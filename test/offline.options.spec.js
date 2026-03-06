@@ -727,4 +727,88 @@ describe("Query Options", () => {
     //     }
     // }).timeout(10000);
   });
+
+  describe("returnOnConditionCheckFailure", () => {
+    let schema = {
+      model: {
+        entity: "condcheck",
+        service: "tests",
+        version: "1",
+      },
+      attributes: {
+        prop1: "string",
+        prop2: "string",
+        prop3: "string",
+      },
+      indexes: {
+        index1: {
+          pk: {
+            field: "pk",
+            facets: ["prop1"],
+          },
+          sk: {
+            field: "sk",
+            facets: ["prop2"],
+          },
+        },
+      },
+    };
+    let entity = new Entity(schema, { table: "test_table" });
+    let properties = {
+      prop1: "prop1Value",
+      prop2: "prop2Value",
+      prop3: "prop3Value",
+    };
+
+    it("should add ReturnValuesOnConditionCheckFailure to put params", () => {
+      let params = entity.put(properties).params({ returnOnConditionCheckFailure: "all_old" });
+      expect(params.ReturnValuesOnConditionCheckFailure).to.equal("ALL_OLD");
+    });
+
+    it("should add ReturnValuesOnConditionCheckFailure to create params", () => {
+      let params = entity.create(properties).params({ returnOnConditionCheckFailure: "all_old" });
+      expect(params.ReturnValuesOnConditionCheckFailure).to.equal("ALL_OLD");
+    });
+
+    it("should add ReturnValuesOnConditionCheckFailure to update params", () => {
+      let params = entity.update(properties).set({ prop3: "newVal" }).params({ returnOnConditionCheckFailure: "all_old" });
+      expect(params.ReturnValuesOnConditionCheckFailure).to.equal("ALL_OLD");
+    });
+
+    it("should add ReturnValuesOnConditionCheckFailure to patch params", () => {
+      let params = entity.patch(properties).set({ prop3: "newVal" }).params({ returnOnConditionCheckFailure: "all_old" });
+      expect(params.ReturnValuesOnConditionCheckFailure).to.equal("ALL_OLD");
+    });
+
+    it("should add ReturnValuesOnConditionCheckFailure to delete params", () => {
+      let params = entity.delete(properties).params({ returnOnConditionCheckFailure: "all_old" });
+      expect(params.ReturnValuesOnConditionCheckFailure).to.equal("ALL_OLD");
+    });
+
+    it("should add ReturnValuesOnConditionCheckFailure to remove params", () => {
+      let params = entity.remove(properties).params({ returnOnConditionCheckFailure: "all_old" });
+      expect(params.ReturnValuesOnConditionCheckFailure).to.equal("ALL_OLD");
+    });
+
+    it("should add ReturnValuesOnConditionCheckFailure to upsert params", () => {
+      let params = entity.upsert(properties).set({ prop3: "newVal" }).params({ returnOnConditionCheckFailure: "all_old" });
+      expect(params.ReturnValuesOnConditionCheckFailure).to.equal("ALL_OLD");
+    });
+
+    it("should not add ReturnValuesOnConditionCheckFailure when option is 'none'", () => {
+      let params = entity.put(properties).params({ returnOnConditionCheckFailure: "none" });
+      expect(params.ReturnValuesOnConditionCheckFailure).to.be.undefined;
+    });
+
+    it("should not add ReturnValuesOnConditionCheckFailure when option is not provided", () => {
+      let params = entity.put(properties).params();
+      expect(params.ReturnValuesOnConditionCheckFailure).to.be.undefined;
+    });
+
+    it("should throw on invalid returnOnConditionCheckFailure value", () => {
+      expect(() => {
+        entity.put(properties).params({ returnOnConditionCheckFailure: "invalid" });
+      }).to.throw('Invalid value for query option "returnOnConditionCheckFailure"');
+    });
+  });
 });

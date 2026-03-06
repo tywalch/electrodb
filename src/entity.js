@@ -793,25 +793,55 @@ class Entity {
   }
 
   async executeOperation(method, parameters, config) {
-    let response = await this._exec(method, parameters, config);
+    const hasConditionCheck = config.returnOnConditionCheckFailure === "all_old";
+
+    let response;
+    try {
+      response = await this._exec(method, parameters, config);
+    } catch (err) {
+      if (hasConditionCheck && !config.originalErr && this._isConditionalCheckFailedException(err)) {
+        const rawItem = err.Item;
+        if (rawItem) {
+          const item = c.util.unmarshall(rawItem);
+          const formatted = this.formatResponse({ Item: item }, TableIndex, config);
+          return { rejected: true, data: formatted.data };
+        }
+        return { rejected: true, data: null };
+      }
+      throw err;
+    }
+
+    let result;
     switch (parameters.ReturnValues) {
       case FormatToReturnValues.none:
-        return { data: null };
+        result = { data: null };
+        break;
       case FormatToReturnValues.all_new:
       case FormatToReturnValues.all_old:
       case FormatToReturnValues.updated_new:
       case FormatToReturnValues.updated_old:
-        return this.formatResponse(response, TableIndex, config);
+        result = this.formatResponse(response, TableIndex, config);
+        break;
       case FormatToReturnValues.default:
       default:
-        return this._formatDefaultResponse(
+        result = this._formatDefaultResponse(
           method,
           parameters.IndexName,
           parameters,
           config,
           response,
         );
+        break;
     }
+
+    if (hasConditionCheck) {
+      return { rejected: false, data: result.data };
+    }
+    return result;
+  }
+
+  _isConditionalCheckFailedException(err) {
+    return err.name === "ConditionalCheckFailedException" || err.code === "ConditionalCheckFailedException";
   }
 
   _formatDefaultResponse(method, index, parameters, config = {}, response) {
@@ -1794,6 +1824,19 @@ class Entity {
 
       if (option.originalErr === true) {
         config.originalErr = true;
+      }
+
+      if (typeof option.returnOnConditionCheckFailure === "string") {
+        const value = option.returnOnConditionCheckFailure.toLowerCase();
+        if (value === "all_old") {
+          config.returnOnConditionCheckFailure = "all_old";
+          config.params.ReturnValuesOnConditionCheckFailure = "ALL_OLD";
+        } else if (value !== "none") {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidOptions,
+            `Invalid value for query option "returnOnConditionCheckFailure" provided: "${option.returnOnConditionCheckFailure}". Allowed values include "all_old" and "none".`,
+          );
+        }
       }
 
       if (option.raw === true) {

@@ -1,6 +1,6 @@
 {
   "name": "electrodb",
-  "version": "3.7.1",
+  "version": "3.7.2",
   "description": "A library to more easily create and interact with multiple entities and heretical relationships in dynamodb",
   "main": "index.js",
   "scripts": {
@@ -56,7 +56,7 @@
     "@types/node": "^15.14.9",
     "@types/uuid": "^8.3.0",
     "aws-cdk-lib": "^2.100.0",
-    "aws-sdk": "2.630.0",
+    "aws-sdk": "2.1408.0",
     "browserify": "^17.0.0",
     "chai": "4.2.0",
     "coveralls": "^3.1.1",
