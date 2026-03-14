@@ -2396,14 +2396,33 @@ interface QueryOperations<
   ) => QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes, I>;
   go: GoQueryTerminal<A, F, C, S, ResponseItem, I>;
   params: ParamTerminal<A, F, C, S, ResponseItem>;
-  where: WhereClause<
-    A,
-    F,
-    C,
-    S,
-    Item<A, F, C, S, S["attributes"]>,
-    QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes, I>
-  >;
+  where: IndexSpecificSchema<A, F, C, S, I> extends Schema<
+    infer A2,
+    infer F2,
+    infer C2
+  >
+    ? WhereClause<
+        A2,
+        F2,
+        C2,
+        IndexSpecificSchema<A, F, C, S, I>,
+        Item<
+          A2,
+          F2,
+          C2,
+          IndexSpecificSchema<A, F, C, S, I>,
+          IndexSpecificSchema<A, F, C, S, I>["attributes"]
+        >,
+        QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes, I>
+      >
+    : WhereClause<
+        A,
+        F,
+        C,
+        S,
+        Item<A, F, C, S, S["attributes"]>,
+        QueryBranches<A, F, C, S, ResponseItem, IndexCompositeAttributes, I>
+      >;
 }
 
 type IndexKeyComposite<
@@ -5302,8 +5321,8 @@ export type WhereCallback<
   C extends string,
   S extends Schema<A, F, C>,
   I extends Item<A, F, C, S, S["attributes"]>,
-> = <W extends WhereAttributes<A, F, C, S, I>>(
-  attributes: W,
+> = (
+  attributes: WhereAttributes<A, F, C, S, I>,
   operations: WhereOperations<A, F, C, S, I>,
 ) => string;
 
