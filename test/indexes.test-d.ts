@@ -1468,6 +1468,57 @@ const compositeProjectionEntity = new Entity(
   { table },
 );
 
+const standardProjectionEntity = new Entity(
+  {
+    model: {
+      entity: "standardProjection",
+      version: "1",
+      service: "test",
+    },
+    attributes: {
+      tenantId: { type: "string", required: true },
+      status: { type: "string" },
+      name: { type: "string" },
+      email: { type: "string" },
+      age: { type: "number" },
+    },
+    indexes: {
+      primary: {
+        pk: {
+          field: "pk",
+          composite: ["tenantId"],
+        },
+        sk: {
+          field: "sk",
+          composite: ["status"],
+        },
+      },
+      includeStandard: {
+        index: "gsi1pk-gsi1sk-index",
+        pk: {
+          field: "gsi1pk",
+          composite: ["tenantId"],
+        },
+        sk: {
+          field: "gsi1sk",
+          composite: ["email"],
+        },
+      },
+    },
+  },
+  { table },
+);
+
+standardProjectionEntity.query.includeStandard({ tenantId: "t1" }).go().then((resp) => {
+  expectType<{
+    tenantId: string;
+    status: string;
+    name?: string;
+    email?: string;
+    age?: number;
+  }[]>(resp.data);
+});
+
 compositeProjectionEntity.query.keysOnlyComposite({ tenantId: "t1" }).go().then((resp) => {
   expectType<{ tenantId: string; age: number }[]>(resp.data);
 });

@@ -62,6 +62,11 @@ function createEntity(service: string) {
           projection: ["name", "age"],
           pk: { composite: ["email"] },
         },
+        standardIndex: {
+          index: "gsi5-index",
+          pk: { field: "gsi5pk", composite: ["tenantId"] },
+          sk: { field: "gsi5sk", composite: ["email"] },
+        },
       },
     },
     { table, client },
@@ -457,6 +462,29 @@ describe("composite index projection tests", () => {
 
       expect(result.data).to.have.lengthOf(1);
       expect(result.data[0].name).to.equal("Alice");
+    });
+  });
+
+  describe("standard index with optional sk composite", () => {
+    const standardTenantId = uuid();
+
+    before(async () => {
+      await entity.put({
+        tenantId: standardTenantId,
+        status: "active",
+        name: "NoEmail",
+      }).go();
+    });
+
+    it("should return email as undefined on standard index when not provided", async () => {
+      const result = await entity.query
+        .standardIndex({ tenantId: standardTenantId })
+        .go();
+
+      expect(result.data).to.have.length.greaterThan(0);
+      const item = result.data[0];
+      expect(item.tenantId).to.equal(standardTenantId);
+      expect(item.email).to.be.undefined;
     });
   });
 });

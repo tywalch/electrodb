@@ -8,7 +8,9 @@
     { "AttributeName": "sk", "AttributeType": "S" },
     { "AttributeName": "tenantId", "AttributeType": "S" },
     { "AttributeName": "age", "AttributeType": "N" },
-    { "AttributeName": "email", "AttributeType": "S" }
+    { "AttributeName": "email", "AttributeType": "S" },
+    { "AttributeName": "gsi5pk", "AttributeType": "S" },
+    { "AttributeName": "gsi5sk", "AttributeType": "S" }
   ],
   "GlobalSecondaryIndexes": [
     {
@@ -46,6 +48,14 @@
         "ProjectionType": "INCLUDE",
         "NonKeyAttributes": ["name", "age", "__edb_e__", "__edb_v__"]
       }
+    },
+    {
+      "IndexName": "gsi5-index",
+      "KeySchema": [
+        { "AttributeName": "gsi5pk", "KeyType": "HASH" },
+        { "AttributeName": "gsi5sk", "KeyType": "RANGE" }
+      ],
+      "Projection": { "ProjectionType": "ALL" }
     }
   ],
   "BillingMode": "PAY_PER_REQUEST"
