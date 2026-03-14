@@ -1398,3 +1398,367 @@ expectError(() =>
 );
 
 
+const compositeProjectionEntity = new Entity(
+  {
+    model: {
+      entity: "compositeProjection",
+      version: "1",
+      service: "test",
+    },
+    attributes: {
+      tenantId: { type: "string", required: true },
+      status: { type: "string" },
+      name: { type: "string" },
+      email: { type: "string" },
+      age: { type: "number" },
+    },
+    indexes: {
+      primary: {
+        pk: {
+          field: "pk",
+          composite: ["tenantId"],
+        },
+        sk: {
+          field: "sk",
+          composite: ["status"],
+        },
+      },
+      keysOnlyComposite: {
+        index: "gsi1pk-gsi1sk-index",
+        type: "composite",
+        collection: "compositeKeysOnly",
+        projection: "keys_only",
+        pk: {
+          composite: ["tenantId"],
+        },
+        sk: {
+          composite: ["age"],
+        },
+      },
+      includeComposite: {
+        index: "gsi2pk-gsi2sk-index",
+        type: "composite",
+        collection: "compositeInclude",
+        projection: ["name"],
+        pk: {
+          composite: ["tenantId"],
+        },
+        sk: {
+          composite: ["email"],
+        },
+      },
+      keysOnlyCompositeNoSk: {
+        index: "gsi3pk-gsi3sk-index",
+        type: "composite",
+        projection: "keys_only",
+        pk: {
+          composite: ["email"],
+        },
+      },
+      includeCompositeNoSk: {
+        index: "gsi4pk-gsi4sk-index",
+        type: "composite",
+        projection: ["name", "age"],
+        pk: {
+          composite: ["email"],
+        },
+      },
+    },
+  },
+  { table },
+);
+
+const standardProjectionEntity = new Entity(
+  {
+    model: {
+      entity: "standardProjection",
+      version: "1",
+      service: "test",
+    },
+    attributes: {
+      tenantId: { type: "string", required: true },
+      status: { type: "string" },
+      name: { type: "string" },
+      email: { type: "string" },
+      age: { type: "number" },
+    },
+    indexes: {
+      primary: {
+        pk: {
+          field: "pk",
+          composite: ["tenantId"],
+        },
+        sk: {
+          field: "sk",
+          composite: ["status"],
+        },
+      },
+      includeStandard: {
+        index: "gsi1pk-gsi1sk-index",
+        pk: {
+          field: "gsi1pk",
+          composite: ["tenantId"],
+        },
+        sk: {
+          field: "gsi1sk",
+          composite: ["email"],
+        },
+      },
+    },
+  },
+  { table },
+);
+
+standardProjectionEntity.query.includeStandard({ tenantId: "t1" }).go().then((resp) => {
+  expectType<{
+    tenantId: string;
+    status: string;
+    name?: string;
+    email?: string;
+    age?: number;
+  }[]>(resp.data);
+});
+
+compositeProjectionEntity.query.keysOnlyComposite({ tenantId: "t1" }).go().then((resp) => {
+  expectType<{ tenantId: string; age: number }[]>(resp.data);
+});
+
+compositeProjectionEntity.query.keysOnlyComposite({ tenantId: "t1" })
+  .go({ attributes: ["tenantId"] })
+  .then((resp) => {
+    expectType<{ tenantId: string }[]>(resp.data);
+  });
+
+compositeProjectionEntity.query.keysOnlyComposite({ tenantId: "t1" })
+  .go({ attributes: ["age"] })
+  .then((resp) => {
+    expectType<{ age: number }[]>(resp.data);
+  });
+
+expectError(
+  compositeProjectionEntity.query.keysOnlyComposite({ tenantId: "t1" })
+    .go({ attributes: ["name"] })
+);
+
+compositeProjectionEntity.query.includeComposite({ tenantId: "t1" }).go().then((resp) => {
+  expectType<{ tenantId: string; email: string; name?: string }[]>(resp.data);
+});
+
+compositeProjectionEntity.query.includeComposite({ tenantId: "t1" })
+  .go({ attributes: ["name"] })
+  .then((resp) => {
+    expectType<{ name?: string }[]>(resp.data);
+  });
+
+compositeProjectionEntity.query.keysOnlyComposite({ tenantId: "t1" }).go({ hydrate: true }).then((resp) => {
+  expectType<
+    {
+      tenantId: string;
+      status: string;
+      name?: string;
+      email?: string;
+      age?: number;
+    }[]
+  >(resp.data);
+});
+
+projectionEntity.scan.keysOnly.go().then((resp) => {
+  expectType<{}[]>(resp.data);
+});
+
+compositeProjectionEntity.scan.keysOnlyComposite
+  .go()
+  .then((resp) => {
+    expectType<{ tenantId: string; age: number }[]>(resp.data);
+  });
+
+compositeProjectionEntity.query.keysOnlyCompositeNoSk({ email: "a@b.com" }).go().then((resp) => {
+  expectType<{ email: string }[]>(resp.data);
+});
+
+compositeProjectionEntity.query.keysOnlyCompositeNoSk({ email: "a@b.com" })
+  .go({ attributes: ["email"] })
+  .then((resp) => {
+    expectType<{ email: string }[]>(resp.data);
+  });
+
+expectError(
+  compositeProjectionEntity.query.keysOnlyCompositeNoSk({ email: "a@b.com" })
+    .go({ attributes: ["name"] })
+);
+
+compositeProjectionEntity.scan.keysOnlyCompositeNoSk
+  .go()
+  .then((resp) => {
+    expectType<{ email: string }[]>(resp.data);
+  });
+
+compositeProjectionEntity.query.includeCompositeNoSk({ email: "a@b.com" }).go().then((resp) => {
+  expectType<{ email: string; name?: string; age?: number }[]>(resp.data);
+});
+
+compositeProjectionEntity.query.includeCompositeNoSk({ email: "a@b.com" })
+  .go({ attributes: ["email", "name"] })
+  .then((resp) => {
+    expectType<{ email: string; name?: string }[]>(resp.data);
+  });
+
+expectError(
+  compositeProjectionEntity.query.includeCompositeNoSk({ email: "a@b.com" })
+    .go({ attributes: ["status"] })
+);
+
+const compositeProjectionEntity2 = new Entity(
+  {
+    model: {
+      entity: "compositeProjection2",
+      version: "1",
+      service: "test",
+    },
+    attributes: {
+      tenantId: { type: "string", required: true },
+      age: { type: "number" },
+      email: { type: "string" },
+      category: { type: "string" },
+      score: { type: "number" },
+    },
+    indexes: {
+      primary: {
+        pk: {
+          field: "pk",
+          composite: ["tenantId"],
+        },
+        sk: {
+          field: "sk",
+          composite: ["category"],
+        },
+      },
+      keysOnlyComposite: {
+        index: "gsi1pk-gsi1sk-index",
+        type: "composite",
+        collection: "compositeKeysOnly",
+        projection: "keys_only",
+        pk: {
+          composite: ["tenantId"],
+        },
+        sk: {
+          composite: ["age"],
+        },
+      },
+      includeComposite: {
+        index: "gsi2pk-gsi2sk-index",
+        type: "composite",
+        collection: "compositeInclude",
+        projection: ["score"],
+        pk: {
+          composite: ["tenantId"],
+        },
+        sk: {
+          composite: ["email"],
+        },
+      },
+    },
+  },
+  { table },
+);
+
+const compositeService = new Service({
+  compositeProjectionEntity,
+  compositeProjectionEntity2,
+});
+
+type CompositeKeysOnlyCollectionResponse = {
+  data: {
+    compositeProjectionEntity: { tenantId: string; age: number }[];
+    compositeProjectionEntity2: { tenantId: string; age: number }[];
+  };
+  cursor: string | null;
+};
+
+compositeService.collections.compositeKeysOnly({ tenantId: "t1" }).go().then((res) => {
+  expectType<CompositeKeysOnlyCollectionResponse>(res);
+});
+
+
+compositeService.collections.compositeKeysOnly({ tenantId: "t1" })
+  .go({ attributes: ["tenantId", "age"] })
+  .then((res) => {
+    expectType<{
+      data: {
+        compositeProjectionEntity: { tenantId: string; age: number }[];
+        compositeProjectionEntity2: { tenantId: string; age: number }[];
+      };
+      cursor: string | null;
+    }>(res);
+  });
+
+
+expectError(() =>
+  compositeService.collections.compositeKeysOnly({ tenantId: "t1" })
+    .go({ attributes: ["name"] })
+);
+
+expectError(() =>
+  compositeService.collections.compositeKeysOnly({ tenantId: "t1" })
+    .go({ attributes: ["category"] })
+);
+
+
+type CompositeIncludeCollectionResponse = {
+  data: {
+    compositeProjectionEntity: { tenantId: string; email: string; name?: string }[];
+    compositeProjectionEntity2: { tenantId: string; email: string; score?: number }[];
+  };
+  cursor: string | null;
+};
+
+compositeService.collections.compositeInclude({ tenantId: "t1" }).go().then((res) => {
+  expectType<CompositeIncludeCollectionResponse>(res);
+});
+
+
+compositeService.collections.compositeInclude({ tenantId: "t1" })
+  .go({ attributes: ["tenantId", "name", "email", "score"] })
+  .then((res) => {
+    expectType<{
+      data: {
+        compositeProjectionEntity: { tenantId: string; email: string; name?: string }[];
+        compositeProjectionEntity2: { tenantId: string; email: string; score?: number }[];
+      };
+      cursor: string | null;
+    }>(res);
+  });
+
+
+expectError(() =>
+  compositeService.collections.compositeInclude({ tenantId: "t1" })
+    .go({ attributes: ["status"] })
+);
+
+expectError(() =>
+  compositeService.collections.compositeInclude({ tenantId: "t1" })
+    .go({ attributes: ["age"] })
+);
+
+
+compositeService.collections.compositeInclude({ tenantId: "t1" }).go({ hydrate: true }).then((res) => {
+  expectType<{
+    data: {
+      compositeProjectionEntity: {
+        tenantId: string;
+        status: string;
+        name?: string;
+        email?: string;
+        age?: number;
+      }[];
+      compositeProjectionEntity2: {
+        tenantId: string;
+        age?: number;
+        email?: string;
+        category: string;
+        score?: number;
+      }[];
+    };
+    cursor: string | null;
+  }>(res);
+});
