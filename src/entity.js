@@ -644,7 +644,7 @@ class Entity {
     const validKeys = [];
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i];
-      const item = this._formatKeysToItem(index, key);
+      const item = this._formatKeysToItem(TableIndex, key);
       if (item !== null) {
         items.push(item);
         validKeys.push(key);
