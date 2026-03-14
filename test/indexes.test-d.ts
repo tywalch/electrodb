@@ -1493,6 +1493,12 @@ compositeProjectionEntity.query.includeComposite({ tenantId: "t1" }).go().then((
   expectType<{ tenantId: string; email: string; name?: string }[]>(resp.data);
 });
 
+compositeProjectionEntity.query.includeComposite({ tenantId: "t1" })
+  .go({ attributes: ["name"] })
+  .then((resp) => {
+    expectType<{ name?: string }[]>(resp.data);
+  });
+
 compositeProjectionEntity.query.keysOnlyComposite({ tenantId: "t1" }).go({ hydrate: true }).then((resp) => {
   expectType<
     {
