@@ -639,3 +639,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.7.1]
 ### Added
 - [Issue #543](https://github.com/tywalch/electrodb/issues/543); New `client` option for `go()` method allowing dynamic DynamoDB client override at query execution time. This enables use cases like multi-region routing, per-request client selection, and easier testing. Supported for all operation types: entity operations, collection queries, batch operations, and transactions.
+
+## [3.7.2]
+### Fixed
+- [Issue #556](https://github.com/tywalch/electrodb/issues/556); Fixed `where` clause on projected indexes exposing all entity attributes instead of only projected attributes when the index has non-empty SK composites. Calling `.where()` directly now correctly restricts to projected attributes, matching the existing behavior of `.gte().where()` and other SK operation chains.
