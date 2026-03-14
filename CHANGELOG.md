@@ -639,3 +639,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.7.1]
 ### Added
 - [Issue #543](https://github.com/tywalch/electrodb/issues/543); New `client` option for `go()` method allowing dynamic DynamoDB client override at query execution time. This enables use cases like multi-region routing, per-request client selection, and easier testing. Supported for all operation types: entity operations, collection queries, batch operations, and transactions.
+
+## [3.7.2]
+### Fixed
+- [Issue #553](https://github.com/tywalch/electrodb/issues/553); Fixed `parse` method returning data instead of `null` for invalid items.
+- [Issue #561](https://github.com/tywalch/electrodb/issues/561); Fixed `parse` method not allowing the `ignoreOwnership` option to be overridden.
