@@ -1,0 +1,52 @@
+{
+  "KeySchema": [
+    { "AttributeName": "pk", "KeyType": "HASH" },
+    { "AttributeName": "sk", "KeyType": "RANGE" }
+  ],
+  "AttributeDefinitions": [
+    { "AttributeName": "pk", "AttributeType": "S" },
+    { "AttributeName": "sk", "AttributeType": "S" },
+    { "AttributeName": "tenantId", "AttributeType": "S" },
+    { "AttributeName": "age", "AttributeType": "N" },
+    { "AttributeName": "email", "AttributeType": "S" }
+  ],
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "gsi1-index",
+      "KeySchema": [
+        { "AttributeName": "tenantId", "KeyType": "HASH" },
+        { "AttributeName": "age", "KeyType": "RANGE" }
+      ],
+      "Projection": { "ProjectionType": "KEYS_ONLY" }
+    },
+    {
+      "IndexName": "gsi2-index",
+      "KeySchema": [
+        { "AttributeName": "tenantId", "KeyType": "HASH" },
+        { "AttributeName": "email", "KeyType": "RANGE" }
+      ],
+      "Projection": {
+        "ProjectionType": "INCLUDE",
+        "NonKeyAttributes": ["name", "__edb_e__", "__edb_v__"]
+      }
+    },
+    {
+      "IndexName": "gsi3-index",
+      "KeySchema": [
+        { "AttributeName": "email", "KeyType": "HASH" }
+      ],
+      "Projection": { "ProjectionType": "KEYS_ONLY" }
+    },
+    {
+      "IndexName": "gsi4-index",
+      "KeySchema": [
+        { "AttributeName": "email", "KeyType": "HASH" }
+      ],
+      "Projection": {
+        "ProjectionType": "INCLUDE",
+        "NonKeyAttributes": ["name", "age", "__edb_e__", "__edb_v__"]
+      }
+    }
+  ],
+  "BillingMode": "PAY_PER_REQUEST"
+}
