@@ -644,3 +644,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Fixed
 - [Issue #553](https://github.com/tywalch/electrodb/issues/553); Fixed `parse` method returning data instead of `null` for invalid items.
 - [Issue #561](https://github.com/tywalch/electrodb/issues/561); Fixed `parse` method not allowing the `ignoreOwnership` option to be overridden.
+
+## [3.8.0]
+### Added
+- [Issue #563](https://github.com/tywalch/electrodb/issues/563); Async iterable support for `query`, `scan`, and `collection` results. The result of `.go()` can now be consumed with `for await...of` to iterate through pages one at a time. [read more](https://electrodb.dev/en/queries/pagination#async-iteration)
