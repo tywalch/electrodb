@@ -1013,9 +1013,8 @@ export async function closePullRequest(user: string, pr: PullRequestIds) {
     .update(pr)
     .set({ status: "Closed" })
     .where(
-      ({ username, repoOwner }, { eq }) => `
-            ${eq(username, user)} OR ${eq(repoOwner, user)}
-        `,
+      ({ username, repoOwner }, { eq, or }) =>
+        or(eq(username, user), eq(repoOwner, user)),
     )
     .go();
 }

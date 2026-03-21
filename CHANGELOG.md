@@ -644,3 +644,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ### Fixed
 - [Issue #553](https://github.com/tywalch/electrodb/issues/553); Fixed `parse` method returning data instead of `null` for invalid items.
 - [Issue #561](https://github.com/tywalch/electrodb/issues/561); Fixed `parse` method not allowing the `ignoreOwnership` option to be overridden.
+
+## [3.8.0]
+### Added
+- [Issue #565](https://github.com/tywalch/electrodb/issues/565); Added `and` and `or` logical operators to the WHERE clause `operations` object.

@@ -503,6 +503,142 @@ describe("Where Clause Queries", () => {
       'Error thrown by DynamoDB client: "The conditional request failed" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error',
     );
   });
+  it("Should filter with 'or' operation", async () => {
+    const animals = await WhereTests.query
+      .farm({ pen })
+      .where(({ animal }, { eq, or }) =>
+        or(eq(animal, "Cow"), eq(animal, "Shark"))
+      )
+      .go()
+      .then((res) => res.data);
+    expect(animals).to.be.an("array").and.have.length(2);
+    expect(animals.map((pen) => pen.animal)).to.have.members(["Cow", "Shark"]);
+  });
+
+  it("Should filter with 'and' operation", async () => {
+    const animals = await WhereTests.query
+      .farm({ pen })
+      .where(({ animal }, { begins, contains, and }) =>
+        and(begins(animal, "Sh"), contains(animal, "ar"))
+      )
+      .go()
+      .then((res) => res.data);
+    expect(animals).to.be.an("array").and.have.length(1);
+    expect(animals.map((pen) => pen.animal)).to.have.members(["Shark"]);
+  });
+
+  it("Should filter with nested 'or' inside 'and'", async () => {
+    const animals = await WhereTests.query
+      .farm({ pen })
+      .where(({ animal, dangerous }, { eq, notExists, and, or }) =>
+        and(
+          or(eq(animal, "Cow"), eq(animal, "Dog"), eq(animal, "Shark")),
+          notExists(dangerous),
+        )
+      )
+      .go()
+      .then((res) => res.data);
+    expect(animals).to.be.an("array").and.have.length(2);
+    expect(animals.map((pen) => pen.animal)).to.have.members(["Cow", "Dog"]);
+  });
+
+  it("Should filter with nested 'and' inside 'or'", async () => {
+    const animals = await WhereTests.query
+      .farm({ pen })
+      .where(({ animal }, { eq, begins, contains, and, or }) =>
+        or(
+          and(begins(animal, "Ch"), contains(animal, "ick")),
+          eq(animal, "Pig"),
+        )
+      )
+      .go()
+      .then((res) => res.data);
+    expect(animals).to.be.an("array").and.have.length(3);
+    expect(animals.map((pen) => pen.animal)).to.have.members([
+      "Chicken",
+      "Chick",
+      "Pig",
+    ]);
+  });
+
+  it("Should generate correct params for 'or' operation", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where(({ animal }, { eq, or }) =>
+        or(eq(animal, "Cow"), eq(animal, "Dog"))
+      )
+      .params();
+    expect(params.FilterExpression).to.equal(
+      "(#animal = :animal0 OR #animal = :animal1)",
+    );
+  });
+
+  it("Should generate correct params for 'and' operation", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where(({ animal, dangerous }, { eq, exists, and }) =>
+        and(eq(animal, "Cow"), exists(dangerous))
+      )
+      .params();
+    expect(params.FilterExpression).to.equal(
+      "(#animal = :animal0 AND attribute_exists(#dangerous))",
+    );
+  });
+
+  it("Should generate correct params for nested and/or", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where(({ animal, dangerous }, { eq, exists, notExists, and, or }) =>
+        or(
+          and(eq(animal, "Cow"), notExists(dangerous)),
+          and(eq(animal, "Shark"), exists(dangerous)),
+        )
+      )
+      .params();
+    expect(params.FilterExpression).to.equal(
+      "((#animal = :animal0 AND attribute_not_exists(#dangerous)) OR (#animal = :animal1 AND attribute_exists(#dangerous)))",
+    );
+  });
+
+  it("Should handle 'or' with undefined values (conditional expressions)", async () => {
+    const includeShark = false;
+    const animals = await WhereTests.query
+      .farm({ pen })
+      .where(({ animal }, { eq, or }) =>
+        or(eq(animal, "Cow"), includeShark ? eq(animal, "Shark") : undefined)
+      )
+      .go()
+      .then((res) => res.data);
+    expect(animals).to.be.an("array").and.have.length(1);
+    expect(animals.map((pen) => pen.animal)).to.have.members(["Cow"]);
+  });
+
+  it("Should handle 'and'/'or' with multiple .where() calls", async () => {
+    const animals = await WhereTests.query
+      .farm({ pen })
+      .where(({ animal }, { eq, or }) =>
+        or(eq(animal, "Cow"), eq(animal, "Shark"))
+      )
+      .where(({ dangerous }, { exists }) => exists(dangerous))
+      .go()
+      .then((res) => res.data);
+    expect(animals).to.be.an("array").and.have.length(1);
+    expect(animals.map((pen) => pen.animal)).to.have.members(["Shark"]);
+  });
+
+  it("Should apply 'or' in condition expression for update", async () => {
+    const penRow = penRows[2];
+    const params = WhereTests.update(penRow)
+      .set({ dangerous: false })
+      .where(({ animal }, { eq, or }) =>
+        or(eq(animal, penRow.animal), eq(animal, "Dog"))
+      )
+      .params();
+    expect(params.ConditionExpression).to.equal(
+      "(#animal = :animal0 OR #animal = :animal1)",
+    );
+  });
+
   it("should properly handle nested properties being used more than once", () => {
     const table = "your_table_name";
 

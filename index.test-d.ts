@@ -409,7 +409,9 @@ type OperationNames =
   | "size"
   | "escape"
   | "type"
-  | "field";
+  | "field"
+  | "and"
+  | "or";
 
 type WithSKMyIndexCompositeAttributes = {
   attr1: string;

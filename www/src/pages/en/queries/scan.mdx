@@ -25,9 +25,8 @@ import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
 ```typescript
 await StoreLocations.scan
   .where(
-    ({ category }, { eq }) => `
-        ${eq(category, "food/coffee")} OR ${eq(category, "spite store")}
-    `,
+    ({ category }, { eq, or }) =>
+      or(eq(category, "food/coffee"), eq(category, "spite store")),
   )
   .where(
     ({ leaseEndDate }, { between }) => `

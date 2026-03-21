@@ -173,6 +173,193 @@ describe("Offline Where", () => {
       FilterExpression: "(#animal = :animal0) AND #dangerous = :dangerous0",
     });
   });
+  it("Should combine expressions with 'or' operation", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where(({ animal, dangerous }, { eq, exists, or }) =>
+        or(eq(animal, "Cow"), exists(dangerous))
+      )
+      .params();
+    expect(params.FilterExpression).to.equal(
+      "(#animal = :animal0 OR attribute_exists(#dangerous))",
+    );
+  });
+
+  it("Should combine expressions with 'and' operation", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where(({ animal, dangerous }, { eq, exists, and }) =>
+        and(eq(animal, "Cow"), exists(dangerous))
+      )
+      .params();
+    expect(params.FilterExpression).to.equal(
+      "(#animal = :animal0 AND attribute_exists(#dangerous))",
+    );
+  });
+
+  it("Should nest 'or' inside 'and'", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where(({ animal, dangerous }, { eq, exists, and, or }) =>
+        and(or(eq(animal, "Cow"), eq(animal, "Dog")), exists(dangerous))
+      )
+      .params();
+    expect(params.FilterExpression).to.equal(
+      "((#animal = :animal0 OR #animal = :animal1) AND attribute_exists(#dangerous))",
+    );
+  });
+
+  it("Should nest 'and' inside 'or'", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where(({ animal, dangerous }, { eq, exists, or, and }) =>
+        or(and(eq(animal, "Cow"), exists(dangerous)), eq(animal, "Dog"))
+      )
+      .params();
+    expect(params.FilterExpression).to.equal(
+      "((#animal = :animal0 AND attribute_exists(#dangerous)) OR #animal = :animal1)",
+    );
+  });
+
+  it("Should handle 'or' with more than two expressions", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where(({ animal }, { eq, or }) =>
+        or(eq(animal, "Cow"), eq(animal, "Dog"), eq(animal, "Pig"))
+      )
+      .params();
+    expect(params.FilterExpression).to.equal(
+      "(#animal = :animal0 OR #animal = :animal1 OR #animal = :animal2)",
+    );
+  });
+
+  it("Should handle 'and' with more than two expressions", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where(({ animal, dangerous, row }, { eq, exists, begins, and }) =>
+        and(eq(animal, "Cow"), exists(dangerous), begins(row, "A"))
+      )
+      .params();
+    expect(params.FilterExpression).to.equal(
+      "(#animal = :animal0 AND attribute_exists(#dangerous) AND begins_with(#row, :row0))",
+    );
+  });
+
+  it("Should return single expression unwrapped for 'or' with one argument", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where(({ animal }, { eq, or }) =>
+        or(eq(animal, "Cow"))
+      )
+      .params();
+    expect(params.FilterExpression).to.equal("#animal = :animal0");
+  });
+
+  it("Should return single expression unwrapped for 'and' with one argument", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where(({ animal }, { eq, and }) =>
+        and(eq(animal, "Cow"))
+      )
+      .params();
+    expect(params.FilterExpression).to.equal("#animal = :animal0");
+  });
+
+  it("Should return empty string for 'or' with no arguments", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where((_, { or }) => or())
+      .params();
+    expect(params.FilterExpression).to.be.undefined;
+  });
+
+  it("Should return empty string for 'and' with no arguments", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where((_, { and }) => and())
+      .params();
+    expect(params.FilterExpression).to.be.undefined;
+  });
+
+  it("Should filter out undefined values in 'or'", () => {
+    const includeCondition = false;
+    const params = WhereTests.query
+      .farm({ pen })
+      .where(({ animal, dangerous }, { eq, exists, or }) =>
+        or(eq(animal, "Cow"), includeCondition ? exists(dangerous) : undefined)
+      )
+      .params();
+    expect(params.FilterExpression).to.equal("#animal = :animal0");
+  });
+
+  it("Should filter out undefined values in 'and'", () => {
+    const includeCondition = false;
+    const params = WhereTests.query
+      .farm({ pen })
+      .where(({ animal, dangerous }, { eq, exists, and }) =>
+        and(eq(animal, "Cow"), includeCondition ? exists(dangerous) : undefined)
+      )
+      .params();
+    expect(params.FilterExpression).to.equal("#animal = :animal0");
+  });
+
+  it("Should return empty string when all arguments to 'or' are undefined", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where((_, { or }) => or(undefined, undefined))
+      .params();
+    expect(params.FilterExpression).to.be.undefined;
+  });
+
+  it("Should filter out empty strings in 'or'", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where(({ animal }, { eq, or }) =>
+        or(eq(animal, "Cow"), "")
+      )
+      .params();
+    expect(params.FilterExpression).to.equal("#animal = :animal0");
+  });
+
+  it("Should work with 'and'/'or' combined with multiple .where() calls", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where(({ animal }, { eq, or }) =>
+        or(eq(animal, "Cow"), eq(animal, "Dog"))
+      )
+      .where(({ dangerous }, { exists }) => exists(dangerous))
+      .params();
+    expect(params.FilterExpression).to.equal(
+      "(#animal = :animal0 OR #animal = :animal1) AND attribute_exists(#dangerous)",
+    );
+  });
+
+  it("Should work with deeply nested 'and'/'or'", () => {
+    const params = WhereTests.query
+      .farm({ pen })
+      .where(({ animal, dangerous, row }, { eq, exists, begins, and, or }) =>
+        or(
+          and(eq(animal, "Cow"), exists(dangerous)),
+          and(eq(animal, "Dog"), begins(row, "A")),
+        )
+      )
+      .params();
+    expect(params.FilterExpression).to.equal(
+      "((#animal = :animal0 AND attribute_exists(#dangerous)) OR (#animal = :animal1 AND begins_with(#row, :row0)))",
+    );
+  });
+
+  it("Should apply 'or' in condition expression for mutation methods", () => {
+    const deleteParams = WhereTests.delete({ pen: "abc", row: "def" })
+      .where(({ animal, dangerous }, { eq, exists, or }) =>
+        or(eq(animal, "cow"), exists(dangerous))
+      )
+      .params();
+    expect(deleteParams.ConditionExpression).to.equal(
+      "(#animal = :animal0 OR attribute_exists(#dangerous))",
+    );
+  });
+
   it("Should apply the where clause as condition expression for mutation methods", () => {
     let deleteParams = WhereTests.delete({ pen: "abc", row: "def" })
       .where((attr, op) => op.eq(attr.animal, "cow"))

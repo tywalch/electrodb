@@ -44,9 +44,8 @@ animals
   // using the where clause can guard against making
   // updates against stale data
   .where(
-    ({ isPregnant, lastEvaluation }, { lt, eq }) => `
-    ${eq(isPregnant, true)} AND ${lt(lastEvaluation, "2021-09-12")}
-  `,
+    ({ isPregnant, lastEvaluation }, { lt, eq, and }) =>
+      and(eq(isPregnant, true), lt(lastEvaluation, "2021-09-12")),
   )
   .go();
 ```
@@ -122,9 +121,8 @@ animals
   .update({ animal: "tiger", name: "janet" })
   .set({ keeper: "Joe Exotic" })
   .where(
-    (attr, op) => `
-    ${op.eq(attr.dangerous, true)} AND ${op.notExists(attr.lastFed)}
-  `,
+    (attr, op) =>
+      op.and(op.eq(attr.dangerous, true), op.notExists(attr.lastFed)),
   )
   .go();
 ```
@@ -136,9 +134,8 @@ animals
   .update({ animal: "tiger", name: "janet" })
   .set({ keeper: "Joe Exotic" })
   .where(
-    (attr, op) => `
-    ${op.eq(attr.dangerous, true)} OR ${op.notExists(attr.lastFed)}
-  `,
+    (attr, op) =>
+      op.or(op.eq(attr.dangerous, true), op.notExists(attr.lastFed)),
   )
   .where(({ birthday }, { between }) => {
     const today = Date.now();
@@ -196,6 +193,8 @@ The `attributes` object contains every Attribute defined in the Entity's Model. 
 | `value`       | `value(rent, maxRent)`            | `:rent1`                            |
 | `escape`      | `escape(123)`, `escape('abc')`    | `#123`, `#abc`                      |
 | `field`       | `field('field_name')`             | `:field_name`                       |
+| `and`         | `and(eq(a, b), eq(c, d))`        | `(#a = :a1 AND #c = :c1)`          |
+| `or`          | `or(eq(a, b), eq(c, d))`         | `(#a = :a1 OR #c = :c1)`           |
 
 ### ElectroDB Functions
 
@@ -313,9 +312,8 @@ let stores = await MallStores.query
   .leases({ mallId: "EastPointe" })
   .between({ leaseEndDate: "2020-04-01" }, { leaseEndDate: "2020-07-01" })
   .where(
-    ({ rent, discount }, { between, eq }) => `
-		${between(rent, "2000.00", "5000.00")} AND ${eq(discount, "1000.00")}
-	`,
+    ({ rent, discount }, { between, eq, and }) =>
+      and(between(rent, "2000.00", "5000.00"), eq(discount, "1000.00")),
   )
   .where(
     ({ category }, { eq }) => `

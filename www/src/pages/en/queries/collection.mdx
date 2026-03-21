@@ -156,9 +156,9 @@ Collections do not have the same `query` functionality and as an Entity, though 
 ```typescript
 const results - await TaskApp.collections
   .assignments({employee: "CBaskin"})
-  .where(({ project }, { notExists, contains }) => `
-    ${notExists(project)} OR ${contains(project, "murder")}
-  `)
+  .where(({ project }, { notExists, contains, or }) =>
+    or(notExists(project), contains(project, "murder")),
+  )
   .go();
 ```
 

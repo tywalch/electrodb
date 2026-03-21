@@ -23,9 +23,8 @@ Below demonstrates how to add a `FilterExpression` to Dynamo's DocumentClient di
 animals.query
   .exhibit({ habitat: "Africa" })
   .where(
-    ({ isPregnant, offspring }, { exists, eq }) => `
-    ${eq(isPregnant, true)} OR ${exists(offspring)}
-  `,
+    ({ isPregnant, offspring }, { exists, eq, or }) =>
+      or(eq(isPregnant, true), exists(offspring)),
   )
   .go();
 ```
@@ -86,9 +85,8 @@ animals.query
 animals.query
   .exhibit({ habitat: "Africa", enclosure: "5b" })
   .where(
-    (attr, op) => `
-    ${op.eq(attr.dangerous, true)} AND ${op.notExists(attr.lastFed)}
-  `,
+    (attr, op) =>
+      op.and(op.eq(attr.dangerous, true), op.notExists(attr.lastFed)),
   )
   .go();
 ```
@@ -98,9 +96,9 @@ animals.query
 ```typescript
 animals.query
   .habitats({ habitat: "Africa", enclosure: "5b" })
-  .where((attr, op) => `
-    ${op.eq(attr.dangerous, true)} OR ${op.notExists(attr.lastFed)}
-  `)
+  .where((attr, op) =>
+    op.or(op.eq(attr.dangerous, true), op.notExists(attr.lastFed)),
+  )
   .where(({ birthday }, { between }) => {
     const today = Date.now();
     const lastMonth = today - 1000 * 60 * 60 * 24 * 30;
@@ -157,6 +155,8 @@ The `attributes` object contains every Attribute defined in the Entity's Model. 
 | `value`       | `value(rent, maxRent)`            | `:rent1`                            |
 | `escape`      | `escape(123)`, `escape('abc')`    | `#123`, `#abc`                      |
 | `field`       | `field('field_name')`             | `:field_name`                       |
+| `and`         | `and(eq(a, b), eq(c, d))`        | `(#a = :a1 AND #c = :c1)`          |
+| `or`          | `or(eq(a, b), eq(c, d))`         | `(#a = :a1 OR #c = :c1)`           |
 
 ### ElectroDB Functions
 
@@ -272,9 +272,8 @@ let stores = await MallStores.query
   .leases({ mallId: "EastPointe" })
   .between({ leaseEndDate: "2020-04-01" }, { leaseEndDate: "2020-07-01" })
   .where(
-    ({ rent, discount }, { between, eq }) => `
-		${between(rent, "2000.00", "5000.00")} AND ${eq(discount, "1000.00")}
-	`,
+    ({ rent, discount }, { between, eq, and }) =>
+      and(between(rent, "2000.00", "5000.00"), eq(discount, "1000.00")),
   )
   .where(
     ({ category }, { eq }) => `
