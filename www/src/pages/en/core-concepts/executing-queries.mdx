@@ -129,6 +129,15 @@ const results = await MallStores.query
 }
 ```
 
+For `query`, `scan`, and `collection` operations, the result of `.go()` can also be used as an `AsyncIterable` to iterate through pages of results one at a time. Read more in the [Pagination](/en/queries/pagination#async-iteration) section.
+
+```typescript
+for await (const page of MallStores.query.leases({ mallId }).go({ pages: "all" })) {
+  console.log(page.data);   // items for this page
+  console.log(page.cursor);  // cursor for this page
+}
+```
+
 ### Execution Options
 
 Execution options can be added the `.params()` and `.go()` to change query behavior or add customer parameters to a query.

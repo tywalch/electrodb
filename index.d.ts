@@ -2804,6 +2804,21 @@ type ServiceQueryGoTerminalOptions<
       }
   );
 
+export class ElectroQueryResult<T> implements PromiseLike<T>, AsyncIterable<T> {
+  private constructor();
+  then<TResult1 = T, TResult2 = never>(
+    onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null,
+    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
+  ): Promise<TResult1 | TResult2>;
+  catch<TResult = never>(
+    onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null,
+  ): Promise<T | TResult>;
+  finally(onfinally?: (() => void) | null): Promise<T>;
+  readonly [Symbol.toStringTag]: string;
+  [Symbol.asyncIterator](): AsyncIterator<T>;
+  static reject<T>(err: any): ElectroQueryResult<T>;
+}
+
 type GoQueryTerminalOptions<
   Attributes,
   S extends Schema<any, any, any>,
@@ -2983,8 +2998,8 @@ export type GoQueryTerminal<
 > = {
   <Options extends GoQueryTerminalOptions<keyof Item, S, I>>(
     options: Options,
-  ): Promise<IndexResponse<Options, Item, S, I>>;
-  (): Promise<IndexResponse<{}, Item, S, I>>;
+  ): ElectroQueryResult<IndexResponse<Options, Item, S, I>>;
+  (): ElectroQueryResult<IndexResponse<{}, Item, S, I>>;
 }
 
 export type EntityParseMultipleItems<
@@ -3061,7 +3076,7 @@ export type ServiceQueryRecordsGo<
     >,
   >(
     options: Options,
-  ): Promise<
+  ): ElectroQueryResult<
     Options extends ServiceQueryGoTerminalOptions<
       E,
       Collections,
@@ -3115,7 +3130,7 @@ export type ServiceQueryRecordsGo<
           cursor: string | null;
         }
   >;
-  (): Promise<{
+  (): ElectroQueryResult<{
     data: {
       [EntityResultName in Collections[Collection]]: EntityResultName extends keyof E
         ? E[EntityResultName] extends Entity<infer A, infer F, infer C, infer S>
@@ -3173,13 +3188,13 @@ export type QueryRecordsGo<Item, S extends Schema<string, string, string>> = <
 >(
   options?: Options,
 ) => Options extends GoQueryTerminalOptions<infer Attr, any>
-  ? Promise<{
+  ? ElectroQueryResult<{
       data: Array<{
         [Name in keyof Item as Name extends Attr ? Name : never]: Item[Name];
       }>;
       cursor: string | null;
     }>
-  : Promise<{ data: Array<Item>; cursor: string | null }>;
+  : ElectroQueryResult<{ data: Array<Item>; cursor: string | null }>;
 
 export type UpdateRecordGo<ResponseType, Keys> = <
   T = ResponseType,

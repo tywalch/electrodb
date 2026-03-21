@@ -449,6 +449,26 @@ class Entity {
     );
   }
 
+  _throwEnrichedError(err, stackTrace) {
+    if (err.__isAWSError) {
+      stackTrace.message = `Error thrown by DynamoDB client: "${err.message}" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error`;
+      stackTrace.cause = err;
+      e.applyParamsFn(stackTrace, err.__edb_params);
+      throw stackTrace;
+    } else if (err.isElectroError) {
+      e.applyParamsFn(err, err.__edb_params);
+      throw err;
+    } else {
+      stackTrace.message = new e.ElectroError(
+        e.ErrorCodes.UnknownError,
+        err.message,
+        err,
+      ).message;
+      e.applyParamsFn(stackTrace, err.__edb_params);
+      throw stackTrace;
+    }
+  }
+
   async go(method, parameters = {}, config = {}) {
     let stackTrace;
     if (!config.originalErr) {
@@ -462,32 +482,38 @@ class Entity {
           return await this.executeBulkGet(parameters, config);
         case MethodTypes.query:
         case MethodTypes.scan:
-          return await this.executeQuery(method, parameters, config);
+          return await this._collectAllPages(method, parameters, config);
         default:
           return await this.executeOperation(method, parameters, config);
       }
     } catch (err) {
       if (config.originalErr || stackTrace === undefined) {
-        return Promise.reject(err);
-      } else {
-        if (err.__isAWSError) {
-          stackTrace.message = `Error thrown by DynamoDB client: "${err.message}" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error`;
-          stackTrace.cause = err;
-          e.applyParamsFn(stackTrace, err.__edb_params);
-          return Promise.reject(stackTrace);
-        } else if (err.isElectroError) {
-          e.applyParamsFn(err, err.__edb_params);
-          return Promise.reject(err);
-        } else {
-          stackTrace.message = new e.ElectroError(
-            e.ErrorCodes.UnknownError,
-            err.message,
-            err,
-          ).message;
-          e.applyParamsFn(stackTrace, err.__edb_params);
-          return Promise.reject(stackTrace);
-        }
+        throw err;
       }
+      this._throwEnrichedError(err, stackTrace);
+    }
+  }
+
+  async *goIterator(method, parameters = {}, config = {}) {
+    let stackTrace;
+    if (!config.originalErr) {
+      stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
+    }
+    try {
+      switch (method) {
+        case MethodTypes.query:
+        case MethodTypes.scan:
+          yield* this.executeQuery(method, parameters, config);
+          return;
+        default:
+          yield await this.go(method, parameters, config);
+          return;
+      }
+    } catch (err) {
+      if (config.originalErr || stackTrace === undefined) {
+        throw err;
+      }
+      this._throwEnrichedError(err, stackTrace);
     }
   }
 
@@ -683,9 +709,8 @@ class Entity {
     };
   }
 
-  async executeQuery(method, parameters, config = {}) {
+  async *executeQuery(method, parameters, config = {}) {
     const indexName = parameters.IndexName;
-    let results = config._isCollectionQuery ? {} : [];
     let ExclusiveStartKey = this._formatExclusiveStartKey({
       indexName,
       config,
@@ -696,7 +721,6 @@ class Entity {
     let pages = this._normalizePagesValue(config.pages);
     let iterations = 0;
     let count = 0;
-    let hydratedUnprocessed = [];
     const shouldHydrate =
       config.hydrate &&
       (method === MethodTypes.query || method === MethodTypes.scan);
@@ -719,8 +743,11 @@ class Entity {
         ignoreOwnership: shouldHydrate || config.ignoreOwnership,
       });
       if (config.data === DataOptions.raw) {
-        return response;
+        yield response;
+        return;
       } else if (config._isCollectionQuery) {
+        let pageData = {};
+        let pageUnprocessed = [];
         for (const entity in response.data) {
           let items = response.data[entity];
           if (shouldHydrate && items.length) {
@@ -731,13 +758,14 @@ class Entity {
               config,
             );
             items = hydrated.data;
-            hydratedUnprocessed = hydratedUnprocessed.concat(
-              hydrated.unprocessed,
-            );
+            pageUnprocessed.push(...hydrated.unprocessed);
           }
-          results[entity] = results[entity] || [];
-          results[entity] = [...results[entity], ...items];
+          pageData[entity] = items;
         }
+        const cursor = this._formatReturnPager(config, ExclusiveStartKey);
+        yield shouldHydrate
+          ? { data: pageData, cursor, unprocessed: pageUnprocessed }
+          : { data: pageData, cursor };
       } else if (Array.isArray(response.data)) {
         let prevCount = count;
         if (config.count) {
@@ -748,6 +776,7 @@ class Entity {
         if (moreItemsThanRequired) {
           items = items.slice(0, config.count - prevCount);
         }
+        let pageUnprocessed = [];
         if (shouldHydrate) {
           const hydrated = await this.hydrate(
             parameters.IndexName,
@@ -755,21 +784,27 @@ class Entity {
             config,
           );
           items = hydrated.data;
-          hydratedUnprocessed = hydratedUnprocessed.concat(
-            hydrated.unprocessed,
-          );
+          pageUnprocessed = hydrated.unprocessed;
         }
-        results = [...results, ...items];
         if (moreItemsThanRequired || count === config.count) {
-          const lastItem = results[results.length - 1];
+          const lastItem = items[items.length - 1];
           ExclusiveStartKey = this._fromCompositeToKeysByIndex({
             indexName,
             provided: lastItem,
           });
-          break;
+          const cursor = this._formatReturnPager(config, ExclusiveStartKey);
+          yield shouldHydrate
+            ? { data: items, cursor, unprocessed: pageUnprocessed }
+            : { data: items, cursor };
+          return;
         }
+        const cursor = this._formatReturnPager(config, ExclusiveStartKey);
+        yield shouldHydrate
+          ? { data: items, cursor, unprocessed: pageUnprocessed }
+          : { data: items, cursor };
       } else {
-        return response;
+        yield response;
+        return;
       }
       iterations++;
     } while (
@@ -779,17 +814,44 @@ class Entity {
         iterations < pages) &&
       (config.count === undefined || count < config.count)
     );
+  }
 
-    const cursor = this._formatReturnPager(config, ExclusiveStartKey);
-
-    if (shouldHydrate) {
-      return {
-        cursor,
-        data: results,
-        unprocessed: hydratedUnprocessed,
-      };
+  async _collectAllPages(method, parameters, config) {
+    if (config.data === DataOptions.raw) {
+      for await (const page of this.executeQuery(method, parameters, config)) {
+        return page;
+      }
     }
-    return { data: results, cursor };
+
+    const results = config._isCollectionQuery ? {} : [];
+    let cursor = null;
+    const allUnprocessed = [];
+    let hasUnprocessed = false;
+
+    for await (const page of this.executeQuery(method, parameters, config)) {
+      if (config._isCollectionQuery) {
+        for (const entity in page.data) {
+          results[entity] = results[entity] || [];
+          results[entity].push(...page.data[entity]);
+        }
+      } else if (Array.isArray(page.data)) {
+        results.push(...page.data);
+      } else {
+        return page;
+      }
+
+      cursor = page.cursor;
+      if (page.unprocessed) {
+        hasUnprocessed = true;
+        allUnprocessed.push(...page.unprocessed);
+      }
+    }
+
+    const result = { data: results, cursor };
+    if (hasUnprocessed) {
+      result.unprocessed = allUnprocessed;
+    }
+    return result;
   }
 
   async executeOperation(method, parameters, config) {
