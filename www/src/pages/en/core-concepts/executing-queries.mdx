@@ -108,6 +108,8 @@ const params = MallStores.query
 
 The `go` method _ends_ a query chain, and asynchronously queries DynamoDB with the `client` provided in the model or via the `client` execution option.
 
+> **Important:** Calling `.go()` does not immediately execute the query. The request to DynamoDB is deferred until the result is consumed — either by `await`, `.then()`, `.catch()`, `.finally()`, or `for await...of`. If you call `.go()` without consuming the result, the query will never execute.
+
 > For more information on the options available in the `config` object, check out the section [Execution Options](/en/core-concepts/executing-queries)
 
 #### Example
