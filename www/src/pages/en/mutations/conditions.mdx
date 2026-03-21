@@ -196,6 +196,8 @@ The `attributes` object contains every Attribute defined in the Entity's Model. 
 | `value`       | `value(rent, maxRent)`            | `:rent1`                            |
 | `escape`      | `escape(123)`, `escape('abc')`    | `#123`, `#abc`                      |
 | `field`       | `field('field_name')`             | `:field_name`                       |
+| `and`         | `and(eq(a, b), eq(c, d))`        | `(#a = :a1 AND #c = :c1)`          |
+| `or`          | `or(eq(a, b), eq(c, d))`         | `(#a = :a1 OR #c = :c1)`           |
 
 ### ElectroDB Functions
 

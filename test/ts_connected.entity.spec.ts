@@ -2354,7 +2354,7 @@ describe('field translation', () => {
   });
 
   describe('when performing filters', () => {
-    const filterOperations = ['begins', 'between', 'contains', 'eq', 'escape', 'exists', 'eqOrNotExists', 'field', 'gt', 'gte', 'lt', 'lte', 'name', 'ne', 'notContains', 'notExists', 'size', 'type', 'value'] as const;
+    const filterOperations = ['and', 'begins', 'between', 'contains', 'eq', 'escape', 'exists', 'eqOrNotExists', 'field', 'gt', 'gte', 'lt', 'lte', 'name', 'ne', 'notContains', 'notExists', 'or', 'size', 'type', 'value'] as const;
 
     it('test case should contain all filter operations', () => {
       let foundFilterOperations: string[] = [];

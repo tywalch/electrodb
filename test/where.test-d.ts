@@ -1972,6 +1972,8 @@ entityWithSK.getWhereCallback((a, o) => {
     | "size"
     | "type"
     | "field"
+    | "and"
+    | "or"
   >(keys(op));
 
   expectType<string>(o.eq(a.attr1, ""));
@@ -2015,6 +2017,25 @@ entityWithSK.getWhereCallback((a, o) => {
   expectError(() => {
     o.notExists(a.attr1, "");
   });
+
+  expectType<string>(o.and(o.eq(a.attr1, ""), o.eq(a.attr2, "")));
+  expectType<string>(o.or(o.eq(a.attr1, ""), o.eq(a.attr2, "")));
+  expectType<string>(o.and(o.eq(a.attr1, "")));
+  expectType<string>(o.or(o.eq(a.attr1, "")));
+  expectType<string>(o.and());
+  expectType<string>(o.or());
+  expectType<string>(o.and(o.eq(a.attr1, ""), undefined));
+  expectType<string>(o.or(o.eq(a.attr1, ""), undefined));
+  expectType<string>(o.or(o.eq(a.attr1, ""), o.eq(a.attr2, ""), o.exists(a.attr3)));
+  expectType<string>(o.and(o.eq(a.attr1, ""), o.eq(a.attr2, ""), o.exists(a.attr3)));
+  expectType<string>(o.or(
+    o.and(o.eq(a.attr1, ""), o.exists(a.attr2)),
+    o.and(o.eq(a.attr1, ""), o.notExists(a.attr2)),
+  ));
+  expectType<string>(o.and(
+    o.or(o.eq(a.attr1, ""), o.eq(a.attr2, "")),
+    o.exists(a.attr3),
+  ));
 
   troubleshoot(() => keys(op), "gte");
   return "";

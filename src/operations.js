@@ -325,6 +325,21 @@ class AttributeOperationProxy {
         },
       });
     }
+    ops.and = (...expressions) => {
+      const filtered = expressions.filter(e => typeof e === 'string' && e.length > 0);
+      if (filtered.length === 0) return '';
+      if (filtered.length === 1) return filtered[0];
+      return `(${filtered.join(' AND ')})`;
+    };
+
+    ops.or = (...expressions) => {
+      const filtered = expressions.filter(e => typeof e === 'string' && e.length > 0);
+      if (filtered.length === 0) return '';
+      if (filtered.length === 1) return filtered[0];
+      return `(${filtered.join(' OR ')})`;
+    };
+
+
     return ops;
   }
 

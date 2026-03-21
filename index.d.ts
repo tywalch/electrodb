@@ -254,6 +254,8 @@ export interface CollectionWhereOperations {
     : T extends boolean
     ? boolean
     : never;
+  and: (...expressions: (string | undefined)[]) => string;
+  or: (...expressions: (string | undefined)[]) => string;
 }
 
 export type CollectionWhereCallback<
@@ -5162,6 +5164,8 @@ export interface WhereOperations<
     : T extends boolean
     ? boolean
     : never;
+  and: (...expressions: (string | undefined)[]) => string;
+  or: (...expressions: (string | undefined)[]) => string;
 }
 
 export interface DataUpdateOperations<
