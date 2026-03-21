@@ -11,6 +11,7 @@ const {
   UpsertOperations,
   ComparisonTypes,
 } = require("./types");
+const { ElectroQueryResult } = require("./query-result");
 const {
   AttributeOperationProxy,
   UpdateOperations,
@@ -1355,7 +1356,7 @@ let clauses = {
     name: "go",
     action(entity, state, options = {}) {
       if (state.getError() !== null) {
-        return Promise.reject(state.error);
+        return ElectroQueryResult.reject(state.error);
       }
       try {
         if (entity.client === undefined && options.client === undefined) {
@@ -1369,13 +1370,16 @@ let clauses = {
           ...options,
           _returnOptions: true,
         });
-        return entity.go(
-          state.getMethod(),
-          paramResults.params,
-          paramResults.options,
-        );
+        const method = state.getMethod();
+        const params = paramResults.params;
+        const opts = paramResults.options;
+
+        return new ElectroQueryResult({
+          resolve: () => entity.go(method, params, opts),
+          iterate: () => entity.goIterator(method, params, opts),
+        });
       } catch (err) {
-        return Promise.reject(err);
+        return ElectroQueryResult.reject(err);
       }
     },
     children: [],

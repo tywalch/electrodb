@@ -16,6 +16,7 @@ const {
   ElectroAttributeValidationError,
 } = require("./src/errors");
 const { createConversions } = require("./src/conversions");
+const { ElectroQueryResult } = require("./src/query-result");
 
 const {
   ComparisonTypes,
@@ -37,6 +38,7 @@ module.exports = {
   ElectroUserValidationError,
   ElectroAttributeValidationError,
   createConversions,
+  ElectroQueryResult,
   EntityIdentifiers,
   EntityIdentifierFields,
 };

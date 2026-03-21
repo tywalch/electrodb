@@ -107,9 +107,87 @@ async function getLeases(options: GetItemsOptions) {
 ### Pages
 The execution option `pages` allows you to automatically perform multiple queries against DynamoDB. By default, ElectroDB queries will perform one request against DynamoDB. With `pages`, you can specify the number of queries you'd like to occur under the hood before returning. Furthermore, if you would like ElectroDB to return all results for a given query (i.e., exhausting pagination for a given query automatically) you can use the option `{pages: "all"}`. Note that while option is convenient, it may not performant for some workflows.
 
+## Async Iteration
+
+The result of `.go()` on `query`, `scan`, and `collection` operations can be used as an `AsyncIterable`, allowing you to iterate through pages of results using `for await...of`. Each iteration yields a single page of results with its own `cursor`.
+
+### Entity Query
+
+```typescript
+for await (const page of MallStores.query.leases({ mallId }).go({ pages: "all" })) {
+  console.log(page.data);   // items for this page
+  console.log(page.cursor);  // cursor for this page (null on last page)
+}
+```
+
+### Scan
+
+```typescript
+for await (const page of MallStores.scan.go({ pages: "all" })) {
+  console.log(page.data);
+  console.log(page.cursor);
+}
+```
+
+### Collection Query
+
+```typescript
+for await (const page of TaskApp.collections.assignments({ employeeId: "JExotic" }).go({ pages: "all" })) {
+  console.log(page.data.employees);
+  console.log(page.data.tasks);
+  console.log(page.cursor);
+}
+```
+
+### Early Termination
+
+You can `break` out of the loop at any time to stop fetching additional pages:
+
+```typescript
+const firstBatch: StoreItem[] = [];
+
+for await (const page of MallStores.query.leases({ mallId }).go({ pages: "all" })) {
+  firstBatch.push(...page.data);
+  if (firstBatch.length >= 100) {
+    break; // stop pagination early
+  }
+}
+```
+
+### Combining with Execution Options
+
+All existing execution options work with async iteration. For example, `limit` controls the DynamoDB `Limit` per page, and `pages` controls how many pages to fetch:
+
+```typescript
+// Each page returns at most 25 items, iterate at most 10 pages
+for await (const page of MallStores.query.leases({ mallId }).go({ limit: 25, pages: 10 })) {
+  console.log(page.data);
+}
+```
+
 ## Example
 
-Simple pagination example:
+Simple pagination example using async iteration:
+
+```typescript
+import { EntityItem } from "electrodb";
+
+import { users } from "./entities";
+
+type UserItem = EntityItem<typeof users>;
+
+async function getTeamMembers(team: string) {
+  const members: UserItem[] = [];
+
+  for await (const page of users.query.members({ team }).go({ pages: "all" })) {
+    members.push(...page.data);
+  }
+
+  return members;
+}
+```
+
+Simple pagination example using cursors:
 
 ```typescript
 // EntityItem is the type for a returned item
