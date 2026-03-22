@@ -642,4 +642,8 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [3.7.2]
 ### Fixed
+- [Issue #553](https://github.com/tywalch/electrodb/issues/553); Fixed `parse` method returning data instead of `null` for invalid items.
+- [Issue #561](https://github.com/tywalch/electrodb/issues/561); Fixed `parse` method not allowing the `ignoreOwnership` option to be overridden.
+
+## [3.7.3]
 - [Issue #556](https://github.com/tywalch/electrodb/issues/556); Fixed `where` clause on projected indexes exposing all entity attributes instead of only projected attributes when the index has non-empty SK composites. Calling `.where()` directly now correctly restricts to projected attributes, matching the existing behavior of `.gte().where()` and other SK operation chains.
