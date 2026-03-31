@@ -2637,8 +2637,31 @@ export type ReturnValues =
   | "all_new"
   | "updated_new";
 
+/**
+ * Resolves the cursor type returned by a query based on the `pager` option:
+ * - `"item"` or `"raw"`: returns the raw DynamoDB key as a `Record`
+ * - `"named"`, `"cursor"`, or unset (default): returns a base64-encoded `string`
+ */
+export type CursorFromPager<P extends "raw" | "named" | "item" | "cursor" | undefined> =
+  P extends "raw" | "item" ? Record<string, unknown> | null : string | null;
+
 export interface QueryOptions {
-  cursor?: string | null;
+  /**
+   * Controls the format of the cursor used for pagination.
+   * - `"named"` (default): base64-encoded string cursor
+   * - `"cursor"`: alias for `"named"`
+   * - `"raw"`: raw DynamoDB LastEvaluatedKey object
+   * - `"item"`: the boundary item's composite key attributes (enables correct
+   *   bi-directional pagination by letting ElectroDB build the ExclusiveStartKey
+   *   from the item's own attributes, avoiding direction-dependent off-by-one errors)
+   */
+  pager?: "raw" | "named" | "item" | "cursor";
+  /**
+   * Pagination cursor. Type depends on `pager`:
+   * - `"named"` / `"cursor"`: pass the opaque `string` cursor returned by a previous query
+   * - `"raw"` / `"item"`: pass the DynamoDB key object or item attributes object
+   */
+  cursor?: string | Record<string, unknown> | null;
   params?: object;
   table?: string;
   limit?: number;
@@ -2692,7 +2715,8 @@ export interface PutQueryOptions extends QueryOptions {
 }
 
 export type ParamOptions = {
-  cursor?: string | null;
+  pager?: "raw" | "named" | "item" | "cursor";
+  cursor?: string | Record<string, unknown> | null;
   params?: object;
   table?: string;
   limit?: number;
@@ -2761,7 +2785,8 @@ type ServiceQueryGoTerminalOptions<
   Collection extends keyof Collections,
   Attributes,
 > = {
-  cursor?: string | null;
+  pager?: "raw" | "named" | "item" | "cursor";
+  cursor?: string | Record<string, unknown> | null;
   data?: "raw" | "includeKeys" | "attributes";
   table?: string;
   limit?: number;
@@ -2828,7 +2853,8 @@ type GoQueryTerminalOptions<
   S extends Schema<any, any, any>,
   I extends keyof S["indexes"] | undefined = undefined,
 > = {
-  cursor?: string | null;
+  pager?: "raw" | "named" | "item" | "cursor";
+  cursor?: string | Record<string, unknown> | null;
   data?: "raw" | "includeKeys" | "attributes";
   table?: string;
   limit?: number;
@@ -3108,7 +3134,7 @@ export type ServiceQueryRecordsGo<
                 : never
               : never;
           };
-          cursor: string | null;
+          cursor: CursorFromPager<Options["pager"]>;
         }
       : {
           data: {
@@ -3180,7 +3206,7 @@ export type IndexResponse<
             : Name
           : never]: Item[Name];
       }>;
-      cursor: string | null;
+      cursor: CursorFromPager<Options["pager"]>;
     }
   : {
       data: Array<Item>;
@@ -3196,7 +3222,7 @@ export type QueryRecordsGo<Item, S extends Schema<string, string, string>> = <
       data: Array<{
         [Name in keyof Item as Name extends Attr ? Name : never]: Item[Name];
       }>;
-      cursor: string | null;
+      cursor: CursorFromPager<Options["pager"]>;
     }>
   : Promise<{ data: Array<Item>; cursor: string | null }>;
 
