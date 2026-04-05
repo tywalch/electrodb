@@ -8920,4 +8920,96 @@ describe("Entity", () => {
       });
     });
   });
+
+  describe("parse", () => {
+    const entity = new Entity({
+      model: {
+        entity: "Item",
+        service: "Playground",
+        version: "1",
+      },
+      attributes: {
+        id: {
+          type: "string",
+          required: true,
+        },
+        name: {
+          type: "string",
+          required: true,
+        },
+        description: {
+          type: "string",
+          required: true,
+        },
+      },
+      indexes: {
+        byId: {
+          pk: {
+            field: "pk",
+            composite: ["id"],
+          },
+          sk: {
+            field: "sk",
+            composite: ["id"],
+          },
+        },
+      },
+    });
+
+    it("should return null when item has no key fields", () => {
+      const result = entity.parse({ Item: { description: "desc" } });
+      expect(result.data).to.be.null;
+    });
+
+    it("should return null when item is empty", () => {
+      const result = entity.parse({ Item: {} });
+      expect(result.data).to.be.null;
+    });
+
+    it("should return null when item has unrelated attributes", () => {
+      const result = entity.parse({ Item: { other: "value" } });
+      expect(result.data).to.be.null;
+    });
+
+    it("should parse a valid item with correct keys", () => {
+      const result = entity.parse({
+        Item: {
+          pk: "$playground#id_123",
+          sk: "$item_1#id_123",
+          id: "123",
+          name: "test",
+          description: "desc",
+        },
+      });
+      expect(result.data).to.deep.equal({ id: "123", name: "test", description: "desc" });
+    });
+
+    it("should return null when ignoreOwnership is overridden to false and item lacks entity identifiers", () => {
+      const result = entity.parse({
+        Item: {
+          pk: "$playground#id_123",
+          sk: "$item_1#id_123",
+          id: "123",
+          name: "test",
+          description: "desc",
+        },
+      }, { ignoreOwnership: false });
+      expect(result.data).to.be.null;
+    });
+
+    it("should parse when ignoreOwnership is false and item has correct entity identifiers", () => {
+      const result = entity.parse({
+        Item: {
+          pk: "$playground#id_123",
+          sk: "$item_1#id_123",
+          id: "123",
+          name: "test",
+          description: "desc",
+          __edb_e__: "Item",
+          __edb_v__: "1",
+        },
+      }, { ignoreOwnership: false });
+      expect(result.data).to.deep.equal({ id: "123", name: "test", description: "desc" });
+    });
+  });
 });

@@ -1397,6 +1397,232 @@ expectError(() =>
     .go({ attributes: ["invalid"] }),
 );
 
+const projectedSkEntity = new Entity({
+  model: {
+    entity: "projectedSk",
+    version: "1",
+    service: "test",
+  },
+  attributes: {
+    id: { type: "string", required: true },
+    sortVal: { type: "number" },
+    projected1: { type: "string" },
+    projected2: { type: "number" },
+    notProjected: { type: "string" },
+  },
+  indexes: {
+    primary: {
+      pk: { field: "pk", composite: ["id"] },
+      sk: { field: "sk", composite: [] },
+    },
+    projectedWithSk: {
+      index: "gsi1pk-gsi1sk-index",
+      projection: ["projected1", "projected2"],
+      pk: {
+        field: "gsi1pk",
+        composite: ["id"],
+      },
+      sk: {
+        field: "gsi1sk",
+        composite: ["sortVal"],
+      },
+    },
+    keysOnlyWithSk: {
+      index: "gsi2pk-gsi2sk-index",
+      projection: "keys_only",
+      pk: {
+        field: "gsi2pk",
+        composite: ["id"],
+      },
+      sk: {
+        field: "gsi2sk",
+        composite: ["sortVal"],
+      },
+    },
+    allProjectionWithSk: {
+      index: "gsi3pk-gsi3sk-index",
+      pk: {
+        field: "gsi3pk",
+        composite: ["id"],
+      },
+      sk: {
+        field: "gsi3sk",
+        composite: ["sortVal"],
+      },
+    },
+  },
+}, { table });
+
+type ProjectedWithSkWhereAttrs = {
+  projected1: string;
+  projected2: number;
+};
+
+type AllProjectionWithSkWhereAttrs = {
+  id: string;
+  sortVal: number;
+  projected1: string;
+  projected2: number;
+  notProjected: string;
+};
+
+projectedSkEntity.query
+  .projectedWithSk({ id: "1" })
+  .where((attrs, ops) => {
+    expectType<ProjectedWithSkWhereAttrs>(attrs);
+    ops.eq(attrs.projected1, "abc");
+    expectError(() => ops.eq(attrs.id, "1"));
+    expectError(() => ops.eq(attrs.sortVal, 5));
+    return "";
+  })
+  .go();
+
+projectedSkEntity.query
+  .projectedWithSk({ id: "1" })
+  .gte({ sortVal: 10 })
+  .where((attrs, ops) => {
+    expectType<ProjectedWithSkWhereAttrs>(attrs);
+    ops.eq(attrs.projected1, "abc");
+    expectError(() => ops.eq(attrs.id, "1"));
+    expectError(() => ops.eq(attrs.sortVal, 5));
+    return "";
+  })
+  .go();
+
+projectedSkEntity.query
+  .projectedWithSk({ id: "1" })
+  .where((attrs, _ops) => {
+    expectType<ProjectedWithSkWhereAttrs>(attrs);
+    return "";
+  })
+  .where((attrs, _ops) => {
+    expectType<ProjectedWithSkWhereAttrs>(attrs);
+    return "";
+  })
+  .go();
+
+projectedSkEntity.query
+  .projectedWithSk({ id: "1" })
+  .gte({ sortVal: 10 })
+  .where((attrs, _ops) => {
+    expectType<ProjectedWithSkWhereAttrs>(attrs);
+    return "";
+  })
+  .where((attrs, _ops) => {
+    expectType<ProjectedWithSkWhereAttrs>(attrs);
+    return "";
+  })
+  .go();
+
+projectedSkEntity.query
+  .keysOnlyWithSk({ id: "1" })
+  .where((attrs, ops) => {
+    expectType<{}>(attrs);
+    expectError(() => ops.eq(attrs.id, "1"));
+    expectError(() => ops.eq(attrs.sortVal, 5));
+    expectError(() => ops.eq(attrs.projected1, "abc"));
+    return "";
+  })
+  .go();
+
+projectedSkEntity.query
+  .keysOnlyWithSk({ id: "1" })
+  .gte({ sortVal: 10 })
+  .where((attrs, ops) => {
+    expectType<{}>(attrs);
+    expectError(() => ops.eq(attrs.id, "1"));
+    return "";
+  })
+  .go();
+
+projectedSkEntity.query
+  .keysOnlyWithSk({ id: "1" })
+  .where((attrs, _ops) => {
+    expectType<{}>(attrs);
+    return "";
+  })
+  .where((attrs, _ops) => {
+    expectType<{}>(attrs);
+    return "";
+  })
+  .go();
+
+projectedSkEntity.query
+  .keysOnlyWithSk({ id: "1" })
+  .gte({ sortVal: 10 })
+  .where((attrs, _ops) => {
+    expectType<{}>(attrs);
+    return "";
+  })
+  .where((attrs, _ops) => {
+    expectType<{}>(attrs);
+    return "";
+  })
+  .go();
+
+projectedSkEntity.query
+  .allProjectionWithSk({ id: "1" })
+  .where((attrs, ops) => {
+    expectType<AllProjectionWithSkWhereAttrs>(attrs);
+    ops.eq(attrs.id, "1");
+    ops.eq(attrs.projected1, "abc");
+    ops.eq(attrs.notProjected, "x");
+    return "";
+  })
+  .go();
+
+projectedSkEntity.query
+  .allProjectionWithSk({ id: "1" })
+  .gte({ sortVal: 10 })
+  .where((attrs, ops) => {
+    expectType<AllProjectionWithSkWhereAttrs>(attrs);
+    ops.eq(attrs.id, "1");
+    ops.eq(attrs.projected1, "abc");
+    ops.eq(attrs.notProjected, "x");
+    return "";
+  })
+  .go();
+
+projectedSkEntity.query
+  .allProjectionWithSk({ id: "1" })
+  .where((attrs, _ops) => {
+    expectType<AllProjectionWithSkWhereAttrs>(attrs);
+    return "";
+  })
+  .where((attrs, _ops) => {
+    expectType<AllProjectionWithSkWhereAttrs>(attrs);
+    return "";
+  })
+  .go();
+
+projectedSkEntity.query
+  .projectedWithSk({ id: "1" })
+  .where((attrs, _ops) => {
+    expectType<ProjectedWithSkWhereAttrs>(attrs);
+    return "";
+  })
+  .go()
+  .then((resp) => {
+    expectType<{
+      projected1?: string | undefined;
+      projected2?: number | undefined;
+    }[]>(resp.data);
+  });
+
+projectedSkEntity.query
+  .projectedWithSk({ id: "1" })
+  .gte({ sortVal: 10 })
+  .where((attrs, _ops) => {
+    expectType<ProjectedWithSkWhereAttrs>(attrs);
+    return "";
+  })
+  .go()
+  .then((resp) => {
+    expectType<{
+      projected1?: string | undefined;
+      projected2?: number | undefined;
+    }[]>(resp.data);
+  });
 
 const compositeProjectionEntity = new Entity(
   {
