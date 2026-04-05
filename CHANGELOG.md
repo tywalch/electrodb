@@ -651,3 +651,6 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.7.4]
 - [Issue #558](https://github.com/tywalch/electrodb/issues/558); Fixed composite index (`type: "composite"`) projection types being too narrow. `keys_only` returned `{}` and array projections omitted pk/sk composite attributes from the response type, even though DynamoDB always returns them as native columns. Response types, `attributes` parameter, and collection queries now correctly include composite key attributes.
 - [Issue #559](https://github.com/tywalch/electrodb/issues/559); Fixed composite index query response types marking pk/sk composite attributes as optional even though composite indexes are sparse — items only appear in the index if all key attributes are present, so they are always defined in query results.
+
+## [3.7.5]
+- [Issue #554](https://github.com/tywalch/electrodb/issues/554); Fixed `hydrate: true` returning no items when querying composite type indexes with `keys_only` or `include` projections.
