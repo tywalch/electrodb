@@ -16,6 +16,7 @@ const projectionInclude = require("./definitions/projection-include.json");
 const projectionIncludeWithoutEdb = require("./definitions/projection-include-without-edb.json");
 const multiattribute = require("./definitions/multiattributekeys.json");
 const multiattributeProjections = require("./definitions/multiattribute-projections.json");
+const compositeProjection = require("./definitions/composite-projection.json");
 const shouldDestroy = process.argv.includes("--recreate");
 
 if (
@@ -94,6 +95,7 @@ async function main() {
     createTable(dynamodb, "electro_projectioninclude", projectionInclude),
     createTable(dynamodb, "electro_projectionincludewithoutedb", projectionIncludeWithoutEdb),
     createTable(dynamodb, "multi-attribute-projections", multiattributeProjections),
+    createTable(dynamodb, "electro_compositeprojection", compositeProjection),
   ]);
 }
 
