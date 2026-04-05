@@ -2800,7 +2800,7 @@ type ServiceQueryGoTerminalOptions<
                       E[EntityResultName]["schema"]
                     >
                     ? Extract<
-                        IndexProjectedAttributeNames<
+                        IndexAvailableAttributeNames<
                           A,
                           F,
                           C,
@@ -2855,7 +2855,7 @@ type GoQueryTerminalOptions<
         hydrate?: false | undefined;
         attributes?: S extends Schema<infer A, infer F, infer C>
           ? ReadonlyArray<
-              Extract<IndexProjectedAttributeNames<A, F, C, S, I>, Attributes>
+              Extract<IndexAvailableAttributeNames<A, F, C, S, I>, Attributes>
             >
           : ReadonlyArray<Attributes>;
       }
@@ -3047,23 +3047,21 @@ export type EntityCollectionResponse<
   Attr,
   Index extends keyof S["indexes"],
   Options extends ServiceQueryGoTerminalOptions<any, any, any, Attr>,
-> = Array<{
-  [Name in keyof ResponseItem as Name extends Attr
-    ? Options["hydrate"] extends true
-      ? Name
-      : Index extends keyof S["indexes"]
-      ? "projection" extends keyof S["indexes"][Index]
-        ? S["indexes"][Index]["projection"] extends ReadonlyArray<infer P>
-          ? Name extends P
-            ? Name
-            : never
-          : S["indexes"][Index]["projection"] extends "keys_only"
-          ? never
-          : Name
-        : Name
-      : Name
-    : never]: ResponseItem[Name];
-}>;
+> = Array<
+  Options["hydrate"] extends true
+    ? { [Name in keyof ResponseItem as Name extends Attr ? Name : never]: ResponseItem[Name] }
+    : RequireCompositeKeys<
+        {
+          [Name in keyof ResponseItem as Name extends Attr
+            ? Name extends IndexResponseProjectedNames<S, Index>
+              ? Name
+              : never
+            : never]: ResponseItem[Name];
+        },
+        S,
+        Index
+      >
+>;
 
 export type ServiceQueryRecordsGo<
   E extends { [name: string]: Entity<any, any, any, any> },
@@ -3154,6 +3152,45 @@ export type ServiceQueryRecordsGo<
   }>;
 };
 
+export type IndexResponseProjectedNames<
+  S extends Schema<string, string, string>,
+  I extends keyof S["indexes"] | undefined,
+> = I extends keyof S["indexes"]
+  ? "projection" extends keyof S["indexes"][I]
+    ? S["indexes"][I]["projection"] extends ReadonlyArray<infer P>
+      ? S["indexes"][I] extends { type: "composite" }
+        ? S extends Schema<infer A, infer F, infer C>
+          ? P | IndexCompositeAttributeNames<A, F, C, S, I>
+          : P
+        : P
+      : S["indexes"][I]["projection"] extends "keys_only"
+        ? S["indexes"][I] extends { type: "composite" }
+          ? S extends Schema<infer A, infer F, infer C>
+            ? IndexCompositeAttributeNames<A, F, C, S, I>
+            : never
+          : never
+        : unknown
+    : unknown
+  : unknown;
+
+// For composite indexes, items only appear when all key attributes are present (sparse index).
+// This makes composite key attributes required in the response, only for type: "composite" indexes.
+type RequireCompositeKeys<
+  Result,
+  S extends Schema<string, string, string>,
+  I extends keyof S["indexes"] | undefined,
+> = I extends keyof S["indexes"]
+  ? S["indexes"][I] extends { type: "composite" }
+    ? S extends Schema<infer A, infer F, infer C>
+      ? IndexCompositeAttributeNames<A, F, C, S, I> & keyof Result extends infer Keys extends keyof Result
+        ? { [K in keyof Result as K extends Keys ? never : K]: Result[K] } & { [K in Keys]-?: Result[K] } extends infer Merged
+          ? { [K in keyof Merged]: Merged[K] }
+          : Result
+        : Result
+      : Result
+    : Result
+  : Result;
+
 export type IndexResponse<
   Options extends GoQueryTerminalOptions<keyof Item, S, any>,
   Item,
@@ -3161,25 +3198,21 @@ export type IndexResponse<
   I extends keyof S["indexes"] | undefined = undefined,
 > = Options extends GoQueryTerminalOptions<infer Attr, S>
   ? {
-      data: Array<{
-        [Name in keyof Item as Name extends Attr
-          ? Options["hydrate"] extends true
-            ? Name
-            : I extends keyof S["indexes"]
-            ? "projection" extends keyof S["indexes"][I]
-              ? S["indexes"][I]["projection"] extends ReadonlyArray<
-                  infer P
-                >
-                ? Name extends P
-                  ? Name
-                  : never
-                : S["indexes"][I]["projection"] extends 'keys_only'
-                  ? never
-                  : Name
-              : Name
-            : Name
-          : never]: Item[Name];
-      }>;
+      data: Array<
+        Options["hydrate"] extends true
+          ? { [Name in keyof Item as Name extends Attr ? Name : never]: Item[Name] }
+          : RequireCompositeKeys<
+              {
+                [Name in keyof Item as Name extends Attr
+                  ? Name extends IndexResponseProjectedNames<S, I>
+                    ? Name
+                    : never
+                  : never]: Item[Name];
+              },
+              S,
+              I
+            >
+      >;
       cursor: string | null;
     }
   : {
@@ -4051,6 +4084,24 @@ export type IndexProjectedAttributeNames<
       : A
   : A;
 
+export type IndexAvailableAttributeNames<
+  A extends string,
+  F extends string,
+  C extends string,
+  S extends Schema<A, F, C>,
+  I extends keyof S["indexes"] | undefined,
+> = I extends keyof S["indexes"]
+  ? S["indexes"][I]["projection"] extends ReadonlyArray<infer R extends A>
+    ? S["indexes"][I] extends { type: "composite" }
+      ? R | IndexCompositeAttributeNames<A, F, C, S, I>
+      : R
+    : S["indexes"][I]["projection"] extends "keys_only"
+      ? S["indexes"][I] extends { type: "composite" }
+        ? IndexCompositeAttributeNames<A, F, C, S, I>
+        : never
+      : A
+  : A;
+
 export type CollectionProjectedAttributeNames<
   E extends { [entityName: string]: Entity<any, any, any, any> },
   Collections extends CollectionAssociations<E>,
@@ -4753,6 +4804,20 @@ export type IndexSKCompositeAttributes<
   S extends Schema<A, F, C>,
   I extends keyof S["indexes"],
 > = Pick<SKCompositeAttributes<A, F, C, S>, I>;
+
+export type IndexCompositeAttributeNames<
+  A extends string,
+  F extends string,
+  C extends string,
+  S extends Schema<A, F, C>,
+  I extends keyof S["indexes"],
+> = (
+  S["indexes"][I]["pk"]["composite"] extends ReadonlyArray<infer PK extends A> ? PK : never
+) | (
+  S["indexes"][I] extends IndexWithSortKey
+    ? S["indexes"][I]["sk"]["composite"] extends ReadonlyArray<infer SK extends A> ? SK : never
+    : never
+);
 
 export type TableIndexPKAttributes<
   A extends string,
