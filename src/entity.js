@@ -709,6 +709,14 @@ class Entity {
 
       ExclusiveStartKey = response.LastEvaluatedKey;
 
+      // When using count-based pagination, we need access to the raw
+      // DynamoDB items to build accurate synthetic cursors. Hidden
+      // attributes (hidden: true) are stripped by formatItemForRetrieval,
+      // but they may be part of index key composites needed for the cursor.
+      let rawItems = config.count && response.Items
+        ? response.Items.slice()
+        : undefined;
+
       response = this.formatResponse(response, parameters.IndexName, {
         ...config,
         data:
@@ -747,6 +755,9 @@ class Entity {
         const moreItemsThanRequired = !!config.count && count > config.count;
         if (moreItemsThanRequired) {
           items = items.slice(0, config.count - prevCount);
+          if (rawItems) {
+            rawItems = rawItems.slice(0, config.count - prevCount);
+          }
         }
         if (shouldHydrate) {
           const hydrated = await this.hydrate(
@@ -761,10 +772,23 @@ class Entity {
         }
         results = [...results, ...items];
         if (moreItemsThanRequired || count === config.count) {
-          const lastItem = results[results.length - 1];
+          // Build the cursor from the last item. Use the raw DynamoDB
+          // item (before hidden-attribute stripping) and translateFromFields
+          // directly (bypassing formatItemForRetrieval) to ensure all index
+          // key facets are present. Both the attribute getter and the
+          // retrieval formatter strip hidden attributes, which breaks
+          // synthetic cursor construction when a hidden attribute is part
+          // of an index key composite.
+          let cursorSource = results[results.length - 1];
+          if (rawItems && rawItems.length > 0) {
+            cursorSource = this.model.schema.translateFromFields(
+              rawItems[rawItems.length - 1],
+              config,
+            );
+          }
           ExclusiveStartKey = this._fromCompositeToKeysByIndex({
             indexName,
-            provided: lastItem,
+            provided: cursorSource,
           });
           break;
         }
