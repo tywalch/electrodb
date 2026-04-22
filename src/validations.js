@@ -284,10 +284,10 @@ v.addSchema(Modelv1, "/Modelv1");
 
 function validateModel(model = {}) {
   /** start beta/v1 condition **/
-  let betaErrors = v.validate(model, "/ModelBeta").errors;
+  let betaErrors = v.validate(model, ModelBeta).errors;
   if (betaErrors.length) {
     /** end/v1 condition **/
-    let errors = v.validate(model, "/Modelv1").errors;
+    let errors = v.validate(model, Modelv1).errors;
     if (errors.length) {
       throw new e.ElectroError(
         e.ErrorCodes.InvalidModel,
