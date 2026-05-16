@@ -384,6 +384,32 @@ for (const { name, client } of clients) {
         }
       });
 
+      it("should throw the unwrapped dynamodb error when originalErr: true is combined with returnOnConditionCheckFailure on update", async () => {
+        const id = uuid();
+        const sort = "original-err-combo-update";
+        await entity.put({ id, sort, val: "original" }).go();
+
+        let threw = false;
+        try {
+          await entity
+            .update({ id, sort })
+            .set({ val: "updated" })
+            .where(({ val }, { eq }) => eq(val, "wrong"))
+            .go({
+              returnOnConditionCheckFailure: "all_old",
+              originalErr: true,
+            });
+        } catch (err: any) {
+          threw = true;
+          expect(
+            err.name === "ConditionalCheckFailedException" ||
+              err.code === "ConditionalCheckFailedException",
+          ).to.be.true;
+          expect(err.message).to.not.include("Error thrown by DynamoDB client");
+        }
+        expect(threw).to.equal(true);
+      });
+
       it("should work with data: 'raw' - rejected item returned in raw format", async () => {
         const id = uuid();
         const sort = "raw-data";
