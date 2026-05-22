@@ -7,7 +7,8 @@ type Props = {
 };
 
 const { currentPage } = Astro.props as Props;
-const currentPageMatch = currentPage.slice(1);
+const normalizePath = (p: string) => p.replace(/\/$/, "");
+const currentPageMatch = normalizePath(currentPage.slice(1));
 const langCode = getLanguageFromURL(currentPage);
 const sidebar = SIDEBAR[langCode];
 ---
@@ -38,7 +39,7 @@ const sidebar = SIDEBAR[langCode];
             <ul>
               {children.map((child) => {
                 const url = Astro.site?.pathname + child.link;
-                const isActive = currentPageMatch === child.link;
+                const isActive = currentPageMatch === normalizePath(child.link);
                 return (
                   <li class="nav-link">
                     <a
