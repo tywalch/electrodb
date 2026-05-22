@@ -49,12 +49,11 @@ class DocumentClientV2Wrapper {
     this.__v = "v2";
   }
 
-  _wrapRequest(request, signal) {
+  _wrapRequest(makeRequest, signal) {
     return {
       promise: () => {
         return new Promise((resolve, reject) => {
           if (signal && signal.aborted) {
-            request.abort();
             return reject(
               new ElectroError(
                 ErrorCodes.OperationAborted,
@@ -62,6 +61,8 @@ class DocumentClientV2Wrapper {
               ),
             );
           }
+
+          const request = makeRequest();
 
           const onAbort = () => {
             request.abort();
@@ -97,60 +98,42 @@ class DocumentClientV2Wrapper {
   }
 
   get(params, options = {}) {
-    const request = this.client.get(params);
-    return this._wrapRequest(request, options.abortSignal);
+    return this._wrapRequest(() => this.client.get(params), options.abortSignal);
   }
 
   put(params, options = {}) {
-    const request = this.client.put(params);
-    return this._wrapRequest(request, options.abortSignal);
+    return this._wrapRequest(() => this.client.put(params), options.abortSignal);
   }
 
   update(params, options = {}) {
-    const request = this.client.update(params);
-    return this._wrapRequest(request, options.abortSignal);
+    return this._wrapRequest(() => this.client.update(params), options.abortSignal);
   }
 
   delete(params, options = {}) {
-    const request = this.client.delete(params);
-    return this._wrapRequest(request, options.abortSignal);
+    return this._wrapRequest(() => this.client.delete(params), options.abortSignal);
   }
 
   batchWrite(params, options = {}) {
-    const request = this.client.batchWrite(params);
-    return this._wrapRequest(request, options.abortSignal);
+    return this._wrapRequest(() => this.client.batchWrite(params), options.abortSignal);
   }
 
   batchGet(params, options = {}) {
-    const request = this.client.batchGet(params);
-    return this._wrapRequest(request, options.abortSignal);
+    return this._wrapRequest(() => this.client.batchGet(params), options.abortSignal);
   }
 
   scan(params, options = {}) {
-    const request = this.client.scan(params);
-    return this._wrapRequest(request, options.abortSignal);
+    return this._wrapRequest(() => this.client.scan(params), options.abortSignal);
   }
 
   query(params, options = {}) {
-    const request = this.client.query(params);
-    return this._wrapRequest(request, options.abortSignal);
+    return this._wrapRequest(() => this.client.query(params), options.abortSignal);
   }
 
-  _transact(transactionRequest, signal) {
-    let cancellationReasons;
-    transactionRequest.on("extractError", (response) => {
-      try {
-        cancellationReasons = JSON.parse(
-          response.httpResponse.body.toString(),
-        ).CancellationReasons;
-      } catch (err) {}
-    });
-
+  _transact(makeTransactionRequest, signal) {
     return {
       promise: () => {
         return new Promise((resolve, reject) => {
           if (signal && signal.aborted) {
-            transactionRequest.abort();
             return reject(
               new ElectroError(
                 ErrorCodes.OperationAborted,
@@ -158,6 +141,16 @@ class DocumentClientV2Wrapper {
               ),
             );
           }
+
+          const transactionRequest = makeTransactionRequest();
+          let cancellationReasons;
+          transactionRequest.on("extractError", (response) => {
+            try {
+              cancellationReasons = JSON.parse(
+                response.httpResponse.body.toString(),
+              ).CancellationReasons;
+            } catch (err) {}
+          });
 
           const onAbort = () => {
             transactionRequest.abort();
@@ -206,13 +199,11 @@ class DocumentClientV2Wrapper {
   }
 
   transactWrite(params, options = {}) {
-    const transactionRequest = this.client.transactWrite(params);
-    return this._transact(transactionRequest, options.abortSignal);
+    return this._transact(() => this.client.transactWrite(params), options.abortSignal);
   }
 
   transactGet(params, options = {}) {
-    const transactionRequest = this.client.transactGet(params);
-    return this._transact(transactionRequest, options.abortSignal);
+    return this._transact(() => this.client.transactGet(params), options.abortSignal);
   }
 
   createSet(value, ...rest) {
