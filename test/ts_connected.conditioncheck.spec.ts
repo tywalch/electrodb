@@ -105,6 +105,7 @@ for (const { name, client } of clients) {
             returnOnConditionCheckFailure: "all_old",
           });
         expect(result.rejected).to.equal(true);
+        expect(result.data).to.not.be.null;
         if (result.rejected && result.data !== null) {
           expect(result.data.id).to.equal(id);
           expect(result.data.val).to.equal("original");
@@ -138,6 +139,7 @@ for (const { name, client } of clients) {
           .where(({ val }, { eq }) => eq(val, "wrong_value"))
           .go({ returnOnConditionCheckFailure: "all_old" });
         expect(result.rejected).to.equal(true);
+        expect(result.data).to.not.be.null;
         if (result.rejected && result.data !== null) {
           expect(result.data.id).to.equal(id);
           expect(result.data.val).to.equal("original");
@@ -180,6 +182,7 @@ for (const { name, client } of clients) {
           .where(({ val }, { eq }) => eq(val, "wrong"))
           .go({ returnOnConditionCheckFailure: "all_old" });
         expect(result.rejected).to.equal(true);
+        expect(result.data).to.not.be.null;
         if (result.rejected && result.data !== null) {
           expect(result.data.val).to.equal("original");
         }
@@ -211,6 +214,7 @@ for (const { name, client } of clients) {
           .where(({ val }, { eq }) => eq(val, "wrong"))
           .go({ returnOnConditionCheckFailure: "all_old" });
         expect(result.rejected).to.equal(true);
+        expect(result.data).to.not.be.null;
         if (result.rejected && result.data !== null) {
           expect(result.data.val).to.equal("original");
         }
@@ -249,6 +253,7 @@ for (const { name, client } of clients) {
           .where(({ val }, { eq }) => eq(val, "wrong"))
           .go({ returnOnConditionCheckFailure: "all_old" });
         expect(result.rejected).to.equal(true);
+        expect(result.data).to.not.be.null;
         if (result.rejected && result.data !== null) {
           expect(result.data.val).to.equal("original");
         }
@@ -278,6 +283,7 @@ for (const { name, client } of clients) {
           .where(({ val }, { eq }) => eq(val, "wrong"))
           .go({ returnOnConditionCheckFailure: "all_old" });
         expect(result.rejected).to.equal(true);
+        expect(result.data).to.not.be.null;
         if (result.rejected && result.data !== null) {
           expect(result.data.val).to.equal("original");
         }
@@ -307,6 +313,7 @@ for (const { name, client } of clients) {
           .where(({ val }, { eq }) => eq(val, "wrong"))
           .go({ returnOnConditionCheckFailure: "all_old" });
         expect(result.rejected).to.equal(true);
+        expect(result.data).to.not.be.null;
         if (result.rejected && result.data !== null) {
           expect(result.data.val).to.equal("original");
         }
@@ -390,6 +397,7 @@ for (const { name, client } of clients) {
             returnOnConditionCheckFailure: "all_old",
           });
         expect(result.rejected).to.equal(true);
+        expect(result.data).to.not.be.null;
         if (result.rejected && result.data !== null) {
           expect(result.data.val).to.equal("original");
         }
@@ -405,6 +413,7 @@ for (const { name, client } of clients) {
           originalErr: true,
         });
         expect(result.rejected).to.equal(true);
+        expect(result.data).to.not.be.null;
         if (result.rejected && result.data !== null) {
           expect(result.data.val).to.equal("original");
         }
@@ -424,6 +433,7 @@ for (const { name, client } of clients) {
             originalErr: true,
           });
         expect(result.rejected).to.equal(true);
+        expect(result.data).to.not.be.null;
         if (result.rejected && result.data !== null) {
           expect(result.data.val).to.equal("original");
         }
@@ -456,6 +466,7 @@ for (const { name, client } of clients) {
             data: "includeKeys",
           });
         expect(result.rejected).to.equal(true);
+        expect(result.data).to.not.be.null;
         if (result.rejected && result.data !== null) {
           expect(result.data.id).to.equal(id);
           expect((result.data as any).pk).to.not.be.undefined;
@@ -714,6 +725,7 @@ for (const { name, client } of clients) {
         .go({ returnOnConditionCheckFailure: "all_old" });
 
       expect(result.rejected).to.equal(true);
+      expect(result.data).to.not.be.null;
       if (result.rejected && result.data !== null) {
         expect(result.data.accountId).to.equal(accountId);
         expect(result.data.recordId).to.equal(recordId);
@@ -741,6 +753,7 @@ for (const { name, client } of clients) {
         .go({ returnOnConditionCheckFailure: "all_old", data: "raw" });
 
       expect(result.rejected).to.equal(true);
+      expect(result.data).to.not.be.null;
       if (result.rejected && result.data !== null) {
         const raw = result.data as any;
         expect(raw.Item.dn).to.equal("Original");
