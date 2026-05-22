@@ -327,6 +327,36 @@ for (const { name, client } of clients) {
         }
       });
 
+      it("should still throw non-conditional DynamoDB errors when returnOnConditionCheckFailure: true is set", async () => {
+        let threw: any = null;
+        try {
+          await entity
+            .create({ id: uuid(), sort: "nonexistent-table", val: "x" })
+            .go({ returnOnConditionCheckFailure: true, table: "does_not_exist" });
+        } catch (err: any) {
+          threw = err;
+        }
+        expect(threw, "non-conditional error should still throw").to.not.equal(null);
+        expect(threw.isElectroError).to.equal(true);
+        expect(threw.code).to.equal(4001);
+        expect(threw.cause?.name ?? threw.cause?.code).to.match(/ResourceNotFoundException/);
+      });
+
+      it("should still throw non-conditional DynamoDB errors when returnOnConditionCheckFailure: 'all_old' is set", async () => {
+        let threw: any = null;
+        try {
+          await entity
+            .create({ id: uuid(), sort: "nonexistent-table-allold", val: "x" })
+            .go({ returnOnConditionCheckFailure: "all_old", table: "does_not_exist" });
+        } catch (err: any) {
+          threw = err;
+        }
+        expect(threw, "non-conditional error should still throw").to.not.equal(null);
+        expect(threw.isElectroError).to.equal(true);
+        expect(threw.code).to.equal(4001);
+        expect(threw.cause?.name ?? threw.cause?.code).to.match(/ResourceNotFoundException/);
+      });
+
       it("should combine with response option - success uses response format", async () => {
         const id = uuid();
         const sort = "response-combo";
