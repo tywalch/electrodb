@@ -2,13 +2,14 @@ import type { FunctionalComponent } from "preact";
 import { useState, useEffect, useRef } from "preact/hooks";
 import type { MarkdownHeading } from "astro";
 
+const ACTIVATION_OFFSET = 100;
+
 const TableOfContents: FunctionalComponent<{ headings: MarkdownHeading[] }> = ({
   headings = [],
 }) => {
   const [activeId, setActiveId] = useState<string>("overview");
   const pinnedRef = useRef(false);
-  const pinFrameRef = useRef<number | null>(null);
-  const pinFallbackRef = useRef<number | null>(null);
+  const pinTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const tocSlugs = new Set(
@@ -22,60 +23,66 @@ const TableOfContents: FunctionalComponent<{ headings: MarkdownHeading[] }> = ({
       return;
     }
 
-    const headingMap = new Map<string, HTMLElement>();
-    for (const t of titles) {
-      headingMap.set(t.id, t);
+    let positions: { id: string; top: number }[] = [];
+    const recompute = () => {
+      positions = titles.map((t) => ({
+        id: t.id,
+        top: t.getBoundingClientRect().top + window.scrollY,
+      }));
+    };
+
+    let raf: number | null = null;
+    const update = () => {
+      raf = null;
+      if (pinnedRef.current) return;
+      if (positions.length === 0) return;
+
+      const y = window.scrollY + ACTIVATION_OFFSET;
+
+      if (y < positions[0].top) {
+        setActiveId("overview");
+        return;
+      }
+
+      let active = positions[0].id;
+      for (const p of positions) {
+        if (p.top <= y) active = p.id;
+        else break;
+      }
+      setActiveId(active);
+    };
+
+    const schedule = () => {
+      if (raf !== null) return;
+      raf = requestAnimationFrame(update);
+    };
+
+    const onResize = () => {
+      recompute();
+      schedule();
+    };
+
+    recompute();
+    update();
+
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", onResize, { passive: true });
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(onResize);
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (pinnedRef.current) return;
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .map((entry) => entry.target as HTMLElement)
-          .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
-
-        if (visible.length > 0) {
-          setActiveId(visible[0].id);
-          return;
-        }
-
-        const scrollY = window.scrollY;
-        let candidate: HTMLElement | undefined;
-        for (const heading of titles) {
-          const top = heading.getBoundingClientRect().top + window.scrollY;
-          if (top - 120 <= scrollY) {
-            candidate = heading;
-          } else {
-            break;
-          }
-        }
-        if (candidate) {
-          setActiveId(candidate.id);
-        }
-      },
-      {
-        rootMargin: "-80px 0px -70% 0px",
-        threshold: [0, 1],
-      },
-    );
-
-    for (const t of titles) {
-      observer.observe(t);
-    }
-
-    return () => observer.disconnect();
+    return () => {
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", onResize);
+      if (raf !== null) cancelAnimationFrame(raf);
+    };
   }, []);
 
   const releasePin = () => {
     pinnedRef.current = false;
-    if (pinFrameRef.current !== null) {
-      cancelAnimationFrame(pinFrameRef.current);
-      pinFrameRef.current = null;
-    }
-    if (pinFallbackRef.current !== null) {
-      clearTimeout(pinFallbackRef.current);
-      pinFallbackRef.current = null;
+    if (pinTimeoutRef.current !== null) {
+      clearTimeout(pinTimeoutRef.current);
+      pinTimeoutRef.current = null;
     }
   };
 
@@ -91,7 +98,10 @@ const TableOfContents: FunctionalComponent<{ headings: MarkdownHeading[] }> = ({
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
         return;
       }
-      const target = document.getElementById(slug);
+      const target =
+        slug === "overview"
+          ? document.scrollingElement || document.documentElement
+          : document.getElementById(slug);
       if (!target) return;
 
       event.preventDefault();
@@ -99,10 +109,15 @@ const TableOfContents: FunctionalComponent<{ headings: MarkdownHeading[] }> = ({
       pinnedRef.current = true;
       setActiveId(slug);
 
-      target.scrollIntoView();
-      history.replaceState(null, "", `#${slug}`);
+      if (slug === "overview") {
+        window.scrollTo({ top: 0, left: 0 });
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+      } else {
+        (target as HTMLElement).scrollIntoView();
+        history.replaceState(null, "", `#${slug}`);
+      }
 
-      pinFallbackRef.current = window.setTimeout(() => {
+      pinTimeoutRef.current = window.setTimeout(() => {
         releasePin();
       }, 150);
     };
