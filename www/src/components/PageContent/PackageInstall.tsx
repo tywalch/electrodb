@@ -78,14 +78,41 @@ const PackageInstall: FunctionalComponent<Props> = ({
     [manager, packages, dev],
   );
 
-  const onCopy = async () => {
+  const flashCopied = () => {
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1400);
+  };
+
+  const legacyCopy = (text: string): boolean => {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "0";
+    ta.style.left = "0";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    let ok = false;
     try {
-      await navigator.clipboard.writeText(command);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1400);
+      ok = document.execCommand("copy");
     } catch {
-      // ignore
+      ok = false;
     }
+    document.body.removeChild(ta);
+    return ok;
+  };
+
+  const onCopy = () => {
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(command).then(flashCopied, () => {
+        if (legacyCopy(command)) flashCopied();
+      });
+      return;
+    }
+    if (legacyCopy(command)) flashCopied();
   };
 
   return (
