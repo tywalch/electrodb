@@ -374,7 +374,7 @@ The `returnOnConditionCheckFailure` option can be combined with other execution 
 
 - **`response`**: On success, the `data` field respects the `response` option (e.g. `"all_new"` returns the updated item). On rejection, `data` always contains the existing (old) item.
 - **`data`**: Works with `"raw"` and `"includeKeys"` — the rejected item is returned in the requested format.
-- **`originalErr`**: When set to `true`, the raw DynamoDB error is thrown even when `returnOnConditionCheckFailure` is set, bypassing the condition check handling.
+- **`originalErr`**: Does not affect condition check handling — failed conditions always resolve with `{ rejected: true }`. It only changes how other DynamoDB errors are thrown.
 
 ## Advanced Usage
 
