@@ -87,11 +87,7 @@ for (const { name, client } of clients) {
           returnOnConditionCheckFailure: "all_old",
         });
         expect(result.rejected).to.equal(false);
-        if (!result.rejected) {
-          expect(result.data.id).to.equal(id);
-          expect(result.data.sort).to.equal(sort);
-          expect(result.data.val).to.equal("hello");
-        }
+        expect(result.data).to.deep.equal({ id, sort, val: "hello" });
       });
 
       it("should return rejected: true with existing item when create fails (item already exists)", async () => {
@@ -105,11 +101,7 @@ for (const { name, client } of clients) {
             returnOnConditionCheckFailure: "all_old",
           });
         expect(result.rejected).to.equal(true);
-        expect(result.data).to.not.be.null;
-        if (result.rejected && result.data !== null) {
-          expect(result.data.id).to.equal(id);
-          expect(result.data.val).to.equal("original");
-        }
+        expect(result.data).to.deep.equal({ id, sort, val: "original" });
       });
     });
 
@@ -124,9 +116,7 @@ for (const { name, client } of clients) {
           .where(({ val }, { eq }) => eq(val, "original"))
           .go({ returnOnConditionCheckFailure: "all_old" });
         expect(result.rejected).to.equal(false);
-        if (!result.rejected) {
-          expect(result.data.val).to.equal("updated");
-        }
+        expect(result.data).to.deep.equal({ id, sort, val: "updated" });
       });
 
       it("should return rejected: true when put where condition fails", async () => {
@@ -139,11 +129,7 @@ for (const { name, client } of clients) {
           .where(({ val }, { eq }) => eq(val, "wrong_value"))
           .go({ returnOnConditionCheckFailure: "all_old" });
         expect(result.rejected).to.equal(true);
-        expect(result.data).to.not.be.null;
-        if (result.rejected && result.data !== null) {
-          expect(result.data.id).to.equal(id);
-          expect(result.data.val).to.equal("original");
-        }
+        expect(result.data).to.deep.equal({ id, sort, val: "original" });
       });
     });
 
@@ -182,10 +168,7 @@ for (const { name, client } of clients) {
           .where(({ val }, { eq }) => eq(val, "wrong"))
           .go({ returnOnConditionCheckFailure: "all_old" });
         expect(result.rejected).to.equal(true);
-        expect(result.data).to.not.be.null;
-        if (result.rejected && result.data !== null) {
-          expect(result.data.val).to.equal("original");
-        }
+        expect(result.data).to.deep.equal({ id, sort, val: "original" });
       });
     });
 
@@ -214,10 +197,7 @@ for (const { name, client } of clients) {
           .where(({ val }, { eq }) => eq(val, "wrong"))
           .go({ returnOnConditionCheckFailure: "all_old" });
         expect(result.rejected).to.equal(true);
-        expect(result.data).to.not.be.null;
-        if (result.rejected && result.data !== null) {
-          expect(result.data.val).to.equal("original");
-        }
+        expect(result.data).to.deep.equal({ id, sort, val: "original" });
       });
     });
 
@@ -253,10 +233,7 @@ for (const { name, client } of clients) {
           .where(({ val }, { eq }) => eq(val, "wrong"))
           .go({ returnOnConditionCheckFailure: "all_old" });
         expect(result.rejected).to.equal(true);
-        expect(result.data).to.not.be.null;
-        if (result.rejected && result.data !== null) {
-          expect(result.data.val).to.equal("original");
-        }
+        expect(result.data).to.deep.equal({ id, sort, val: "original" });
       });
     });
 
@@ -283,10 +260,7 @@ for (const { name, client } of clients) {
           .where(({ val }, { eq }) => eq(val, "wrong"))
           .go({ returnOnConditionCheckFailure: "all_old" });
         expect(result.rejected).to.equal(true);
-        expect(result.data).to.not.be.null;
-        if (result.rejected && result.data !== null) {
-          expect(result.data.val).to.equal("original");
-        }
+        expect(result.data).to.deep.equal({ id, sort, val: "original" });
       });
     });
 
@@ -313,10 +287,7 @@ for (const { name, client } of clients) {
           .where(({ val }, { eq }) => eq(val, "wrong"))
           .go({ returnOnConditionCheckFailure: "all_old" });
         expect(result.rejected).to.equal(true);
-        expect(result.data).to.not.be.null;
-        if (result.rejected && result.data !== null) {
-          expect(result.data.val).to.equal("original");
-        }
+        expect(result.data).to.deep.equal({ id, sort, val: "original" });
       });
     });
 
@@ -378,9 +349,7 @@ for (const { name, client } of clients) {
             returnOnConditionCheckFailure: "all_old",
           });
         expect(result.rejected).to.equal(false);
-        if (!result.rejected) {
-          expect(result.data.val).to.equal("updated");
-        }
+        expect(result.data).to.deep.equal({ id, sort, val: "updated" });
       });
 
       it("should combine with response option - failure returns old item", async () => {
@@ -397,10 +366,7 @@ for (const { name, client } of clients) {
             returnOnConditionCheckFailure: "all_old",
           });
         expect(result.rejected).to.equal(true);
-        expect(result.data).to.not.be.null;
-        if (result.rejected && result.data !== null) {
-          expect(result.data.val).to.equal("original");
-        }
+        expect(result.data).to.deep.equal({ id, sort, val: "original" });
       });
 
       it("should still resolve with rejected when originalErr: true is also set (all_old)", async () => {
@@ -413,10 +379,7 @@ for (const { name, client } of clients) {
           originalErr: true,
         });
         expect(result.rejected).to.equal(true);
-        expect(result.data).to.not.be.null;
-        if (result.rejected && result.data !== null) {
-          expect(result.data.val).to.equal("original");
-        }
+        expect(result.data).to.deep.equal({ id, sort, val: "original" });
       });
 
       it("should still resolve with rejected when originalErr: true is combined with all_old on update", async () => {
@@ -433,10 +396,7 @@ for (const { name, client } of clients) {
             originalErr: true,
           });
         expect(result.rejected).to.equal(true);
-        expect(result.data).to.not.be.null;
-        if (result.rejected && result.data !== null) {
-          expect(result.data.val).to.equal("original");
-        }
+        expect(result.data).to.deep.equal({ id, sort, val: "original" });
       });
 
       it("should work with data: 'raw' - rejected item returned in raw format", async () => {
@@ -451,7 +411,7 @@ for (const { name, client } of clients) {
             data: "raw",
           });
         expect(result.rejected).to.equal(true);
-        expect(result.data).to.not.be.null;
+        expect((result.data as any)?.Item).to.deep.include({ id, sort, val: "original" });
       });
 
       it("should work with data: 'includeKeys' - rejected item includes key attributes", async () => {
@@ -466,12 +426,9 @@ for (const { name, client } of clients) {
             data: "includeKeys",
           });
         expect(result.rejected).to.equal(true);
-        expect(result.data).to.not.be.null;
-        if (result.rejected && result.data !== null) {
-          expect(result.data.id).to.equal(id);
-          expect((result.data as any).pk).to.not.be.undefined;
-          expect((result.data as any).sk).to.not.be.undefined;
-        }
+        expect(result.data).to.deep.include({ id, sort, val: "original" });
+        expect((result.data as any).pk).to.not.be.undefined;
+        expect((result.data as any).sk).to.not.be.undefined;
       });
     });
 
@@ -483,9 +440,7 @@ for (const { name, client } of clients) {
           .create({ id, sort, val: "hello" })
           .go({ returnOnConditionCheckFailure: true });
         expect(result.rejected).to.equal(false);
-        if (!result.rejected) {
-          expect(result.data.id).to.equal(id);
-        }
+        expect(result.data).to.deep.equal({ id, sort, val: "hello" });
       });
 
       it("should return rejected: true with no data key when create fails (true)", async () => {
@@ -545,9 +500,7 @@ for (const { name, client } of clients) {
           .where(({ val }, { eq }) => eq(val, "original"))
           .go({ returnOnConditionCheckFailure: true });
         expect(result.rejected).to.equal(false);
-        if (!result.rejected) {
-          expect(result.data.val).to.equal("updated");
-        }
+        expect(result.data).to.deep.equal({ id, sort, val: "updated" });
       });
 
       it("should return rejected: true with no data key when put where condition fails (true)", async () => {
@@ -649,9 +602,7 @@ for (const { name, client } of clients) {
             returnOnConditionCheckFailure: true,
           });
         expect(result.rejected).to.equal(false);
-        if (!result.rejected) {
-          expect(result.data.val).to.equal("updated");
-        }
+        expect(result.data).to.deep.equal({ id, sort, val: "updated" });
       });
 
       it("should still resolve with rejected when originalErr: true is also set (true)", async () => {
@@ -725,19 +676,12 @@ for (const { name, client } of clients) {
         .go({ returnOnConditionCheckFailure: "all_old" });
 
       expect(result.rejected).to.equal(true);
-      expect(result.data).to.not.be.null;
-      if (result.rejected && result.data !== null) {
-        expect(result.data.accountId).to.equal(accountId);
-        expect(result.data.recordId).to.equal(recordId);
-        expect(result.data.displayName).to.equal("Original");
-        expect(result.data.score).to.equal(20);
-        expect(result.data).to.not.have.property("secret");
-        expect(result.data).to.not.have.property("a");
-        expect(result.data).to.not.have.property("r");
-        expect(result.data).to.not.have.property("dn");
-        expect(result.data).to.not.have.property("sc");
-        expect(result.data).to.not.have.property("s");
-      }
+      expect(result.data).to.deep.equal({
+        accountId,
+        recordId,
+        displayName: "Original",
+        score: 20,
+      });
     });
 
     it("should return raw response shape when data: 'raw' is set", async () => {
@@ -753,14 +697,9 @@ for (const { name, client } of clients) {
         .go({ returnOnConditionCheckFailure: "all_old", data: "raw" });
 
       expect(result.rejected).to.equal(true);
-      expect(result.data).to.not.be.null;
-      if (result.rejected && result.data !== null) {
-        const raw = result.data as any;
-        expect(raw.Item.dn).to.equal("Original");
-        expect(raw.Item.s).to.equal("shh");
-        expect(raw.Item.sc).to.equal(10);
-        expect(raw.Item).to.not.have.property("displayName");
-      }
+      const rawItem = (result.data as any)?.Item;
+      expect(rawItem).to.deep.include({ dn: "Original", s: "shh", sc: 10 });
+      expect(rawItem).to.not.have.property("displayName");
     });
   });
 }
