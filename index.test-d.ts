@@ -5387,33 +5387,26 @@ normalEntity2
 
 entityWithSK.put(putItemFull).go().then((result) => {
   expectType<typeof result.data>(result.data);
-  // @ts-expect-error - rejected should not exist without option
-  result.rejected;
+  expectError(() => result.rejected);
 });
 
 entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: false }).then((result) => {
   expectType<typeof result.data>(result.data);
-  // @ts-expect-error - rejected should not exist with false
-  result.rejected;
+  expectError(() => result.rejected);
 });
 
 entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: false }).then((result) => {
   expectType<typeof result.data>(result.data);
-  // @ts-expect-error - rejected should not exist with false
-  result.rejected;
+  expectError(() => result.rejected);
 });
 
 entityWithSK.delete({ attr1: "abc", attr2: "def" }).go({ returnOnConditionCheckFailure: false }).then((result) => {
   expectType<typeof result.data>(result.data);
-  // @ts-expect-error - rejected should not exist with false
-  result.rejected;
+  expectError(() => result.rejected);
 });
 
-// @ts-expect-error - "none" is not a valid value
-entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: "none" });
-
-// @ts-expect-error - arbitrary strings are not valid
-entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: "invalid" });
+expectError(() => entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: "none" }));
+expectError(() => entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: "invalid" }));
 
 entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: true }).then((result) => {
   if (result.rejected) {
