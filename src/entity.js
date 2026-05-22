@@ -1844,7 +1844,7 @@ class Entity {
         } else {
           throw new e.ElectroError(
             e.ErrorCodes.InvalidOptions,
-            `Invalid value for query option "returnOnConditionCheckFailure" provided: "${option.returnOnConditionCheckFailure}". Allowed values include "all_old".`,
+            `Invalid value for query option "returnOnConditionCheckFailure" provided: "${option.returnOnConditionCheckFailure}". Allowed values include true, false, or "all_old".`,
           );
         }
       }
