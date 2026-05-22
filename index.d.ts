@@ -2201,7 +2201,11 @@ export interface SetRecordActionOptions<
   IndexCompositeAttributes,
   TableItem,
 > {
-  go: UpdateRecordGo<TableItem, AllTableIndexCompositeAttributes<A, F, C, S>>;
+  go: UpdateRecordGo<
+    TableItem,
+    AllTableIndexCompositeAttributes<A, F, C, S>,
+    ResponseItem<A, F, C, S>
+  >;
   params: ParamRecord<UpdateQueryParams>;
   set: SetRecord<
     A,
@@ -3253,7 +3257,7 @@ type MaybeConditionCheck<O, SuccessData, ResponseType> =
       ? Promise<ConditionCheckResult<SuccessData>>
       : Promise<{ data: SuccessData }>;
 
-export type UpdateRecordGo<ResponseType, Keys> = <
+export type UpdateRecordGo<ResponseType, Keys, FullItem = ResponseType> = <
   T = ResponseType,
   Options extends UpdateQueryOptions = UpdateQueryOptions,
 >(
@@ -3261,15 +3265,15 @@ export type UpdateRecordGo<ResponseType, Keys> = <
 ) => Options extends infer O
   ? "response" extends keyof O
     ? O["response"] extends "all_new"
-      ? MaybeConditionCheck<O, T, T>
+      ? MaybeConditionCheck<O, T, FullItem>
       : O["response"] extends "all_old"
-      ? MaybeConditionCheck<O, T, T>
+      ? MaybeConditionCheck<O, T, FullItem>
       : O["response"] extends "default"
-      ? MaybeConditionCheck<O, Keys, T>
+      ? MaybeConditionCheck<O, Keys, FullItem>
       : O["response"] extends "none"
-      ? MaybeConditionCheck<O, null, T>
-      : MaybeConditionCheck<O, Partial<T>, T>
-    : MaybeConditionCheck<O, Keys, T>
+      ? MaybeConditionCheck<O, null, FullItem>
+      : MaybeConditionCheck<O, Partial<T>, FullItem>
+    : MaybeConditionCheck<O, Keys, FullItem>
   : never;
 
 export type UpsertRecordGo<ResponseType, Keys> = <

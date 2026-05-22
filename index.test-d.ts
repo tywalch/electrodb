@@ -5468,7 +5468,7 @@ entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: "all_old" }).t
 entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: "all_old" }).then((result) => {
   if (result.rejected) {
     expectType<true>(result.rejected);
-    expectType<Partial<EntityItem<typeof entityWithSK>> | null>(result.data);
+    expectType<EntityItem<typeof entityWithSK> | null>(result.data);
   } else {
     expectType<false>(result.rejected);
     expectType<UpdateEntityResponseItem<typeof entityWithSK>>(result.data);
@@ -5478,7 +5478,7 @@ entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ retu
 entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: "all_old", response: "all_new" }).then((result) => {
   if (result.rejected) {
     expectType<true>(result.rejected);
-    expectType<Partial<EntityItem<typeof entityWithSK>> | null>(result.data);
+    expectType<EntityItem<typeof entityWithSK> | null>(result.data);
   } else {
     expectType<false>(result.rejected);
     expectType<Partial<EntityItem<typeof entityWithSK>>>(result.data);
