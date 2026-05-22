@@ -1,0 +1,111 @@
+---
+type Props = {
+	writeLabel?: string;
+	skipLabel?: string;
+};
+
+const {
+	writeLabel = 'Write this',
+	skipLabel = 'Skip this',
+} = Astro.props as Props;
+---
+
+<div class="comparison">
+	<section class="comparison-col comparison-write">
+		<header class="comparison-head">
+			<span class="comparison-badge comparison-badge-write">
+				<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M20 6 9 17l-5-5" />
+				</svg>
+				{writeLabel}
+			</span>
+		</header>
+		<div class="comparison-body comparison-body-write"><slot name="write" /></div>
+	</section>
+
+	<section class="comparison-col comparison-skip">
+		<header class="comparison-head">
+			<span class="comparison-badge comparison-badge-skip">
+				<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M18 6 6 18M6 6l12 12" />
+				</svg>
+				{skipLabel}
+			</span>
+		</header>
+		<div class="comparison-body comparison-body-skip"><slot name="skip" /></div>
+	</section>
+</div>
+
+<style>
+	.comparison {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+		margin: 1.5rem 0;
+	}
+
+	.comparison-col {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	.comparison-head {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		margin-bottom: 0.6rem;
+	}
+
+	.comparison-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		font-size: 0.85rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		padding: 0.4rem 0.85rem;
+		border-radius: 99em;
+		width: fit-content;
+	}
+
+	.comparison-badge svg {
+		width: 14px;
+		height: 14px;
+	}
+
+	.comparison-badge-write {
+		color: #15803d;
+		background: rgba(34, 197, 94, 0.12);
+	}
+
+	.comparison-badge-skip {
+		color: #b91c1c;
+		background: rgba(239, 68, 68, 0.1);
+	}
+
+	:root.theme-dark .comparison-badge-write {
+		color: #4ade80;
+		background: rgba(34, 197, 94, 0.14);
+	}
+
+	:root.theme-dark .comparison-badge-skip {
+		color: #f87171;
+		background: rgba(239, 68, 68, 0.14);
+	}
+
+	.comparison-caption {
+		font-size: 0.85rem;
+		color: var(--theme-text-light);
+		line-height: 1.4;
+	}
+
+	.comparison-body {
+		min-width: 0;
+	}
+
+	.comparison-body :global(pre) {
+		margin: 0;
+	}
+</style>

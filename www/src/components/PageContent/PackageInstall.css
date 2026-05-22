@@ -1,0 +1,93 @@
+.pkg-install {
+  margin: 1.25rem 0;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--radius-lg);
+  background: var(--theme-code-bg);
+  overflow: hidden;
+}
+
+.pkg-install-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 0 0.4rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+
+.pkg-install-tab {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba(230, 237, 243, 0.55);
+  padding: 0.55rem 0.85rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 120ms ease, border-color 120ms ease;
+  margin-bottom: -1px;
+}
+
+.pkg-install-tab:hover {
+  color: rgba(230, 237, 243, 0.85);
+}
+
+.pkg-install-tab.is-active {
+  color: var(--theme-code-text);
+  border-bottom-color: var(--brand-blue-soft);
+}
+
+.pkg-install-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  padding: 0.35rem 0.6rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(230, 237, 243, 0.6);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
+  cursor: pointer;
+  align-self: center;
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+.pkg-install-copy:hover {
+  color: var(--theme-code-text);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.pkg-install-code {
+  margin: 0;
+  padding: 0.9rem 1.1rem;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--theme-code-text);
+  overflow-x: auto;
+}
+
+.pkg-install-code code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font-size: 1em;
+}
+
+.pkg-install-line::before {
+  content: "$ ";
+  color: var(--brand-blue-soft);
+  font-weight: 600;
+  user-select: none;
+  -webkit-user-select: none;
+}

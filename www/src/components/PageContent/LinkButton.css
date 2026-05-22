@@ -1,43 +1,37 @@
 .link-button {
-  position: relative;
-  /* pill shaped link button */
-  border-radius: 9999px;
-  /* 1rem = 16px */
-  padding: 0.5rem 1rem;
-  /* no underline */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius);
   text-decoration: none;
-  text-decoration-line: none;
-  /* text size */
-  font-size: 1rem;
-  /* text weight */
-  font-weight: 700;
-  /* text alignment */
-  text-align: center;
-  /* text transform */
-  text-transform: uppercase;
-  /* text spacing */
-  letter-spacing: 0.1em;
-  /* transition */
-  transition: all 0.2s ease-in-out;
-  /* background color */
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
   background-color: var(--theme-button-bg);
-  /* text color */
   color: var(--theme-button-text);
-  /* cursor */
   cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 120ms ease, opacity 120ms ease, transform 120ms ease;
+  line-height: 1;
+}
+
+.link-button.alt,
+.link-button[data-alt] {
+  background-color: var(--theme-bg-elevated);
+  color: var(--theme-text);
+  border-color: var(--theme-border);
 }
 
 .link-button:hover,
 .link-button:focus {
-  /* cursor */
   cursor: pointer;
-  /* no underline */
   text-decoration: none;
-  text-decoration-line: none;
-  /* background color */
-  /* background-color: var(--theme-button-bg-hover) !important; */
-  filter: brightness(105%);
+  opacity: 0.92;
+}
 
-  /* shadow */
-  box-shadow: 0em 0em 13px 0px var(--theme-button-text);
+.link-button.alt:hover,
+.link-button.alt:focus {
+  background-color: var(--theme-bg-hover);
+  opacity: 1;
 }

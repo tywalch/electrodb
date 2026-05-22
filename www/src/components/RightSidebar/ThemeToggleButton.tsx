@@ -1,81 +1,85 @@
+/** @jsxImportSource preact */
 import type { FunctionalComponent } from "preact";
-import { useState, useEffect } from "preact/hooks";
 import "./ThemeToggleButton.css";
 
-const themes = ["light", "dark"];
+const SunIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2" />
+    <path d="M12 20v2" />
+    <path d="m4.93 4.93 1.41 1.41" />
+    <path d="m17.66 17.66 1.41 1.41" />
+    <path d="M2 12h2" />
+    <path d="M20 12h2" />
+    <path d="m6.34 17.66-1.41 1.41" />
+    <path d="m19.07 4.93-1.41 1.41" />
+  </svg>
+);
 
-const icons = [
+const MoonIcon = (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    viewBox="0 0 20 20"
-    fill="currentColor"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
   >
-    <path
-      fillRule="evenodd"
-      d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
-      clipRule="evenodd"
-    />
-  </svg>,
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    viewBox="0 0 20 20"
-    fill="currentColor"
-  >
-    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-  </svg>,
-];
+    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+  </svg>
+);
 
 const ThemeToggle: FunctionalComponent = () => {
-  const [theme, setTheme] = useState(() => {
-    if (import.meta.env.SSR) {
-      return undefined;
-    }
-    if (typeof localStorage !== undefined && localStorage.getItem("theme")) {
-      return localStorage.getItem("theme");
-    }
-    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      return "dark";
-    }
-    return "light";
-  });
-
-  useEffect(() => {
+  const handleClick = () => {
     const root = document.documentElement;
-    if (theme === "light") {
-      root.classList.remove("theme-dark");
+    let isDark: boolean;
+    if (root.classList.contains("theme-dark")) {
+      isDark = true;
+    } else if (root.classList.contains("theme-light")) {
+      isDark = false;
     } else {
-      root.classList.add("theme-dark");
+      isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     }
-  }, [theme]);
+    const next = isDark ? "light" : "dark";
+    root.classList.remove("theme-light", "theme-dark");
+    root.classList.add(`theme-${next}`);
+    localStorage.setItem("theme", next);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+      meta.setAttribute("content", next === "dark" ? "#09090b" : "#ffffff");
+    }
+  };
 
   return (
-    <div className="theme-toggle">
-      {themes.map((t, i) => {
-        const icon = icons[i];
-        const checked = t === theme;
-        return (
-          <label className={checked ? " checked" : ""}>
-            {icon}
-            <input
-              type="radio"
-              name="theme-toggle"
-              checked={checked}
-              value={t}
-              title={`Use ${t} theme`}
-              aria-label={`Use ${t} theme`}
-              onChange={() => {
-                localStorage.setItem("theme", t);
-                setTheme(t);
-              }}
-            />
-          </label>
-        );
-      })}
-    </div>
+    <button
+      type="button"
+      className="theme-toggle"
+      aria-label="Toggle theme"
+      title="Toggle theme"
+      onClick={handleClick}
+    >
+      <span className="theme-toggle-icon theme-toggle-icon-light">
+        {MoonIcon}
+      </span>
+      <span className="theme-toggle-icon theme-toggle-icon-dark">
+        {SunIcon}
+      </span>
+    </button>
   );
 };
 
