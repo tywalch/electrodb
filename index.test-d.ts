@@ -5386,22 +5386,22 @@ normalEntity2
   });
 
 entityWithSK.put(putItemFull).go().then((result) => {
-  expectType<typeof result.data>(result.data);
+  expectType<EntityItem<typeof entityWithSK>>(result.data);
   expectError(() => result.rejected);
 });
 
 entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: false }).then((result) => {
-  expectType<typeof result.data>(result.data);
+  expectType<EntityItem<typeof entityWithSK>>(result.data);
   expectError(() => result.rejected);
 });
 
 entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: false }).then((result) => {
-  expectType<typeof result.data>(result.data);
+  expectType<UpdateEntityResponseItem<typeof entityWithSK>>(result.data);
   expectError(() => result.rejected);
 });
 
 entityWithSK.delete({ attr1: "abc", attr2: "def" }).go({ returnOnConditionCheckFailure: false }).then((result) => {
-  expectType<typeof result.data>(result.data);
+  expectType<UpdateEntityResponseItem<typeof entityWithSK>>(result.data);
   expectError(() => result.rejected);
 });
 
