@@ -210,6 +210,18 @@ const { currentPage } = Astro.props as Props;
 			display: none;
 		}
 	}
+
+	/* Optically align the leftmost/rightmost icon buttons with the MobileTOC
+	   below: the buttons center a ~16px icon inside a 32px hit target, so
+	   without this nudge the glyphs sit ~0.5rem inboard of the TOC bar's edge. */
+	@media (max-width: 72em) {
+		.nav-left > .menu-toggle {
+			margin-left: -0.5rem;
+		}
+		.nav-right > :last-child {
+			margin-right: -0.5rem;
+		}
+	}
 </style>
 
 <style is:global>
