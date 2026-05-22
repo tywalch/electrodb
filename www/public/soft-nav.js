@@ -69,15 +69,25 @@
     document.head
       .querySelectorAll('style, link[rel="stylesheet"]')
       .forEach((node) => existing.add(styleKey(node)));
+    const pending = [];
     newHead
       .querySelectorAll('style, link[rel="stylesheet"]')
       .forEach((node) => {
         const key = styleKey(node);
         if (existing.has(key)) return;
         const clone = node.cloneNode(true);
+        if (clone.tagName === "LINK" && clone.rel === "stylesheet") {
+          pending.push(
+            new Promise((resolve) => {
+              clone.addEventListener("load", resolve, { once: true });
+              clone.addEventListener("error", resolve, { once: true });
+            }),
+          );
+        }
         document.head.appendChild(clone);
         existing.add(key);
       });
+    return Promise.all(pending);
   };
 
   const navigateTo = async (href, { push = true } = {}) => {
@@ -96,7 +106,8 @@
       const doc = new DOMParser().parseFromString(html, "text/html");
 
       document.title = doc.title;
-      mergeHeadStyles(doc.head);
+      await mergeHeadStyles(doc.head);
+      if (token !== navToken) return;
 
       const oldMain = document.querySelector(MAIN_SELECTOR);
       const newMain = doc.querySelector(MAIN_SELECTOR);
