@@ -1962,6 +1962,12 @@ class Entity {
       }
 
       if (option.abortSignal !== undefined) {
+        if (!validations.isAbortSignal(option.abortSignal)) {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidOptions,
+            "Invalid 'abortSignal' option provided. Expected an AbortSignal-like object with an 'aborted' boolean and 'addEventListener'/'removeEventListener' methods.",
+          );
+        }
         config.abortSignal = option.abortSignal;
       }
 

@@ -728,4 +728,64 @@ describe("AbortSignal Support", () => {
       }
     });
   });
+
+  describe("abortSignal option validation", () => {
+    const entity = createEntity(v3Client);
+    const invalidValues = [
+      ["string", "not-a-signal"],
+      ["number", 42],
+      ["boolean", true],
+      ["null", null],
+      ["plain object", {}],
+      ["object missing addEventListener", {
+        aborted: false,
+        removeEventListener: () => {},
+      }],
+      ["object missing removeEventListener", {
+        aborted: false,
+        addEventListener: () => {},
+      }],
+      ["object with non-boolean aborted", {
+        aborted: "yes",
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }],
+    ];
+
+    for (const [label, value] of invalidValues) {
+      it(`should reject invalid abortSignal (${label})`, async () => {
+        try {
+          await entity
+            .get({ prop1: "value1", prop2: "value2" })
+            .go({ abortSignal: value });
+          expect.fail("Should have thrown an error");
+        } catch (err) {
+          expect(err.code).to.equal(ErrorCodes.InvalidOptions.code);
+          expect(err.message).to.include("abortSignal");
+        }
+      });
+    }
+
+    it("should accept a real AbortSignal", () => {
+      const controller = new AbortController();
+      expect(() =>
+        entity
+          .get({ prop1: "value1", prop2: "value2" })
+          .params({ abortSignal: controller.signal }),
+      ).to.not.throw();
+    });
+
+    it("should accept a duck-typed AbortSignal-like object", () => {
+      const fake = {
+        aborted: false,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      };
+      expect(() =>
+        entity
+          .get({ prop1: "value1", prop2: "value2" })
+          .params({ abortSignal: fake }),
+      ).to.not.throw();
+    });
+  });
 });
