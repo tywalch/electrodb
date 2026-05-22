@@ -90,17 +90,33 @@
     return Promise.all(pending);
   };
 
+  const htmlCache = new Map();
+  const fetchHtml = (href) => {
+    let entry = htmlCache.get(href);
+    if (!entry) {
+      entry = fetch(href, {
+        headers: { Accept: "text/html" },
+        credentials: "same-origin",
+      })
+        .then(async (r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.text();
+        })
+        .catch((err) => {
+          htmlCache.delete(href);
+          throw err;
+        });
+      htmlCache.set(href, entry);
+    }
+    return entry;
+  };
+
   const navigateTo = async (href, { push = true } = {}) => {
     const token = ++navToken;
     document.documentElement.dataset.navigating = "";
     if (push) saveScroll();
     try {
-      const response = await fetch(href, {
-        headers: { Accept: "text/html" },
-        credentials: "same-origin",
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const html = await response.text();
+      const html = await fetchHtml(href);
       if (token !== navToken) return; // Superseded by a newer nav
 
       const doc = new DOMParser().parseFromString(html, "text/html");
@@ -204,16 +220,39 @@
     navigateTo(window.location.href, { push: false });
   });
 
-  // Lightweight prefetch on hover/focus so the cached fetch above is instant.
+  // Lightweight prefetch on hover/focus: warm the HTML cache AND preload any
+  // new CSS bundles the destination references, so navigation is instant.
   const prefetched = new Set();
+  const preloadedAssets = new Set();
   const prefetch = (href) => {
     if (prefetched.has(href)) return;
     prefetched.add(href);
-    const link = document.createElement("link");
-    link.rel = "prefetch";
-    link.href = href;
-    link.as = "document";
-    document.head.appendChild(link);
+    fetchHtml(href)
+      .then((html) => {
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const existing = new Set();
+        document.head
+          .querySelectorAll('link[rel="stylesheet"], link[rel="preload"]')
+          .forEach((node) => {
+            const h = node.getAttribute("href");
+            if (h) existing.add(h);
+          });
+        doc.head
+          .querySelectorAll('link[rel="stylesheet"]')
+          .forEach((node) => {
+            const h = node.getAttribute("href");
+            if (!h || existing.has(h) || preloadedAssets.has(h)) return;
+            preloadedAssets.add(h);
+            const preload = document.createElement("link");
+            preload.rel = "preload";
+            preload.as = "style";
+            preload.href = h;
+            document.head.appendChild(preload);
+          });
+      })
+      .catch(() => {
+        prefetched.delete(href);
+      });
   };
 
   const PREFETCH_DELAY_MS = 50;
