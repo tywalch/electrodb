@@ -65,7 +65,7 @@ h6 {
   scroll-margin-top: calc(var(--theme-navbar-height) + 1.5rem);
 }
 
-@media (max-width: 50em) {
+@media (max-width: 72em) {
   h1,
   h2,
   h3,
@@ -509,8 +509,8 @@ h2.heading {
   white-space: normal;
 }
 
-:target {
-  scroll-margin: calc(var(--theme-navbar-height) + 1.5rem) 0 2rem;
+:where(:target) {
+  scroll-margin-bottom: 2rem;
 }
 
 /* Buttons (utility) */
