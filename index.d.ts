@@ -2660,6 +2660,8 @@ export interface ParseOptions<Attributes> {
   ignoreOwnership?: boolean;
 }
 
+export type ReturnOnConditionCheckFailureOption = boolean | "all_old";
+
 export interface UpdateQueryOptions extends QueryOptions {
   response?:
     | "default"
@@ -2668,7 +2670,7 @@ export interface UpdateQueryOptions extends QueryOptions {
     | "updated_old"
     | "all_new"
     | "updated_new";
-  returnOnConditionCheckFailure?: "all_old" | "none";
+  returnOnConditionCheckFailure?: ReturnOnConditionCheckFailureOption;
 }
 
 export interface UpdateQueryParams {
@@ -2686,12 +2688,12 @@ export interface UpdateQueryParams {
 
 export interface DeleteQueryOptions extends QueryOptions {
   response?: "default" | "none" | "all_old";
-  returnOnConditionCheckFailure?: "all_old" | "none";
+  returnOnConditionCheckFailure?: ReturnOnConditionCheckFailureOption;
 }
 
 export interface PutQueryOptions extends QueryOptions {
   response?: "default" | "none" | "all_old" | "all_new";
-  returnOnConditionCheckFailure?: "all_old" | "none";
+  returnOnConditionCheckFailure?: ReturnOnConditionCheckFailureOption;
 }
 
 export type ParamOptions = {
@@ -2710,15 +2712,13 @@ export type ParamOptions = {
   consistent?: boolean;
 } & QueryExecutionComparisonParts;
 
-// SuccessData: the return type on success (varies by operation and `response` option).
-// ResponseType: the full entity item type, used on the rejected branch. DynamoDB returns
-// the existing (old) item on condition check failure, so this is always the full item.
-// The `| null` on the rejected branch covers cases where no item exists (e.g. patch/remove
-// on a non-existent item). For delete, SuccessData is already `T | null`, so both branches
-// resolve to `T | null` — this is intentional.
-type WithConditionCheck<SuccessData, ResponseType> =
-  | { rejected: false; data: SuccessData }
-  | { rejected: true; data: ResponseType | null };
+type ConditionCheckResult<Success> =
+  | { rejected: false; data: Success }
+  | { rejected: true; data?: never };
+
+type ConditionCheckResultWithItem<Success, Item> =
+  | { rejected: false; data: Success }
+  | { rejected: true; data: Item | null };
 
 export interface BulkOptions extends QueryOptions {
   unprocessed?: "raw" | "item";
@@ -3248,8 +3248,10 @@ export type QueryRecordsGo<Item, S extends Schema<string, string, string>> = <
 
 type MaybeConditionCheck<O, SuccessData, ResponseType> =
   O extends { returnOnConditionCheckFailure: "all_old" }
-    ? Promise<WithConditionCheck<SuccessData, ResponseType>>
-    : Promise<{ data: SuccessData }>;
+    ? Promise<ConditionCheckResultWithItem<SuccessData, ResponseType>>
+    : O extends { returnOnConditionCheckFailure: true }
+      ? Promise<ConditionCheckResult<SuccessData>>
+      : Promise<{ data: SuccessData }>;
 
 export type UpdateRecordGo<ResponseType, Keys> = <
   T = ResponseType,

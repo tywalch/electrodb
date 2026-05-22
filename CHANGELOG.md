@@ -657,4 +657,4 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [3.8.0]
 ### Added
-- New `returnOnConditionCheckFailure` execution option for write operations (`put`, `create`, `update`, `patch`, `delete`, `remove`, `upsert`). When set to `"all_old"`, a write that fails due to a condition expression will return the existing item instead of throwing an error. The response includes a `rejected` property to indicate success or failure. This maps to DynamoDB's `ReturnValuesOnConditionCheckFailure` parameter. Requires AWS SDK v3, or AWS SDK v2 >= `2.1408.0`.
+- Added a new `returnOnConditionCheckFailure` execution option for write operations. Instead of throwing when a condition expression fails, the call resolves with `{ rejected: true }`. Pass `true` to get just the rejection flag, or `"all_old"` to also receive the existing item under `data`. The `"all_old"` mode requires AWS SDK v3, or AWS SDK v2 >= `2.1408.0`.

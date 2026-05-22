@@ -793,20 +793,24 @@ class Entity {
   }
 
   async executeOperation(method, parameters, config) {
-    const hasConditionCheck = config.returnOnConditionCheckFailure === "all_old";
+    const conditionCheckMode = config.returnOnConditionCheckFailure;
+    const hasConditionCheck = conditionCheckMode === "all_old" || conditionCheckMode === true;
 
     let response;
     try {
       response = await this._exec(method, parameters, config);
     } catch (err) {
-      if (hasConditionCheck && !config.originalErr && this._isConditionalCheckFailedException(err)) {
-        const rawItem = err.Item;
-        if (rawItem) {
-          const item = c.util.unmarshall(rawItem);
-          const formatted = this.formatResponse({ Item: item }, TableIndex, config);
-          return { rejected: true, data: formatted.data };
+      if (hasConditionCheck && this._isConditionalCheckFailedException(err)) {
+        if (conditionCheckMode === "all_old") {
+          const rawItem = err.Item;
+          if (rawItem) {
+            const item = c.util.unmarshall(rawItem);
+            const formatted = this.formatResponse({ Item: item }, TableIndex, config);
+            return { rejected: true, data: formatted.data };
+          }
+          return { rejected: true, data: null };
         }
-        return { rejected: true, data: null };
+        return { rejected: true };
       }
       throw err;
     }
@@ -1828,15 +1832,19 @@ class Entity {
         config.originalErr = true;
       }
 
-      if (typeof option.returnOnConditionCheckFailure === "string") {
+      if (typeof option.returnOnConditionCheckFailure === "boolean") {
+        if (option.returnOnConditionCheckFailure === true) {
+          config.returnOnConditionCheckFailure = true;
+        }
+      } else if (typeof option.returnOnConditionCheckFailure === "string") {
         const value = option.returnOnConditionCheckFailure.toLowerCase();
         if (value === "all_old") {
           config.returnOnConditionCheckFailure = "all_old";
           config.params.ReturnValuesOnConditionCheckFailure = "ALL_OLD";
-        } else if (value !== "none") {
+        } else {
           throw new e.ElectroError(
             e.ErrorCodes.InvalidOptions,
-            `Invalid value for query option "returnOnConditionCheckFailure" provided: "${option.returnOnConditionCheckFailure}". Allowed values include "all_old" and "none".`,
+            `Invalid value for query option "returnOnConditionCheckFailure" provided: "${option.returnOnConditionCheckFailure}". Allowed values include "all_old".`,
           );
         }
       }

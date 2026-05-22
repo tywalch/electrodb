@@ -3,6 +3,7 @@ import {
   UpdateEntityItem,
   Schema,
   EntityItem,
+  UpdateEntityResponseItem,
   Entity,
   Service,
   UpdateEntityResponse,
@@ -5384,77 +5385,112 @@ normalEntity2
     }>(magnify(results.data));
   });
 
-// returnOnConditionCheckFailure type tests
-// Without option: return type has no `rejected` field
 entityWithSK.put(putItemFull).go().then((result) => {
   expectType<typeof result.data>(result.data);
   // @ts-expect-error - rejected should not exist without option
   result.rejected;
 });
 
-// With returnOnConditionCheckFailure: "none" on put - no rejected field, same as default
-entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: "none" }).then((result) => {
+entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: false }).then((result) => {
   expectType<typeof result.data>(result.data);
-  // @ts-expect-error - rejected should not exist with "none"
+  // @ts-expect-error - rejected should not exist with false
   result.rejected;
 });
 
-// With returnOnConditionCheckFailure: "none" on update - no rejected field
-entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: "none" }).then((result) => {
+entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: false }).then((result) => {
   expectType<typeof result.data>(result.data);
-  // @ts-expect-error - rejected should not exist with "none"
+  // @ts-expect-error - rejected should not exist with false
   result.rejected;
 });
 
-// With returnOnConditionCheckFailure: "none" on delete - no rejected field
-entityWithSK.delete({ attr1: "abc", attr2: "def" }).go({ returnOnConditionCheckFailure: "none" }).then((result) => {
+entityWithSK.delete({ attr1: "abc", attr2: "def" }).go({ returnOnConditionCheckFailure: false }).then((result) => {
   expectType<typeof result.data>(result.data);
-  // @ts-expect-error - rejected should not exist with "none"
+  // @ts-expect-error - rejected should not exist with false
   result.rejected;
 });
 
-// With returnOnConditionCheckFailure: "all_old" on put - return type is discriminated union
+// @ts-expect-error - "none" is not a valid value
+entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: "none" });
+
+// @ts-expect-error - arbitrary strings are not valid
+entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: "invalid" });
+
+entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: true }).then((result) => {
+  if (result.rejected) {
+    expectType<true>(result.rejected);
+    expectType<undefined>(result.data);
+  } else {
+    expectType<false>(result.rejected);
+    expectType<EntityItem<typeof entityWithSK>>(result.data);
+  }
+});
+
+entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: true }).then((result) => {
+  if (result.rejected) {
+    expectType<true>(result.rejected);
+    expectType<undefined>(result.data);
+  } else {
+    expectType<false>(result.rejected);
+    expectType<UpdateEntityResponseItem<typeof entityWithSK>>(result.data);
+  }
+});
+
+entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: true, response: "all_new" }).then((result) => {
+  if (result.rejected) {
+    expectType<true>(result.rejected);
+    expectType<undefined>(result.data);
+  } else {
+    expectType<false>(result.rejected);
+    expectType<Partial<EntityItem<typeof entityWithSK>>>(result.data);
+  }
+});
+
+entityWithSK.delete({ attr1: "abc", attr2: "def" }).go({ returnOnConditionCheckFailure: true }).then((result) => {
+  if (result.rejected) {
+    expectType<true>(result.rejected);
+    expectType<undefined>(result.data);
+  } else {
+    expectType<false>(result.rejected);
+    expectType<UpdateEntityResponseItem<typeof entityWithSK>>(result.data);
+  }
+});
+
 entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: "all_old" }).then((result) => {
   if (result.rejected) {
     expectType<true>(result.rejected);
-    // data is T | null on rejected branch
-    if (result.data !== null) {
-      expectType<string>(magnify(result.data.attr1));
-    }
+    expectType<EntityItem<typeof entityWithSK> | null>(result.data);
   } else {
     expectType<false>(result.rejected);
-    expectType<string>(magnify(result.data.attr1));
+    expectType<EntityItem<typeof entityWithSK>>(result.data);
   }
 });
 
-// With returnOnConditionCheckFailure: "all_old" on update - discriminated union
 entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: "all_old" }).then((result) => {
   if (result.rejected) {
     expectType<true>(result.rejected);
+    expectType<Partial<EntityItem<typeof entityWithSK>> | null>(result.data);
   } else {
     expectType<false>(result.rejected);
-    // default response for update returns key attributes
-    expectType<string>(magnify(result.data.attr2));
+    expectType<UpdateEntityResponseItem<typeof entityWithSK>>(result.data);
   }
 });
 
-// With returnOnConditionCheckFailure: "all_old" on update with response: "all_new"
 entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: "all_old", response: "all_new" }).then((result) => {
   if (result.rejected) {
     expectType<true>(result.rejected);
+    expectType<Partial<EntityItem<typeof entityWithSK>> | null>(result.data);
   } else {
     expectType<false>(result.rejected);
-    // all_new response type includes entity attributes
-    result.data.attr6;
+    expectType<Partial<EntityItem<typeof entityWithSK>>>(result.data);
   }
 });
 
-// With returnOnConditionCheckFailure: "all_old" on delete - discriminated union
 entityWithSK.delete({ attr1: "abc", attr2: "def" }).go({ returnOnConditionCheckFailure: "all_old" }).then((result) => {
   if (result.rejected) {
     expectType<true>(result.rejected);
+    expectType<EntityItem<typeof entityWithSK> | null>(result.data);
   } else {
     expectType<false>(result.rejected);
-    expectType<string>(magnify(result.data.attr2));
+    expectType<UpdateEntityResponseItem<typeof entityWithSK>>(result.data);
   }
 });

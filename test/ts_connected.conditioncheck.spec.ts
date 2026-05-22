@@ -365,49 +365,38 @@ for (const { name, client } of clients) {
         }
       });
 
-      it("should still throw with originalErr: true even when option is set", async () => {
+      it("should still resolve with rejected when originalErr: true is also set (all_old)", async () => {
         const id = uuid();
         const sort = "original-err";
         await entity.create({ id, sort, val: "original" }).go();
 
-        try {
-          await entity.create({ id, sort, val: "duplicate" }).go({
-            returnOnConditionCheckFailure: "all_old",
-            originalErr: true,
-          });
-          expect.fail("Should have thrown");
-        } catch (err: any) {
-          expect(
-            err.name === "ConditionalCheckFailedException" ||
-              err.code === "ConditionalCheckFailedException",
-          ).to.be.true;
+        const result = await entity.create({ id, sort, val: "duplicate" }).go({
+          returnOnConditionCheckFailure: "all_old",
+          originalErr: true,
+        });
+        expect(result.rejected).to.equal(true);
+        if (result.rejected && result.data !== null) {
+          expect(result.data.val).to.equal("original");
         }
       });
 
-      it("should throw the unwrapped dynamodb error when originalErr: true is combined with returnOnConditionCheckFailure on update", async () => {
+      it("should still resolve with rejected when originalErr: true is combined with all_old on update", async () => {
         const id = uuid();
         const sort = "original-err-combo-update";
         await entity.put({ id, sort, val: "original" }).go();
 
-        let threw = false;
-        try {
-          await entity
-            .update({ id, sort })
-            .set({ val: "updated" })
-            .where(({ val }, { eq }) => eq(val, "wrong"))
-            .go({
-              returnOnConditionCheckFailure: "all_old",
-              originalErr: true,
-            });
-        } catch (err: any) {
-          threw = true;
-          expect(
-            err.name === "ConditionalCheckFailedException" ||
-              err.code === "ConditionalCheckFailedException",
-          ).to.be.true;
-          expect(err.message).to.not.include("Error thrown by DynamoDB client");
+        const result = await entity
+          .update({ id, sort })
+          .set({ val: "updated" })
+          .where(({ val }, { eq }) => eq(val, "wrong"))
+          .go({
+            returnOnConditionCheckFailure: "all_old",
+            originalErr: true,
+          });
+        expect(result.rejected).to.equal(true);
+        if (result.rejected && result.data !== null) {
+          expect(result.data.val).to.equal("original");
         }
-        expect(threw).to.equal(true);
       });
 
       it("should work with data: 'raw' - rejected item returned in raw format", async () => {
@@ -443,6 +432,292 @@ for (const { name, client } of clients) {
           expect((result.data as any).sk).to.not.be.undefined;
         }
       });
+    });
+
+    describe("boolean shortcut", () => {
+      it("should return rejected: false on successful create (true)", async () => {
+        const id = uuid();
+        const sort = "bool-create-success";
+        const result = await entity
+          .create({ id, sort, val: "hello" })
+          .go({ returnOnConditionCheckFailure: true });
+        expect(result.rejected).to.equal(false);
+        if (!result.rejected) {
+          expect(result.data.id).to.equal(id);
+        }
+      });
+
+      it("should return rejected: true with no data key when create fails (true)", async () => {
+        const id = uuid();
+        const sort = "bool-create-fail";
+        await entity.create({ id, sort, val: "original" }).go();
+
+        const result = await entity
+          .create({ id, sort, val: "duplicate" })
+          .go({ returnOnConditionCheckFailure: true });
+        expect(result.rejected).to.equal(true);
+        expect(result).to.not.have.property("data");
+      });
+
+      it("should return rejected: true with no data key when update where condition fails (true)", async () => {
+        const id = uuid();
+        const sort = "bool-update-fail";
+        await entity.put({ id, sort, val: "original" }).go();
+
+        const result = await entity
+          .update({ id, sort })
+          .set({ val: "updated" })
+          .where(({ val }, { eq }) => eq(val, "wrong"))
+          .go({ returnOnConditionCheckFailure: true });
+        expect(result.rejected).to.equal(true);
+        expect(result).to.not.have.property("data");
+      });
+
+      it("should return rejected: true with no data key when patch target does not exist (true)", async () => {
+        const id = uuid();
+        const sort = "bool-patch-nonexistent";
+        const result = await entity
+          .patch({ id, sort })
+          .set({ val: "patched" })
+          .go({ returnOnConditionCheckFailure: true });
+        expect(result.rejected).to.equal(true);
+        expect(result).to.not.have.property("data");
+      });
+
+      it("should return rejected: true with no data key when remove target does not exist (true)", async () => {
+        const id = uuid();
+        const sort = "bool-remove-nonexistent";
+        const result = await entity
+          .remove({ id, sort })
+          .go({ returnOnConditionCheckFailure: true });
+        expect(result.rejected).to.equal(true);
+        expect(result).to.not.have.property("data");
+      });
+
+      it("should return rejected: false on successful put (true)", async () => {
+        const id = uuid();
+        const sort = "bool-put-success";
+        await entity.put({ id, sort, val: "original" }).go();
+
+        const result = await entity
+          .put({ id, sort, val: "updated" })
+          .where(({ val }, { eq }) => eq(val, "original"))
+          .go({ returnOnConditionCheckFailure: true });
+        expect(result.rejected).to.equal(false);
+        if (!result.rejected) {
+          expect(result.data.val).to.equal("updated");
+        }
+      });
+
+      it("should return rejected: true with no data key when put where condition fails (true)", async () => {
+        const id = uuid();
+        const sort = "bool-put-fail";
+        await entity.put({ id, sort, val: "original" }).go();
+
+        const result = await entity
+          .put({ id, sort, val: "replaced" })
+          .where(({ val }, { eq }) => eq(val, "wrong"))
+          .go({ returnOnConditionCheckFailure: true });
+        expect(result.rejected).to.equal(true);
+        expect(result).to.not.have.property("data");
+      });
+
+      it("should return rejected: false on successful delete (true)", async () => {
+        const id = uuid();
+        const sort = "bool-delete-success";
+        await entity.put({ id, sort, val: "original" }).go();
+
+        const result = await entity
+          .delete({ id, sort })
+          .where(({ val }, { eq }) => eq(val, "original"))
+          .go({ returnOnConditionCheckFailure: true });
+        expect(result.rejected).to.equal(false);
+      });
+
+      it("should return rejected: true with no data key when delete where condition fails (true)", async () => {
+        const id = uuid();
+        const sort = "bool-delete-fail";
+        await entity.put({ id, sort, val: "original" }).go();
+
+        const result = await entity
+          .delete({ id, sort })
+          .where(({ val }, { eq }) => eq(val, "wrong"))
+          .go({ returnOnConditionCheckFailure: true });
+        expect(result.rejected).to.equal(true);
+        expect(result).to.not.have.property("data");
+      });
+
+      it("should return rejected: false on successful upsert (true)", async () => {
+        const id = uuid();
+        const sort = "bool-upsert-success";
+        await entity.put({ id, sort, val: "original" }).go();
+
+        const result = await entity
+          .upsert({ id, sort, val: "upserted" })
+          .where(({ val }, { eq }) => eq(val, "original"))
+          .go({ returnOnConditionCheckFailure: true });
+        expect(result.rejected).to.equal(false);
+      });
+
+      it("should return rejected: true with no data key when upsert where condition fails (true)", async () => {
+        const id = uuid();
+        const sort = "bool-upsert-fail";
+        await entity.put({ id, sort, val: "original" }).go();
+
+        const result = await entity
+          .upsert({ id, sort, val: "upserted" })
+          .where(({ val }, { eq }) => eq(val, "wrong"))
+          .go({ returnOnConditionCheckFailure: true });
+        expect(result.rejected).to.equal(true);
+        expect(result).to.not.have.property("data");
+      });
+
+      it("should NOT set ReturnValuesOnConditionCheckFailure on DDB params when true", () => {
+        const params = entity
+          .create({ id: uuid(), sort: "params-bool-true", val: "v" })
+          .params({ returnOnConditionCheckFailure: true });
+        expect(params.ReturnValuesOnConditionCheckFailure).to.be.undefined;
+      });
+
+      it("should behave like no option when false (throws on failure)", async () => {
+        const id = uuid();
+        const sort = "bool-false-throws";
+        await entity.create({ id, sort, val: "original" }).go();
+
+        try {
+          await entity
+            .create({ id, sort, val: "duplicate" })
+            .go({ returnOnConditionCheckFailure: false });
+          expect.fail("Should have thrown");
+        } catch (err: any) {
+          expect(err.message).to.include("conditional request failed");
+        }
+      });
+
+      it("should combine with response option (true) - success uses response format", async () => {
+        const id = uuid();
+        const sort = "bool-response-combo";
+        await entity.put({ id, sort, val: "original" }).go();
+
+        const result = await entity
+          .update({ id, sort })
+          .set({ val: "updated" })
+          .where(({ val }, { eq }) => eq(val, "original"))
+          .go({
+            response: "all_new",
+            returnOnConditionCheckFailure: true,
+          });
+        expect(result.rejected).to.equal(false);
+        if (!result.rejected) {
+          expect(result.data.val).to.equal("updated");
+        }
+      });
+
+      it("should still resolve with rejected when originalErr: true is also set (true)", async () => {
+        const id = uuid();
+        const sort = "bool-original-err";
+        await entity.create({ id, sort, val: "original" }).go();
+
+        const result = await entity.create({ id, sort, val: "duplicate" }).go({
+          returnOnConditionCheckFailure: true,
+          originalErr: true,
+        });
+        expect(result.rejected).to.equal(true);
+        expect(result).to.not.have.property("data");
+      });
+    });
+  });
+
+  describe(`returnOnConditionCheckFailure formatting (${name})`, () => {
+    function createMappedEntity() {
+      return new Entity(
+        {
+          model: {
+            entity: uuid(),
+            service: "condcheck",
+            version: "1",
+          },
+          attributes: {
+            accountId: { type: "string" as const, field: "a" },
+            recordId: { type: "string" as const, field: "r" },
+            displayName: { type: "string" as const, field: "dn" },
+            secret: { type: "string" as const, field: "s", hidden: true },
+            score: {
+              type: "number" as const,
+              field: "sc",
+              get: (val: number) => val * 2,
+            },
+          },
+          indexes: {
+            record: {
+              pk: { field: "pk", composite: ["accountId"] },
+              sk: { field: "sk", composite: ["recordId"] },
+            },
+          },
+        },
+        { table, client },
+      );
+    }
+
+    it("should return the rejected item with entity-side attribute names, hidden fields stripped, and getters applied", async () => {
+      const mapped = createMappedEntity();
+      const accountId = uuid();
+      const recordId = "rec1";
+      await mapped
+        .create({
+          accountId,
+          recordId,
+          displayName: "Original",
+          secret: "shh",
+          score: 10,
+        })
+        .go();
+
+      const result = await mapped
+        .create({
+          accountId,
+          recordId,
+          displayName: "Duplicate",
+          secret: "nope",
+          score: 1,
+        })
+        .go({ returnOnConditionCheckFailure: "all_old" });
+
+      expect(result.rejected).to.equal(true);
+      if (result.rejected && result.data !== null) {
+        expect(result.data.accountId).to.equal(accountId);
+        expect(result.data.recordId).to.equal(recordId);
+        expect(result.data.displayName).to.equal("Original");
+        expect(result.data.score).to.equal(20);
+        expect(result.data).to.not.have.property("secret");
+        expect(result.data).to.not.have.property("a");
+        expect(result.data).to.not.have.property("r");
+        expect(result.data).to.not.have.property("dn");
+        expect(result.data).to.not.have.property("sc");
+        expect(result.data).to.not.have.property("s");
+      }
+    });
+
+    it("should return raw response shape when data: 'raw' is set", async () => {
+      const mapped = createMappedEntity();
+      const accountId = uuid();
+      const recordId = "rec-raw";
+      await mapped
+        .create({ accountId, recordId, displayName: "Original", secret: "shh", score: 10 })
+        .go();
+
+      const result = await mapped
+        .create({ accountId, recordId, displayName: "Duplicate", secret: "nope", score: 1 })
+        .go({ returnOnConditionCheckFailure: "all_old", data: "raw" });
+
+      expect(result.rejected).to.equal(true);
+      if (result.rejected && result.data !== null) {
+        const raw = result.data as any;
+        expect(raw.Item.dn).to.equal("Original");
+        expect(raw.Item.s).to.equal("shh");
+        expect(raw.Item.sc).to.equal(10);
+        expect(raw.Item).to.not.have.property("displayName");
+      }
     });
   });
 }

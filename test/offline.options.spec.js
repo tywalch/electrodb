@@ -795,8 +795,13 @@ describe("Query Options", () => {
       expect(params.ReturnValuesOnConditionCheckFailure).to.equal("ALL_OLD");
     });
 
-    it("should not add ReturnValuesOnConditionCheckFailure when option is 'none'", () => {
-      let params = entity.put(properties).params({ returnOnConditionCheckFailure: "none" });
+    it("should not add ReturnValuesOnConditionCheckFailure when option is true", () => {
+      let params = entity.put(properties).params({ returnOnConditionCheckFailure: true });
+      expect(params.ReturnValuesOnConditionCheckFailure).to.be.undefined;
+    });
+
+    it("should not add ReturnValuesOnConditionCheckFailure when option is false", () => {
+      let params = entity.put(properties).params({ returnOnConditionCheckFailure: false });
       expect(params.ReturnValuesOnConditionCheckFailure).to.be.undefined;
     });
 
@@ -805,9 +810,15 @@ describe("Query Options", () => {
       expect(params.ReturnValuesOnConditionCheckFailure).to.be.undefined;
     });
 
-    it("should throw on invalid returnOnConditionCheckFailure value", () => {
+    it("should throw on invalid returnOnConditionCheckFailure string value", () => {
       expect(() => {
         entity.put(properties).params({ returnOnConditionCheckFailure: "invalid" });
+      }).to.throw('Invalid value for query option "returnOnConditionCheckFailure"');
+    });
+
+    it("should throw when 'none' is passed", () => {
+      expect(() => {
+        entity.put(properties).params({ returnOnConditionCheckFailure: "none" });
       }).to.throw('Invalid value for query option "returnOnConditionCheckFailure"');
     });
   });
