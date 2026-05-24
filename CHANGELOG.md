@@ -658,3 +658,6 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.8.0]
 ### Added
 - [Issue #545](https://github.com/tywalch/electrodb/issues/545); Added support for passing an `abortSignal` to the `go()` query options, allowing users to cancel in-flight DynamoDB requests.
+
+### Updated
+- [Issue #571](https://github.com/tywalch/electrodb/issues/571) Upgrading to jsonschema@1.5.0 removes the url module entirely in favour of the WHATWG URL global, silencing the warning. Thank you for your first contribution to the project, [@willmizzi](https://github.com/willmizzi)!
