@@ -1,0 +1,120 @@
+---
+import TableOfContents from '../RightSidebar/TableOfContents';
+import type { MarkdownHeading } from 'astro';
+
+type Props = {
+	headings: MarkdownHeading[];
+};
+
+const { headings } = Astro.props as Props;
+---
+
+{headings.length > 0 && (
+	<details class="mobile-toc">
+		<summary class="mobile-toc-summary">
+			<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<line x1="8" y1="6" x2="21" y2="6" />
+				<line x1="8" y1="12" x2="21" y2="12" />
+				<line x1="8" y1="18" x2="21" y2="18" />
+				<circle cx="4" cy="6" r="0.5" fill="currentColor" />
+				<circle cx="4" cy="12" r="0.5" fill="currentColor" />
+				<circle cx="4" cy="18" r="0.5" fill="currentColor" />
+			</svg>
+			<span class="mobile-toc-label">On this page</span>
+			<svg class="mobile-toc-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<polyline points="6 9 12 15 18 9" />
+			</svg>
+		</summary>
+		<div class="mobile-toc-body">
+			<TableOfContents client:media="(max-width: 72em)" headings={headings} />
+		</div>
+	</details>
+)}
+
+<style>
+	.mobile-toc {
+		position: sticky;
+		top: var(--theme-navbar-height);
+		z-index: 8;
+		background: var(--theme-navbar-bg);
+		backdrop-filter: saturate(180%) blur(12px);
+		-webkit-backdrop-filter: saturate(180%) blur(12px);
+		border-bottom: 1px solid var(--theme-border);
+	}
+
+	.mobile-toc-summary,
+	.mobile-toc-summary * {
+		user-select: none;
+		-webkit-user-select: none;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.mobile-toc-summary {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		padding: 0.65rem 1rem;
+		font-size: 0.85rem;
+		font-weight: 500;
+		color: var(--theme-text);
+		cursor: pointer;
+		list-style: none;
+		touch-action: manipulation;
+	}
+
+	.mobile-toc-summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.mobile-toc-summary > svg:first-of-type {
+		color: var(--theme-text-light);
+		flex-shrink: 0;
+	}
+
+	.mobile-toc-label {
+		flex: 1;
+	}
+
+	.mobile-toc-chevron {
+		color: var(--theme-text-muted);
+		transition: transform 160ms ease;
+	}
+
+	.mobile-toc[open] .mobile-toc-chevron {
+		transform: rotate(180deg);
+	}
+
+	.mobile-toc-body {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		right: 0;
+		max-height: min(60vh, 24rem);
+		overflow-y: auto;
+		padding: 0.6rem 1rem 0.9rem;
+		background: var(--theme-bg);
+		border-top: 1px solid var(--theme-border);
+		border-bottom: 1px solid var(--theme-border);
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+	}
+
+	:root.theme-dark .mobile-toc-body {
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+	}
+
+	.mobile-toc-body :global(.heading) {
+		display: none;
+	}
+
+	.mobile-toc-body :global(.toc-list) {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	@media (min-width: 72em) {
+		.mobile-toc {
+			display: none;
+		}
+	}
+</style>

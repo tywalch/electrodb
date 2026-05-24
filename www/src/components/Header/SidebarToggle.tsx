@@ -6,11 +6,29 @@ const MenuToggle: FunctionalComponent = () => {
   const [sidebarShown, setSidebarShown] = useState(false);
 
   useEffect(() => {
+    const close = () => setSidebarShown(false);
+    window.addEventListener("softnav:done", close);
+    return () => window.removeEventListener("softnav:done", close);
+  }, []);
+
+  useEffect(() => {
     const body = document.querySelector("body")!;
     if (sidebarShown) {
+      const scrollbarWidth =
+        window.innerWidth - document.documentElement.clientWidth;
+      const previousOverflow = body.style.overflow;
+      const previousPaddingRight = body.style.paddingRight;
+      body.style.overflow = "hidden";
+      if (scrollbarWidth > 0) {
+        const current = parseFloat(getComputedStyle(body).paddingRight) || 0;
+        body.style.paddingRight = `${current + scrollbarWidth}px`;
+      }
       body.classList.add("mobile-sidebar-toggle");
-    } else {
-      body.classList.remove("mobile-sidebar-toggle");
+      return () => {
+        body.style.overflow = previousOverflow;
+        body.style.paddingRight = previousPaddingRight;
+        body.classList.remove("mobile-sidebar-toggle");
+      };
     }
   }, [sidebarShown]);
 

@@ -1,0 +1,117 @@
+---
+type Feature = {
+	title: string;
+	body: string;
+	icon: 'shield' | 'layers' | 'zap' | 'sparkles';
+};
+
+const features: Feature[] = [
+	{
+		icon: 'shield',
+		title: 'End-to-end type safety',
+		body: 'Your schema becomes your types. Autocomplete on attributes, indexes, and return values — typos and shape errors fail at compile time, not 3am.',
+	},
+	{
+		icon: 'layers',
+		title: 'Single-table design, simplified',
+		body: 'Define entities once and ElectroDB handles partition keys, sort keys, GSIs, and entity isolation. Multiple entities, one table, no spaghetti.',
+	},
+	{
+		icon: 'zap',
+		title: 'Queries that compose',
+		body: 'Chain get, put, update, patch, query, and scan with first-class filter and condition expressions. Batch and transactional operations work the same way.',
+	},
+	{
+		icon: 'sparkles',
+		title: 'Drop-in for any AWS setup',
+		body: 'Works with the AWS SDK v2 or v3, in Node, Lambda, or edge runtimes. ElectroDB outputs plain DynamoDB params — easy to log, inspect, and combine with whatever you already have.',
+	},
+];
+
+const icons: Record<Feature['icon'], string> = {
+	shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+	layers:
+		'<path d="m12 2 9 5-9 5-9-5 9-5z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',
+	zap: '<path d="M13 2L4.5 13.5h6L11 22l8.5-11.5h-6L13 2Z"/>',
+	sparkles:
+		'<path d="m12 3-1.5 4.5L6 9l4.5 1.5L12 15l1.5-4.5L18 9l-4.5-1.5L12 3z"/><path d="M5 17l-1 2 2 1-2 1 1 2 1-2 2-1-2-1z"/>',
+};
+---
+
+<section class="features">
+	{
+		features.map((f) => (
+			<article class="feature-card">
+				<div class="feature-icon">
+					<svg
+						viewBox="0 0 24 24"
+						width="18"
+						height="18"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+						set:html={icons[f.icon]}
+					/>
+				</div>
+				<h3 class="feature-title">{f.title}</h3>
+				<p class="feature-body">{f.body}</p>
+			</article>
+		))
+	}
+</section>
+
+<style>
+	.features {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1rem;
+		margin: 1.5rem 0 3rem;
+		padding-left: 0;
+	}
+
+	.feature-card {
+		position: relative;
+		padding: 1.4rem 1.4rem 1.5rem;
+		background: var(--theme-bg-elevated);
+		border: 1px solid var(--theme-border);
+		border-radius: var(--radius-lg);
+	}
+
+	.feature-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border-radius: var(--radius);
+		background: var(--theme-bg-accent);
+		color: var(--theme-accent);
+		margin-bottom: 0.9rem;
+	}
+
+	.feature-title {
+		font-size: 1rem;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		margin: 0 0 0.4rem;
+		color: var(--theme-text);
+		border-bottom: 0;
+		padding-bottom: 0;
+	}
+
+	.feature-body {
+		font-size: 0.9rem;
+		line-height: 1.55;
+		color: var(--theme-text-light);
+		margin: 0;
+	}
+
+	@media (min-width: 40em) {
+		.features {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+</style>

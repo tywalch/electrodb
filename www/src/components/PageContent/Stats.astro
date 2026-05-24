@@ -1,0 +1,209 @@
+---
+type StatIcon = 'download' | 'star';
+
+type Stat = {
+	label: string;
+	fallback: string;
+	href?: string;
+	endpoint?: 'npm-downloads' | 'github-stars';
+	format?: 'full' | 'abbrev';
+	animated?: boolean;
+	icon?: StatIcon;
+};
+
+const icons: Record<StatIcon, string> = {
+	download:
+		'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+	star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+};
+
+const stats: Stat[] = [
+	{
+		label: 'downloads / month',
+		fallback: '—',
+		endpoint: 'npm-downloads',
+		format: 'full',
+		animated: true,
+		icon: 'download',
+		href: 'https://www.npmjs.com/package/electrodb',
+	},
+	{
+		label: 'GitHub stars',
+		fallback: '—',
+		endpoint: 'github-stars',
+		format: 'abbrev',
+		icon: 'star',
+		href: 'https://github.com/tywalch/electrodb/stargazers',
+	},
+];
+---
+
+<div class="stats">
+	{
+		stats.map((s) => {
+			const ariaLabel = `${s.label}`;
+			const skeletonWidth = s.format === 'full' ? '8ch' : '4ch';
+			const iconPath = s.icon ? icons[s.icon] : null;
+			const inner = (
+				<>
+					{iconPath && (
+						<span class="stats-icon" aria-hidden="true">
+							<svg
+								viewBox="0 0 24 24"
+								width="22"
+								height="22"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								set:html={iconPath}
+							/>
+						</span>
+					)}
+					<span class="stats-text">
+						<span
+							class="stats-value"
+							data-endpoint={s.endpoint}
+							data-format={s.format}
+							data-animated={s.animated ? 'true' : undefined}
+						>
+							{s.endpoint ? (
+								<span
+									class="stats-skeleton"
+									style={`--skeleton-width: ${skeletonWidth}`}
+									aria-hidden="true"
+								/>
+							) : (
+								s.fallback
+							)}
+						</span>
+						<span class="stats-label">{s.label}</span>
+					</span>
+				</>
+			);
+			return s.href ? (
+				<a
+					class="stats-item"
+					href={s.href}
+					target="_blank"
+					rel="noopener noreferrer"
+					aria-label={ariaLabel}
+				>
+					{inner}
+				</a>
+			) : (
+				<div class="stats-item" aria-label={ariaLabel}>{inner}</div>
+			);
+		})
+	}
+</div>
+
+<style>
+	.stats {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1px;
+		background: var(--theme-border);
+		border: 1px solid var(--theme-border);
+		border-radius: var(--radius-lg);
+		overflow: hidden;
+		margin: 2.5rem 0 3rem;
+	}
+
+	.stats-item {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: flex-start;
+		gap: 0.9rem;
+		padding: 1.1rem 1.25rem;
+		background: var(--theme-bg);
+		text-decoration: none;
+		color: inherit;
+		transition: background 120ms ease;
+	}
+
+	.stats-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 24px;
+		height: 24px;
+		color: var(--theme-text-muted);
+		flex-shrink: 0;
+	}
+
+	.stats-text {
+		display: flex;
+		flex-direction: column;
+		gap: 0.45rem;
+		align-items: flex-start;
+		min-width: 0;
+	}
+
+	a.stats-item:hover {
+		background: var(--theme-bg-hover);
+		text-decoration: none;
+	}
+
+	.stats-value {
+		display: inline-flex;
+		align-items: center;
+		height: 1.65rem;
+		font-size: 1.5rem;
+		font-weight: 700;
+		letter-spacing: -0.02em;
+		color: var(--theme-text);
+		font-variant-numeric: tabular-nums;
+		line-height: 1.1;
+	}
+
+	.stats-skeleton {
+		display: inline-block;
+		width: var(--skeleton-width, 6ch);
+		height: 1.65rem;
+		border-radius: 6px;
+		background: linear-gradient(
+			90deg,
+			var(--theme-bg-hover) 0%,
+			var(--theme-bg-elevated) 50%,
+			var(--theme-bg-hover) 100%
+		);
+		background-size: 200% 100%;
+		animation: stats-skeleton-shimmer 1.4s linear infinite;
+	}
+
+	@keyframes stats-skeleton-shimmer {
+		0% {
+			background-position: 200% 0;
+		}
+		100% {
+			background-position: -200% 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.stats-skeleton {
+			animation: none;
+		}
+	}
+
+	.stats-label {
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--theme-text-muted);
+		font-weight: 500;
+	}
+
+	@media (min-width: 40em) {
+		.stats {
+			grid-template-columns: repeat(2, 1fr);
+		}
+
+		.stats-item {
+			justify-content: center;
+		}
+	}
+</style>

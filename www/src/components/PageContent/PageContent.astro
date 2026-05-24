@@ -1,44 +1,67 @@
 ---
 import type { Frontmatter } from '../../config';
 import MoreMenu from '../RightSidebar/MoreMenu.astro';
-import TableOfContents from '../RightSidebar/TableOfContents';
 import type { MarkdownHeading } from 'astro';
 
 type Props = {
 	frontmatter: Frontmatter;
 	headings: MarkdownHeading[];
 	githubEditUrl: string;
+	hideMoreMenu?: boolean;
 };
 
-const { frontmatter, headings, githubEditUrl } = Astro.props as Props;
+const { frontmatter, headings, githubEditUrl, hideMoreMenu } = Astro.props as Props;
 const title = frontmatter.title;
+const description = frontmatter.description;
 ---
 
 <article id="article" class="content">
 	<section class="main-section">
-		{ title && <h1 class="content-title" id="overview">{title}</h1> }
-		<nav class="block sm:hidden">
-			<TableOfContents client:media="(max-width: 50em)" headings={headings} />
-		</nav>
+		{title && (
+			<header class="page-header">
+				<h1 class="content-title" id="overview">{title}</h1>
+				{description && <p class="page-description">{description}</p>}
+			</header>
+		)}
 		<slot />
 	</section>
-	<nav class="block sm:hidden">
-		<MoreMenu editHref={githubEditUrl} />
-	</nav>
+	{!hideMoreMenu && (
+		<nav class="block sm:hidden">
+			<MoreMenu editHref={githubEditUrl} />
+		</nav>
+	)}
 </article>
 
 <style>
 	.content {
 		padding: 0;
-		/* max-width: 75ch; */
 		width: 100%;
-		height: 100%;
 		display: flex;
 		flex-direction: column;
 	}
 
 	.content > section {
 		margin-bottom: 4rem;
+	}
+
+	.page-header {
+		margin-bottom: 2rem;
+	}
+
+	.content-title {
+		font-size: 2.25rem;
+		font-weight: 800;
+		letter-spacing: -0.035em;
+		line-height: 1.1;
+		margin-bottom: 0.5rem;
+		color: var(--theme-text);
+	}
+
+	.page-description {
+		font-size: 1.05rem;
+		color: var(--theme-text-light);
+		line-height: 1.55;
+		margin: 0;
 	}
 
 	.block {

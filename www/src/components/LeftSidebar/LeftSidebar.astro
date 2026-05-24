@@ -7,31 +7,45 @@ type Props = {
 };
 
 const { currentPage } = Astro.props as Props;
-const currentPageMatch = currentPage.slice(1);
+const normalizePath = (p: string) => p.replace(/\/$/, "");
+const currentPageMatch = normalizePath(currentPage.slice(1));
 const langCode = getLanguageFromURL(currentPage);
 const sidebar = SIDEBAR[langCode];
 ---
 
 <nav aria-labelledby="grid-left">
-  <ul class="nav-groups">
-    <a href="https://electrodb.fun" class="top-level-link" target="_blank" rel="noopener noreferrer">
-      <h4>ElectroDB Playground ›</h4>
+  <div class="nav-scroll">
+    <a
+      href="https://electrodb.fun"
+      class="playground-cta"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polygon points="5 3 19 12 5 21 5 3" />
+      </svg>
+      <span>Open Playground</span>
+      <svg class="arrow" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M7 17 17 7" />
+        <path d="M7 7h10v10" />
+      </svg>
     </a>
-    {
-      Object.entries(sidebar).map(([header, children]) => (
-        <li>
-          <div class="nav-group">
-            <h4>{header}</h4>
+
+    <ul class="nav-groups">
+      {
+        Object.entries(sidebar).map(([header, children]) => (
+          <li class="nav-group">
+            <h4 class="nav-group-title">{header}</h4>
             <ul>
               {children.map((child) => {
                 const url = Astro.site?.pathname + child.link;
+                const isActive = currentPageMatch === normalizePath(child.link);
                 return (
                   <li class="nav-link">
                     <a
                       href={url}
-                      aria-current={
-                        currentPageMatch === child.link ? "page" : false
-                      }
+                      aria-current={isActive ? "page" : false}
+                      class={isActive ? "active" : ""}
                     >
                       {child.text}
                     </a>
@@ -39,96 +53,135 @@ const sidebar = SIDEBAR[langCode];
                 );
               })}
             </ul>
-          </div>
-        </li>
-      ))
-    }
-  </ul>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
 </nav>
 
 <script is:inline>
-  window.addEventListener("DOMContentLoaded", () => {
-    var target = document.querySelector('[aria-current="page"]');
-    if (target && target.offsetTop > window.innerHeight - 100) {
-      document.querySelector(".nav-groups").scrollTop = target.offsetTop;
+  (() => {
+    const scrollActiveIntoView = () => {
+      const target = document.querySelector('[aria-current="page"]');
+      const scroller = document.querySelector(".nav-scroll");
+      if (!target || !scroller) return;
+      const targetTop = target.offsetTop;
+      const visibleTop = scroller.scrollTop;
+      const visibleBottom = visibleTop + scroller.clientHeight;
+      if (targetTop < visibleTop || targetTop > visibleBottom - 100) {
+        scroller.scrollTop = Math.max(0, targetTop - 120);
+      }
+    };
+    if (document.readyState === "loading") {
+      window.addEventListener("DOMContentLoaded", scrollActiveIntoView, {
+        once: true,
+      });
+    } else {
+      scrollActiveIntoView();
     }
-  });
+    window.addEventListener("softnav:done", scrollActiveIntoView);
+  })();
 </script>
 
 <style>
   nav {
     width: 100%;
-    margin-right: 1rem;
+    height: 100%;
+  }
+
+  .nav-scroll {
+    height: 100%;
+    padding: 1.5rem 0.75rem 2rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .playground-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.55rem 0.85rem;
+    margin-bottom: 1.5rem;
+    background: var(--theme-bg-elevated);
+    border: 1px solid var(--theme-border);
+    border-radius: var(--radius);
+    color: var(--theme-text);
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  }
+
+  .playground-cta:hover {
+    background: var(--theme-bg-hover);
+    border-color: var(--theme-border-strong);
+    color: var(--theme-text-accent);
+    text-decoration: none;
+  }
+
+  .playground-cta > span {
+    flex: 1;
+  }
+
+  .playground-cta .arrow {
+    opacity: 0.6;
   }
 
   .nav-groups {
-    height: 100%;
-    padding: 2rem 1rem;
-    overflow-x: visible;
-    overflow-y: auto;
-    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
   }
 
-  .nav-groups > li + li {
-    margin-top: 2rem;
-  }
-
-  .nav-groups > :first-child {
-    padding-top: var(--doc-padding);
-  }
-
-  .nav-groups > :last-child {
-    padding-bottom: 2rem;
-    margin-bottom: var(--theme-navbar-height);
+  .nav-group ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
   }
 
   .nav-group-title {
-    font-size: 1rem;
-    font-weight: 700;
-    padding: 0.1rem 1rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    margin-bottom: 0.5rem;
+    margin: 0 0 0.4rem 0.75rem;
+    color: var(--theme-text-muted);
+  }
+
+  .nav-link {
+    list-style: none;
   }
 
   .nav-link a {
-    font-size: 1rem;
-    margin: 1px;
-    padding: 0.3rem 1rem;
-    font: inherit;
-    color: inherit;
-    text-decoration: none;
     display: block;
+    font-size: 0.875rem;
+    padding: 0.3rem 0.75rem;
+    color: var(--theme-text-light);
+    text-decoration: none;
+    border-radius: var(--radius);
+    line-height: 1.4;
+    transition: color 120ms ease, background 120ms ease;
   }
 
   .nav-link a:hover,
   .nav-link a:focus {
-    background-color: var(--theme-bg-hover);
+    color: var(--theme-text);
+    background: var(--theme-bg-hover);
+    text-decoration: none;
   }
 
+  .nav-link a.active,
   .nav-link a[aria-current="page"] {
     color: var(--theme-text-accent);
-    background-color: var(--theme-bg-accent);
-    font-weight: 600;
-  }
-
-  .top-level-link {
-    text-decoration-line: none;
-  }
-
-  .top-level-link:hover,
-  .top-level-link:focus {
-    text-decoration-line: underline;
-  }
-
-  @media (min-width: 50em) {
-    .nav-groups {
-      padding: 0;
-    }
-  }
-</style>
-
-<style is:global>
-  :root.theme-dark .nav-link a[aria-current="page"] {
-    color: hsla(var(--color-base-white), 100%, 1);
+    background: var(--theme-bg-accent);
+    font-weight: 500;
   }
 </style>

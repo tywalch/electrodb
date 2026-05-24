@@ -153,11 +153,12 @@ A logger callback function can be provided both the at the instantiation of an `
 _On the instantiation of an `Entity`:_
 
 ```typescript
-import { DynamoDB } from "aws-sdk";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { Entity, ElectroEvent } from "electrodb";
 
 const table = "my_table_name";
-const client = new DynamoDB.DocumentClient();
+const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const logger = (event: ElectroEvent) => {
   console.log(JSON.stringify(event, null, 4));
 };
@@ -177,11 +178,12 @@ const task = new Entity(
 _On the instantiation of an `Service`:_
 
 ```typescript
-import { DynamoDB } from "aws-sdk";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { Entity, ElectroEvent } from "electrodb";
 
 const table = "my_table_name";
-const client = new DynamoDB.DocumentClient();
+const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const logger = (event: ElectroEvent) => {
   console.log(JSON.stringify(event, null, 4));
 };
@@ -223,11 +225,12 @@ ElectroDB can be supplied with callbacks (called "Listeners") to be invoked afte
 _On the instantiation of an `Entity`:_
 
 ```typescript
-import { DynamoDB } from "aws-sdk";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { Entity, ElectroEvent } from "electrodb";
 
 const table = "my_table_name";
-const client = new DynamoDB.DocumentClient();
+const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const listener1 = (event: ElectroEvent) => {
   // do work
 };
@@ -254,11 +257,12 @@ const task = new Entity(
 _On the instantiation of an `Service`:_
 
 ```typescript
-import { DynamoDB } from "aws-sdk";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { Entity, ElectroEvent } from "electrodb";
 
 const table = "my_table_name";
-const client = new DynamoDB.DocumentClient();
+const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const listener1 = (event: ElectroEvent) => {
   // do work

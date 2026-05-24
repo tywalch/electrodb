@@ -19,9 +19,10 @@ layout: ../../../layouts/MainLayout.astro
 Collections allow you to query across Entities. They can be used on `Service` instance.
 
 ```javascript
-const DynamoDB = require("aws-sdk/clients/dynamodb");
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBDocumentClient } = require("@aws-sdk/lib-dynamodb");
 const table = "projectmanagement";
-const client = new DynamoDB.DocumentClient();
+const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const employees = new Entity(
   {
