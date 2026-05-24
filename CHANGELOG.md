@@ -654,3 +654,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ## [3.7.5]
 - [Issue #554](https://github.com/tywalch/electrodb/issues/554); Fixed `hydrate: true` returning no items when querying composite type indexes with `keys_only` or `include` projections.
+
+## [3.8.0]
+### Added
+- [Issue #545](https://github.com/tywalch/electrodb/issues/545); Added support for passing an `abortSignal` to the `go()` query options, allowing users to cancel in-flight DynamoDB requests.

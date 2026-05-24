@@ -517,7 +517,8 @@ class Entity {
     };
     const dynamoDBMethod = MethodTypeTranslation[method];
     const client = config.client || this.client;
-    return client[dynamoDBMethod](params)
+    const clientOptions = { abortSignal: config.abortSignal };
+    return client[dynamoDBMethod](params, clientOptions)
       .promise()
       .then((results) => {
         notifyQuery();
@@ -531,7 +532,10 @@ class Entity {
           enumerable: false,
           value: params,
         });
-        err.__isAWSError = true;
+        // Only mark as AWS error if it's not already an ElectroError
+        if (!err.isElectroError) {
+          err.__isAWSError = true;
+        }
         throw err;
       });
   }
@@ -544,6 +548,12 @@ class Entity {
     let concurrent = this._normalizeConcurrencyValue(config.concurrent);
     let concurrentOperations = u.batchItems(parameters, concurrent);
     for (let operation of concurrentOperations) {
+      if (config.abortSignal && config.abortSignal.aborted) {
+        throw new e.ElectroError(
+          e.ErrorCodes.OperationAborted,
+          "The operation was aborted",
+        );
+      }
       await Promise.all(
         operation.map(async (params) => {
           let response = await this._exec(
@@ -619,6 +629,12 @@ class Entity {
       : [];
     let unprocessedAll = [];
     for (let operation of concurrentOperations) {
+      if (config.abortSignal && config.abortSignal.aborted) {
+        throw new e.ElectroError(
+          e.ErrorCodes.OperationAborted,
+          "The operation was aborted",
+        );
+      }
       await Promise.all(
         operation.map(async (params) => {
           let response = await this._exec(MethodTypes.batchGet, params, config);
@@ -701,6 +717,12 @@ class Entity {
       config.hydrate &&
       (method === MethodTypes.query || method === MethodTypes.scan);
     do {
+      if (config.abortSignal && config.abortSignal.aborted) {
+        throw new e.ElectroError(
+          e.ErrorCodes.OperationAborted,
+          "The operation was aborted",
+        );
+      }
       let response = await this._exec(
         method,
         { ExclusiveStartKey, ...parameters },
@@ -1682,6 +1704,7 @@ class Entity {
       hydrator: (_entity, _indexName, items) => items,
       _objectOnEmpty: false,
       _includeOnResponseItem: {},
+      abortSignal: undefined,
     };
 
     // Auto-set ignoreOwnership: true for INCLUDE or KEYS_ONLY indexes
@@ -1936,6 +1959,16 @@ class Entity {
 
       if (option.client !== undefined) {
         config.client = c.normalizeClient(option.client);
+      }
+
+      if (option.abortSignal !== undefined) {
+        if (!validations.isAbortSignal(option.abortSignal)) {
+          throw new e.ElectroError(
+            e.ErrorCodes.InvalidOptions,
+            "Invalid 'abortSignal' option provided. Expected an AbortSignal-like object with an 'aborted' boolean and 'addEventListener'/'removeEventListener' methods.",
+          );
+        }
+        config.abortSignal = option.abortSignal;
       }
 
       if (option._includeOnResponseItem) {

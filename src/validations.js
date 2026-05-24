@@ -371,6 +371,16 @@ function isFunction(value) {
   return typeof value === "function";
 }
 
+function isAbortSignal(value) {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    typeof value.aborted === "boolean" &&
+    typeof value.addEventListener === "function" &&
+    typeof value.removeEventListener === "function"
+  );
+}
+
 function stringArrayMatch(arr1, arr2) {
   let areArrays = Array.isArray(arr1) && Array.isArray(arr2);
   let match = areArrays && arr1.length === arr2.length;
@@ -418,6 +428,7 @@ function isMatchingProjection(received, expected) {
 module.exports = {
   testModel,
   isFunction,
+  isAbortSignal,
   stringArrayMatch,
   isMatchingProjection,
   isMatchingCasing,
