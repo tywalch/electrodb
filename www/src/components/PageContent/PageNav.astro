@@ -1,0 +1,166 @@
+---
+import { getLanguageFromURL } from '../../languages';
+import { SIDEBAR } from '../../config';
+
+type Props = {
+	currentPage: string;
+};
+
+const { currentPage } = Astro.props as Props;
+const lang = getLanguageFromURL(currentPage);
+const sidebar = SIDEBAR[lang];
+
+type FlatEntry = { text: string; link: string; section: string };
+const flat: FlatEntry[] = Object.entries(sidebar).flatMap(
+	([section, entries]) => entries.map((entry) => ({ ...entry, section })),
+);
+const normalized = currentPage.replace(/\/$/, '').replace(/^\//, '');
+const idx = flat.findIndex((entry) => entry.link === normalized);
+
+const prev = idx > 0 ? flat[idx - 1] : null;
+const next = idx >= 0 && idx < flat.length - 1 ? flat[idx + 1] : null;
+---
+
+{(prev || next) && (
+	<nav class="page-nav" aria-label="Page navigation">
+		{prev ? (
+			<a class="page-nav-link page-nav-prev" href={`/${prev.link}`} rel="prev" aria-label={`Previous: ${prev.text}`}>
+				<svg
+					class="page-nav-arrow"
+					viewBox="0 0 24 24"
+					width="16"
+					height="16"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<line x1="19" y1="12" x2="5" y2="12" />
+					<polyline points="12 19 5 12 12 5" />
+				</svg>
+				<span class="page-nav-text">
+					<span class="page-nav-section">{prev.section}</span>
+					<span class="page-nav-title">{prev.text}</span>
+				</span>
+			</a>
+		) : (
+			<span />
+		)}
+		{next ? (
+			<a class="page-nav-link page-nav-next" href={`/${next.link}`} rel="next" aria-label={`Next: ${next.text}`}>
+				<span class="page-nav-text">
+					<span class="page-nav-section">{next.section}</span>
+					<span class="page-nav-title">{next.text}</span>
+				</span>
+				<svg
+					class="page-nav-arrow"
+					viewBox="0 0 24 24"
+					width="16"
+					height="16"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<line x1="5" y1="12" x2="19" y2="12" />
+					<polyline points="12 5 19 12 12 19" />
+				</svg>
+			</a>
+		) : (
+			<span />
+		)}
+	</nav>
+)}
+
+<style>
+	.page-nav {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.75rem;
+		margin: 3rem 0 1.5rem;
+		padding-top: 2rem;
+		border-top: 1px solid var(--theme-border);
+	}
+
+	.page-nav-link {
+		display: flex;
+		align-items: center;
+		gap: 0.85rem;
+		padding: 0.95rem 1.1rem;
+		background: var(--theme-bg-elevated);
+		border: 1px solid var(--theme-border);
+		border-radius: var(--radius);
+		color: var(--theme-text);
+		text-decoration: none;
+		transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+		min-width: 0;
+	}
+
+	.page-nav-link:hover,
+	.page-nav-link:focus,
+	.page-nav-link:focus-visible {
+		border-color: var(--theme-border-strong);
+		background: var(--theme-bg-hover);
+		text-decoration: none;
+	}
+
+	.page-nav-next {
+		justify-content: flex-end;
+		text-align: right;
+	}
+
+	.page-nav-arrow {
+		color: var(--theme-text-muted);
+		flex-shrink: 0;
+		transition: color 120ms ease, transform 120ms ease;
+	}
+
+	.page-nav-link:hover .page-nav-arrow {
+		color: var(--theme-text-accent);
+	}
+
+	.page-nav-prev:hover .page-nav-arrow {
+		transform: translateX(-2px);
+	}
+
+	.page-nav-next:hover .page-nav-arrow {
+		transform: translateX(2px);
+	}
+
+	.page-nav-text {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+		min-width: 0;
+		overflow: hidden;
+	}
+
+	.page-nav-section {
+		font-size: 0.72rem;
+		font-weight: 500;
+		color: var(--theme-text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+	}
+
+	.page-nav-title {
+		font-size: 0.95rem;
+		font-weight: 600;
+		color: var(--theme-text);
+		line-height: 1.3;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	@media (max-width: 50em) {
+		.page-nav {
+			grid-template-columns: 1fr;
+			gap: 0.5rem;
+		}
+	}
+</style>

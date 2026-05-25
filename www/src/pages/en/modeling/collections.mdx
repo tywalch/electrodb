@@ -138,10 +138,11 @@ const Task = new Entity({
 ### Example
 
 ```typescript
-import DynamoDB from "aws-sdk/clients/dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 const table = "projectmanagement";
-const client = new DynamoDB.DocumentClient();
+const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const TaskApp = new Service({
   employee: Employee,
@@ -508,10 +509,11 @@ const projectMembers = new Entity({
 ```
 
 ```typescript
-import DynamoDB from "aws-sdk/clients/dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 const table = "projectmanagement";
-const client = new DynamoDB.DocumentClient();
+const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const TaskApp = new Service(
   {

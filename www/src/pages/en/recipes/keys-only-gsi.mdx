@@ -84,10 +84,11 @@ It is common to define a Global Secondary Index using a `KEYS_ONLY` projection. 
         <summary>Example Entity</summary>
 
         ```typescript
-        import DynamoDB from "aws-sdk/clients/dynamodb";
+        import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+        import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
         import { Entity } from 'electrodb';
 
-        const client = new DynamoDB.DocumentClient();
+        const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
         const table = 'electro';
 

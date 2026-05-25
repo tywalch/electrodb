@@ -21,10 +21,11 @@ ElectroDB was created with Single-Table Design in mind. As a result, entities cr
 Entities are defined via a [Schema](/en/modeling/schema), passed to the Entity's constructor.
 
 ```typescript
-import DynamoDB from "aws-sdk/clients/dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { Entity } from "electrodb";
 
-const client = new DynamoDB.DocumentClient();
+const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const table = "electro";
 
@@ -107,4 +108,4 @@ Additionally, as a second parameter to the constructor, ElectroDB accepts an "op
 | Property | Description                                                                                                                                                                                                                              |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | table    | The name of the dynamodb table in aws.                                                                                                                                                                                                   |
-| client   | (optional) An instance of the `docClient` from the `aws-sdk` for use when querying a DynamoDB table. This is optional if you wish to only use the `params` functionality, or if you intend to provide the client dynamically at query time via [execution options](/en/core-concepts/executing-queries#execution-options). |
+| client   | (optional) A DynamoDB document client (e.g. `DynamoDBDocumentClient` from `@aws-sdk/lib-dynamodb`) for use when querying a DynamoDB table. This is optional if you wish to only use the `params` functionality, or if you intend to provide the client dynamically at query time via [execution options](/en/core-concepts/executing-queries#execution-options). |

@@ -1,10 +1,6 @@
-import react from "react";
+/** @jsxImportSource react */
 import type { FunctionComponent } from "react";
 import "./LinkButton.css";
-
-const ButtonTypeStyle = {
-  default: { backgroundColor: "white", textColor: "black" },
-} as const;
 
 type Props = {
   href: string;
@@ -13,9 +9,8 @@ type Props = {
 };
 
 const LinkButton: FunctionComponent<Props> = ({ href, text, alt }) => {
-  const style = alt ? { backgroundColor: "#f9bd00" } : {};
   return (
-    <a className="link-button" href={href} style={style}>
+    <a className={`link-button${alt ? " alt" : ""}`} href={href}>
       {text}
     </a>
   );

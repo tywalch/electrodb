@@ -1,6 +1,9 @@
 # build output
 dist/
 
+# generated pagefind search index (rebuilt by `npm run build` → `pagefind --site dist`)
+public/pagefind/
+
 # dependencies
 node_modules/
 

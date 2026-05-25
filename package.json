@@ -90,6 +90,6 @@
   "dependencies": {
     "@aws-sdk/lib-dynamodb": "^3.654.0",
     "@aws-sdk/util-dynamodb": "^3.654.0",
-    "jsonschema": "1.2.7"
+    "jsonschema": "1.5.0"
   }
 }
