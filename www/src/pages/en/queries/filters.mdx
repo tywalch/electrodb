@@ -109,6 +109,10 @@ animals.query
 
 #### "dynamic" filtering
 
+Operations return the strings that will be directly used in your FilterExpression. This means you always have fine-grain
+control over any FilterExpression. This example joins the results of the `op.eq` operation with an `AND` clause, instead
+of using the `op.and` function.
+
 ```typescript
 type GetAnimalOptions = {
   habitat: string;
@@ -118,9 +122,9 @@ type GetAnimalOptions = {
 function getAnimals(options: GetAnimalOptions) {
   const { habitat, keepers } = options;
   return animals.query.exhibit({ habitat })
-  .where(({ keeper }, { eq }) => {
-    return keepers.map((name) => eq(keeper, name)).join(' AND ');
-  }).go()
+  .where((attr, op) => {
+    return keepers.map((name) => op.eq(attr.keeper, name)).join(' AND ');
+  }).go();
 }
 
 const { data, cursor } = await getAnimals({
