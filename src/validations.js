@@ -284,10 +284,10 @@ v.addSchema(Modelv1, "/Modelv1");
 
 function validateModel(model = {}) {
   /** start beta/v1 condition **/
-  let betaErrors = v.validate(model, "/ModelBeta").errors;
+  let betaErrors = v.validate(model, ModelBeta).errors;
   if (betaErrors.length) {
     /** end/v1 condition **/
-    let errors = v.validate(model, "/Modelv1").errors;
+    let errors = v.validate(model, Modelv1).errors;
     if (errors.length) {
       throw new e.ElectroError(
         e.ErrorCodes.InvalidModel,
@@ -371,6 +371,16 @@ function isFunction(value) {
   return typeof value === "function";
 }
 
+function isAbortSignal(value) {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    typeof value.aborted === "boolean" &&
+    typeof value.addEventListener === "function" &&
+    typeof value.removeEventListener === "function"
+  );
+}
+
 function stringArrayMatch(arr1, arr2) {
   let areArrays = Array.isArray(arr1) && Array.isArray(arr2);
   let match = areArrays && arr1.length === arr2.length;
@@ -418,6 +428,7 @@ function isMatchingProjection(received, expected) {
 module.exports = {
   testModel,
   isFunction,
+  isAbortSignal,
   stringArrayMatch,
   isMatchingProjection,
   isMatchingCasing,

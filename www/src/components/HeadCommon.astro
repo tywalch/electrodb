@@ -8,15 +8,19 @@ import '../styles/index.css';
 <meta name="viewport" content="width=device-width" />
 <meta name="generator" content={Astro.generator} />
 
-<link rel="icon" type="image/png" href="/favicon.png" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="icon" type="image/png" href="/favicon.png" sizes="32x32" />
+<link rel="mask-icon" href="/favicon.svg" color="#2563eb" />
 
 <link rel="sitemap" href="/sitemap.xml" />
+
+<meta name="theme-color" content="#ffffff" />
 
 <!-- Preload Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
-	href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap"
+	href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
 	rel="stylesheet"
 />
 
@@ -25,14 +29,35 @@ import '../styles/index.css';
 
 </script>
 
+<!-- Soft client-side navigation (intercepts internal links, swaps <main>) -->
+<script src="/soft-nav.js" defer is:inline></script>
+
+<!-- Clickable # anchor next to each heading -->
+<script src="/heading-anchors.js" defer is:inline></script>
+
+<!-- Stats fetch + counter animation (runs on intro page) -->
+<script src="/stats-init.js" defer is:inline></script>
+
 <!-- This is intentionally inlined to avoid FOUC -->
 <script is:inline>
 	const root = document.documentElement;
 	const theme = localStorage.getItem('theme');
-	if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+	root.classList.remove('theme-light', 'theme-dark');
+	if (theme === 'dark') {
 		root.classList.add('theme-dark');
-	} else {
-		root.classList.remove('theme-dark');
+	} else if (theme === 'light') {
+		root.classList.add('theme-light');
+	}
+	// If no stored preference, let @media (prefers-color-scheme) decide via CSS.
+	const effectiveDark =
+		theme === 'dark' ||
+		(!theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+	const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+	if (themeColorMeta) {
+		themeColorMeta.setAttribute('content', effectiveDark ? '#09090b' : '#ffffff');
+	}
+	if (!/(Mac|iPhone|iPod|iPad)/i.test(navigator.userAgent)) {
+		root.classList.add('is-pc');
 	}
 </script>
 

@@ -4,11 +4,9 @@ import HeadSEO from '../components/HeadSEO.astro';
 import Header from '../components/Header/Header.astro';
 import PageContent from '../components/PageContent/PageContent.astro';
 import LeftSidebar from '../components/LeftSidebar/LeftSidebar.astro';
-import RightSidebar from '../components/RightSidebar/RightSidebar.astro';
 import * as CONFIG from '../config';
 import type { MarkdownHeading } from 'astro';
 import Footer from '../components/Footer/Footer.astro';
-import Logo from '../components/Header/Logo';
 
 type Props = {
 	frontmatter: CONFIG.Frontmatter;
@@ -33,121 +31,332 @@ const githubEditUrl = `${CONFIG.GITHUB_EDIT_URL}/${currentFile}`;
 			body {
 				width: 100%;
 				display: grid;
+				grid-template-columns: minmax(0, 1fr);
 				grid-template-rows: var(--theme-navbar-height) 1fr;
-				--gutter: 0.5rem;
-				--doc-padding: 2rem;
-			}
-
-			.logo-img {
-				width: '100%';
+				overflow-x: clip;
 			}
 
 			.layout {
-				display: grid;
-				grid-auto-flow: column;
-				grid-template-columns: minmax(var(--gutter), 1fr) minmax(0, calc(var(--max-width) + minmax(
-						var(--gutter),
-						1fr
-					))) 0;
-				overflow-x: hidden;
-			}
-
-			.grid-sidebar {
-				height: 100vh;
-				position: sticky;
-				top: 0;
-				padding: 0;
+				display: block;
+				width: 100%;
+				max-width: 72rem;
+				margin: 0 auto;
+				padding: 0 0.5rem 4rem;
 			}
 
 			#grid-left {
 				position: fixed;
+				top: var(--theme-navbar-height);
+				left: 0;
+				right: 0;
+				bottom: 0;
 				background-color: var(--theme-bg);
-				z-index: 10;
+				z-index: 9;
 				display: none;
+				border-right: 1px solid var(--theme-border);
 			}
 
 			#grid-main {
-				padding: 0 var(--gutter);
-				grid-column: 2;
 				display: flex;
 				flex-direction: column;
-				height: 100%;
+				width: 100%;
+				min-width: 0;
 			}
 
-			#grid-right {
-				display: none;
+			.hero {
+				position: relative;
+				padding: 3rem 0 2.5rem;
+				text-align: center;
+			}
+
+			.hero::before {
+				content: "";
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				left: 50%;
+				width: 100vw;
+				transform: translateX(-50%);
+				background:
+					radial-gradient(circle at 50% 0%, var(--theme-bg-accent), transparent 65%);
+				pointer-events: none;
+				z-index: -1;
+			}
+
+			.hero-title {
+				font-size: clamp(2.75rem, 11vw, 6.5rem);
+				font-weight: 800;
+				letter-spacing: -0.045em;
+				line-height: 1;
+				margin: 0 auto 1.25rem;
+				color: var(--theme-text);
+			}
+
+			.hero-title .electro {
+				font-style: italic;
+				background: linear-gradient(135deg, var(--brand-blue), var(--brand-blue-deep));
+				-webkit-background-clip: text;
+				background-clip: text;
+				color: transparent;
+			}
+
+			:root.theme-dark .hero-title .electro {
+				background: linear-gradient(135deg, var(--brand-blue-soft), var(--brand-blue));
+				-webkit-background-clip: text;
+				background-clip: text;
+				color: transparent;
+			}
+
+			.hero-tagline {
+				font-size: clamp(1rem, 1.8vw, 1.3rem);
+				color: var(--theme-text-light);
+				max-width: 48rem;
+				margin: 0 auto 1.75rem;
+				line-height: 1.55;
+			}
+
+			.hero-actions {
+				display: flex;
+				gap: 0.6rem;
+				flex-direction: column;
+				align-items: stretch;
+				max-width: 22rem;
+				margin: 0 auto;
+			}
+
+			.hero-actions :global(.btn-primary),
+			.hero-actions :global(.btn-secondary) {
+				font-size: 1rem;
+				padding: 0.85rem 1.25rem;
+				width: 100%;
+				justify-content: center;
 			}
 
 			@media (min-width: 50em) {
-				.logo-img {
-					width: '70%';
-				}
-
-				.main-logo {
-					margin-bottom: -2em;
-				}
-
 				.layout {
-					overflow: initial;
-					grid-template-columns: 20rem minmax(0, var(--max-width));
-					gap: 1em;
+					padding: 0 2.5rem 6rem;
 				}
 
-				#grid-left {
-					display: flex;
-					padding-left: 2rem;
-					position: sticky;
-					grid-column: 1;
-				}
-			}
-
-			@media (min-width: 72em) {
-
-				.layout {
-					grid-template-columns: 20rem minmax(0, calc(var(--max-width) + 18rem)) 0rem;
-					padding-left: 0;
-					padding-right: 0;
-					margin: 0 auto;
+				.hero {
+					padding: 6rem 0 4.5rem;
 				}
 
-				#grid-right {
-					grid-column: 3;
-					display: flex;
+				.hero-title {
+					margin-bottom: 1.5rem;
+				}
+
+				.hero-tagline {
+					margin-bottom: 2.5rem;
+				}
+
+				.hero-actions {
+					display: inline-flex;
+					flex-direction: row;
+					gap: 0.85rem;
+					max-width: none;
+					margin: 0;
+					align-items: center;
+				}
+
+				.hero-actions :global(.btn-primary),
+				.hero-actions :global(.btn-secondary) {
+					width: auto;
+					padding: 0.75rem 1.25rem;
 				}
 			}
 		</style>
 		<style is:global>
-			.layout > * {
-				width: 100%;
-				height: 100%;
-			}
-
-			.mobile-sidebar-toggle {
-				overflow: hidden;
+			.intro-page {
+				--content-max-width: 64rem;
 			}
 
 			.mobile-sidebar-toggle #grid-left {
 				display: block;
-				top: 2rem;
+			}
+
+			.intro-page .stats {
+				margin: 0.5rem 0 2.5rem;
+			}
+
+			.intro-page .stats-item {
+				padding: 1.1rem 1rem;
+			}
+
+			.intro-page .stats-value {
+				font-size: clamp(1.5rem, 4vw, 2.5rem);
+				letter-spacing: -0.03em;
+			}
+
+			.intro-page .stats-label {
+				font-size: 0.75rem;
+			}
+
+			.intro-page article h2 {
+				font-size: clamp(1.5rem, 3vw, 2.25rem);
+				border-bottom: 0;
+				padding-bottom: 0;
+				margin-top: 2.5rem;
+				margin-bottom: 0.85rem;
+				letter-spacing: -0.03em;
+				max-width: none;
+			}
+
+			.intro-page article p {
+				font-size: clamp(0.95rem, 1.4vw, 1.05rem);
+				line-height: 1.7;
+				max-width: 56rem;
+			}
+
+			.intro-page .features {
+				gap: 1rem;
+				margin: 1.5rem 0 2.5rem;
+			}
+
+			.intro-page .feature-card {
+				padding: 1.25rem 1.25rem 1.4rem;
+			}
+
+			.intro-page .feature-icon {
+				width: 36px;
+				height: 36px;
+				margin-bottom: 0.9rem;
+			}
+
+			.intro-page .feature-title {
+				font-size: 1.05rem;
+				margin-bottom: 0.4rem;
+			}
+
+			.intro-page .feature-body {
+				font-size: 0.9rem;
+			}
+
+			.intro-page .comparison {
+				margin: 1rem 0 2.5rem;
+			}
+
+			.intro-page .intro-cta {
+				display: flex;
+				flex-direction: column;
+				gap: 0.6rem;
+				margin: 1.5rem auto 1rem;
+				max-width: 22rem;
+			}
+
+			.intro-page .intro-cta .btn-primary,
+			.intro-page .intro-cta .btn-secondary {
+				width: 100%;
+				justify-content: center;
+				font-size: 1rem;
+				padding: 0.85rem 1.25rem;
+			}
+
+			@media (min-width: 50em) {
+				.intro-page .intro-cta {
+					flex-direction: row;
+					align-items: center;
+					gap: 0.85rem;
+					max-width: none;
+					margin: 1.5rem 0 1rem;
+				}
+
+				.intro-page .intro-cta .btn-primary,
+				.intro-page .intro-cta .btn-secondary {
+					width: auto;
+					font-size: 1rem;
+					padding: 0.85rem 1.5rem;
+				}
+			}
+
+			.intro-page .comparison pre {
+				font-size: 0.95rem;
+				line-height: 1.65;
+				padding: 1.1rem 1.25rem;
+			}
+
+			@media (min-width: 50em) {
+				.intro-page .comparison pre {
+					font-size: 1rem;
+					padding: 1.4rem 1.6rem;
+				}
+			}
+
+			@media (min-width: 50em) {
+				.intro-page .stats {
+					margin: 1rem 0 4rem;
+				}
+
+				.intro-page .stats-item {
+					padding: 1.5rem 1.25rem;
+				}
+
+				.intro-page article h2 {
+					margin-top: 3.5rem;
+					margin-bottom: 1rem;
+				}
+
+				.intro-page .features {
+					gap: 1.25rem;
+					margin: 2rem 0 4rem;
+				}
+
+				.intro-page .feature-card {
+					padding: 1.65rem 1.55rem 1.75rem;
+				}
+
+				.intro-page .feature-icon {
+					width: 40px;
+					height: 40px;
+					margin-bottom: 1.1rem;
+				}
+
+				.intro-page .feature-title {
+					font-size: 1.15rem;
+				}
+
+				.intro-page .feature-body {
+					font-size: 0.95rem;
+				}
 			}
 		</style>
 	</head>
 
 	<body>
-		<Header currentPage={currentPage} hideLogo />
-		<main class="layout">
+		<Header currentPage={currentPage} />
+		<main class="layout intro-page">
 			<aside id="grid-left" class="grid-sidebar" title="Site Navigation">
 				<LeftSidebar currentPage={currentPage} />
 			</aside>
 			<div id="grid-main">
-				<p align="center" class="main-logo"> 
-					<Logo className="logo-img" />
-				</p>
-				<PageContent frontmatter={frontmatter} headings={headings} githubEditUrl={githubEditUrl}>
+				<section class="hero">
+					<h1 class="hero-title">
+						<span class="electro">Electro</span><span>DB</span>
+					</h1>
+					<p class="hero-tagline">
+						Build complex DynamoDB queries with confidence. Type-safe single-table design,
+						entity modeling, and powerful relationships — without writing a single raw
+						parameter object.
+					</p>
+					<div class="hero-actions">
+						<a class="btn-primary" href="/en/core-concepts/quick-start">
+							Quick Start
+							<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M5 12h14" />
+								<path d="m12 5 7 7-7 7" />
+							</svg>
+						</a>
+						<a class="btn-secondary" href="https://electrodb.fun" target="_blank" rel="noopener noreferrer">
+							<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<polygon points="5 3 19 12 5 21 5 3" />
+							</svg>
+							Open Playground
+						</a>
+					</div>
+				</section>
+				<PageContent frontmatter={frontmatter} headings={[]} githubEditUrl={githubEditUrl} hideMoreMenu>
 					<slot />
 				</PageContent>
 			</div>
-
 		</main>
 		<Footer path={currentFile} />
 	</body>

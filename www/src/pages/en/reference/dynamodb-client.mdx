@@ -23,11 +23,13 @@ _On the instantiation of an `Entity`:_
 
 ```typescript
 import { Entity } from "electrodb";
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+
 const table = "my_table_name";
-const client = new DocumentClient({
-  region: "us-east-1",
-});
+const client = DynamoDBDocumentClient.from(
+  new DynamoDBClient({ region: "us-east-1" }),
+);
 
 const task = new Entity(
   {
@@ -44,11 +46,13 @@ _On the instantiation of an `Service`:_
 
 ```typescript
 import { Entity } from "electrodb";
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+
 const table = "my_table_name";
-const client = new DocumentClient({
-  region: "us-east-1",
-});
+const client = DynamoDBDocumentClient.from(
+  new DynamoDBClient({ region: "us-east-1" }),
+);
 
 const task = new Entity({
   // your model
@@ -71,11 +75,13 @@ _Via the `setClient` method:_
 
 ```typescript
 import { Entity } from "electrodb";
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+
 const table = "my_table_name";
-const client = new DocumentClient({
-  region: "us-east-1",
-});
+const client = DynamoDBDocumentClient.from(
+  new DynamoDBClient({ region: "us-east-1" }),
+);
 
 const task = new Entity({
   // your model
@@ -88,11 +94,12 @@ _At query execution time:_
 
 ```typescript
 import { Entity } from "electrodb";
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
-const client = new DocumentClient({
-  region: "us-east-1",
-});
+const client = DynamoDBDocumentClient.from(
+  new DynamoDBClient({ region: "us-east-1" }),
+);
 
 const task = new Entity({
   // your model

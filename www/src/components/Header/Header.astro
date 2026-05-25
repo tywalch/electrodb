@@ -1,41 +1,57 @@
 ---
-import { getLanguageFromURL, KNOWN_LANGUAGE_CODES } from '../../languages';
-import * as CONFIG from '../../config';
-import AstroLogo from './AstroLogo.astro';
 import SkipToContent from './SkipToContent.astro';
 import SidebarToggle from './SidebarToggle';
-import LanguageSelect from './LanguageSelect';
+import ThemeToggleButton from '../RightSidebar/ThemeToggleButton';
 import Search from './Search';
-import Logo from './Logo';
 
 type Props = {
 	currentPage: string;
-	hideLogo?: boolean;
 };
 
-const { currentPage, hideLogo = false } = Astro.props as Props;
-const lang = getLanguageFromURL(currentPage);
-
+const { currentPage } = Astro.props as Props;
 ---
 
 <header>
 	<SkipToContent />
 	<nav class="nav-wrapper" title="Top Navigation">
-		<div class="menu-toggle">
-			<SidebarToggle client:idle />
-		</div>
-		<div class="logo flex">
-			
-		</div>
-		<div style="flex-grow: 1;">
-			<a href="/">
-				{ hideLogo ? null : <Logo className="logo-img" /> }
+		<div class="nav-left">
+			<div class="menu-toggle">
+				<SidebarToggle client:idle />
+			</div>
+			<a href="/en/core-concepts/introduction" class="brand" aria-label="ElectroDB home">
+				<svg class="brand-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<path d="M13 2L4.5 13.5h6L11 22l8.5-11.5h-6L13 2Z" fill="currentColor" />
+				</svg>
+				<span class="brand-text">
+					<span class="brand-electro">Electro</span><span class="brand-db">DB</span>
+				</span>
 			</a>
 		</div>
-		{KNOWN_LANGUAGE_CODES.length > 1 && <LanguageSelect lang={lang} client:idle />}
-		<!-- <div class="search-item"> -->
-			<!-- <Search client:idle /> -->
-		<!-- </div> -->
+
+		<div class="search-slot">
+			<Search client:idle />
+		</div>
+
+		<div class="nav-right">
+			<button
+				type="button"
+				class="icon-link search-trigger-mobile"
+				aria-label="Search docs"
+				onclick="window.dispatchEvent(new CustomEvent('search:open'))"
+			>
+				<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<circle cx="11" cy="11" r="7" />
+					<path d="m20 20-3.5-3.5" />
+				</svg>
+			</button>
+			<a href="https://electrodb.fun" target="_blank" rel="noopener noreferrer" class="nav-link">Playground</a>
+			<a href="https://github.com/tywalch/electrodb" target="_blank" rel="noopener noreferrer" class="icon-link" aria-label="GitHub repository">
+				<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+					<path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2Z" />
+				</svg>
+			</a>
+			<ThemeToggleButton client:idle />
+		</div>
 	</nav>
 </header>
 
@@ -45,127 +61,184 @@ const lang = getLanguageFromURL(currentPage);
 		height: var(--theme-navbar-height);
 		width: 100%;
 		background-color: var(--theme-navbar-bg);
+		backdrop-filter: saturate(180%) blur(12px);
+		-webkit-backdrop-filter: saturate(180%) blur(12px);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		overflow: hidden;
 		position: sticky;
 		top: 0;
-	}
-
-	.header-link {
-		color: var(--theme-text);
-		margin: 0;
-		/* text-decoration: none; */
-	}
-
-	.logo-img {
-		width: 40vh;
-	}
-
-	.logo {
-		flex: 1;
-		display: flex;
-		overflow: hidden;
-		width: 30px;
-		font-size: 2rem;
-		flex-shrink: 0;
-		font-weight: 600;
-		line-height: 1;
-		color: hsla(var(--color-base-white), 100%, 1);
-		gap: 0.25em;
-		z-index: -1;
-	}
-
-	.logo a {
-		display: flex;
-		padding: 0.5em 0.25em;
-		margin: -0.5em -0.25em;
-		text-decoration: none;
-		font-weight: bold;
-	}
-
-	.logo a {
-		transition: color 100ms ease-out;
-		color: var(--theme-text);
-	}
-
-	.logo a:hover,
-	.logo a:focus {
-		color: var(--theme-text-accent);
-	}
-
-	.logo h1 {
-		display: none;
-		font: inherit;
-		color: inherit;
-		margin: 0;
+		border-bottom: 1px solid var(--theme-navbar-border);
 	}
 
 	.nav-wrapper {
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
+		align-items: center;
+		gap: 1rem;
+		width: 100%;
+		max-width: 88rem;
+		padding: 0 1rem;
+		height: 100%;
+	}
+
+	.nav-left {
 		display: flex;
 		align-items: center;
-		justify-content: flex-end;
-		gap: 1em;
+		gap: 0.75rem;
+		grid-column: 1;
+		justify-self: start;
+	}
+
+	.search-slot {
+		grid-column: 2;
+	}
+
+	.nav-right {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		grid-column: 3;
+		justify-self: end;
+	}
+
+	.brand {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		text-decoration: none;
+		font-weight: 700;
+		font-size: 1rem;
+		color: var(--theme-text);
+		letter-spacing: -0.02em;
+		padding: 0.25rem;
+		margin: -0.25rem;
+		border-radius: var(--radius);
+		transition: color 120ms ease;
+	}
+
+	.brand:hover {
+		color: var(--theme-text-accent);
+		text-decoration: none;
+	}
+
+	.brand-icon {
+		width: 20px;
+		height: 20px;
+		color: var(--theme-accent);
+		flex-shrink: 0;
+	}
+
+	.brand-electro {
+		font-style: italic;
+		font-weight: 800;
+	}
+
+	.brand-db {
+		font-weight: 800;
+		letter-spacing: -0.04em;
+	}
+
+	.search-slot {
+		display: none;
+		min-width: 0;
 		width: 100%;
-		/* max-width: 82em; */
-		/* override */
-		margin-top: 1.5em;
-		max-width: 99em;
-		padding: 0 1rem;
+	}
+
+	.nav-link {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--theme-text-light);
+		padding: 0.4rem 0.65rem;
+		border-radius: var(--radius);
+		text-decoration: none;
+		transition: color 120ms ease, background 120ms ease;
+	}
+
+	.nav-link:hover {
+		color: var(--theme-text);
+		background: var(--theme-bg-hover);
+		text-decoration: none;
+	}
+
+	.icon-link {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border-radius: var(--radius);
+		color: var(--theme-text-light);
+		transition: color 120ms ease, background 120ms ease;
+	}
+
+	.icon-link:hover {
+		color: var(--theme-text);
+		background: var(--theme-bg-hover);
+		text-decoration: none;
+	}
+
+	.search-trigger-mobile {
+		display: inline-flex;
 	}
 
 	@media (min-width: 50em) {
-		.logo-img {
-			height: 85px;
-			width: inherit;
+		.search-slot {
+			display: flex;
+			justify-content: center;
 		}
 
-		header {
-			position: static;
-			padding: 2rem 0rem;
+		.search-trigger-mobile {
+			display: none;
 		}
+	}
 
-		.logo {
-			width: auto;
-			margin: 0;
-			z-index: 0;
-		}
+	.menu-toggle {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
 
-		.logo h1 {
-			display: initial;
-		}
-
+	@media (min-width: 72em) {
 		.menu-toggle {
 			display: none;
 		}
 	}
 
-	/** Style Algolia */
-	:root {
-		--docsearch-primary-color: var(--theme-accent);
-		--docsearch-logo-color: var(--theme-text);
+	@media (max-width: 50em) {
+		.nav-link {
+			display: none;
+		}
 	}
 
-	.search-item {
-		display: none;
-		position: relative;
-		z-index: 10;
-		flex-grow: 1;
-		padding-right: 0.7rem;
-		display: flex;
-		max-width: 200px;
-	}
-
-	@media (min-width: 50em) {
-		.search-item {
-			max-width: 400px;
+	/* Optically align the leftmost/rightmost icon buttons with the MobileTOC
+	   below: the buttons center a ~16px icon inside a 32px hit target, so
+	   without this nudge the glyphs sit ~0.5rem inboard of the TOC bar's edge. */
+	@media (max-width: 72em) {
+		.nav-left > .menu-toggle {
+			margin-left: -0.5rem;
+		}
+		.nav-right > :last-child {
+			margin-right: -0.5rem;
 		}
 	}
 </style>
 
 <style is:global>
-	.search-item > * {
-		flex-grow: 1;
+	/* Make sidebar toggle button look right inside header */
+	#menu-toggle {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border-radius: var(--radius);
+		color: var(--theme-text-light);
+		background: transparent;
+	}
+
+	#menu-toggle:hover {
+		background: var(--theme-bg-hover);
+		color: var(--theme-text);
 	}
 </style>

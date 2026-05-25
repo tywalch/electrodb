@@ -270,6 +270,85 @@ animals.query
   .go();
 ```
 
+## Handling Condition Check Failures
+
+By default, a failed condition throws. Set `returnOnConditionCheckFailure` to return the rejection instead.
+
+Supported on `put`, `create`, `update`, `patch`, `delete`, `remove`, `upsert`. Values:
+
+- `true` — `{ rejected: true }` on failure, no extra DDB cost.
+- `"all_old"` — `{ rejected: true, data: existingItem | null }` on failure. Sets DynamoDB's [`ReturnValuesOnConditionCheckFailure`](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_PutItem.html#DDB-PutItem-request-ReturnValuesOnConditionCheckFailure) to `ALL_OLD`. Requires AWS SDK v3 or v2 >= `2.1408.0`.
+- `false` / omitted — throws (default).
+
+```typescript
+// returnOnConditionCheckFailure: true
+{ rejected: false, data: YourItem } | { rejected: true }
+
+// returnOnConditionCheckFailure: "all_old"
+{ rejected: false, data: YourItem } | { rejected: true, data: YourItem | null }
+```
+
+### Detect Rejection Only
+
+```typescript
+const result = await StoreLocations
+  .create({ cityId: "Atlanta1", storeId: "LatteLarrys", mallId: "EastPointe", buildingId: "BuildingA1", unitId: "B47", category: "food/coffee", leaseEndDate: "2020-03-22", rent: "4500.00" })
+  .go({ returnOnConditionCheckFailure: true });
+
+if (result.rejected) {
+  console.log("store already exists");
+} else {
+  console.log("created:", result.data);
+}
+```
+
+### Safe Create
+
+```typescript
+const result = await StoreLocations
+  .create({
+    cityId: "Atlanta1",
+    storeId: "LatteLarrys",
+    mallId: "EastPointe",
+    buildingId: "BuildingA1",
+    unitId: "B47",
+    category: "food/coffee",
+    leaseEndDate: "2020-03-22",
+    rent: "4500.00",
+  })
+  .go({ returnOnConditionCheckFailure: "all_old" });
+
+if (result.rejected) {
+  console.log("already exists:", result.data);
+} else {
+  console.log("created:", result.data);
+}
+```
+
+### Conditional Update
+
+```typescript
+const result = await StoreLocations
+  .patch({ cityId: "Atlanta1", mallId: "EastPointe", storeId: "LatteLarrys", buildingId: "BuildingA1" })
+  .set({ rent: "5000.00" })
+  .where(({ rent }, { lt }) => lt(rent, "4000.00"))
+  .go({ returnOnConditionCheckFailure: "all_old" });
+
+if (result.rejected) {
+  console.log("current rent:", result.data?.rent);
+}
+```
+
+### Null Data on Rejection
+
+`result.data` is `null` when the target item does not exist (e.g. `patch` or `remove` on a missing key).
+
+### Combining with Other Options
+
+- **`response`**: success `data` follows the `response` option; rejected `data` is always the existing (old) item.
+- **`data`**: `"raw"` and `"includeKeys"` apply to the rejected item too.
+- **`originalErr`**: independent — failed conditions still resolve with `{ rejected: true }`; only affects how other DynamoDB errors are thrown.
+
 ## Advanced Usage
 
 ### Where with Complex Attributes

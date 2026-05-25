@@ -645,6 +645,27 @@ All notable changes to this project will be documented in this file. Breaking ch
 - [Issue #553](https://github.com/tywalch/electrodb/issues/553); Fixed `parse` method returning data instead of `null` for invalid items.
 - [Issue #561](https://github.com/tywalch/electrodb/issues/561); Fixed `parse` method not allowing the `ignoreOwnership` option to be overridden.
 
+## [3.7.3]
+- [Issue #556](https://github.com/tywalch/electrodb/issues/556); Fixed `where` clause on projected indexes exposing all entity attributes instead of only projected attributes when the index has non-empty SK composites. Calling `.where()` directly now correctly restricts to projected attributes, matching the existing behavior of `.gte().where()` and other SK operation chains.
+
+## [3.7.4]
+- [Issue #558](https://github.com/tywalch/electrodb/issues/558); Fixed composite index (`type: "composite"`) projection types being too narrow. `keys_only` returned `{}` and array projections omitted pk/sk composite attributes from the response type, even though DynamoDB always returns them as native columns. Response types, `attributes` parameter, and collection queries now correctly include composite key attributes.
+- [Issue #559](https://github.com/tywalch/electrodb/issues/559); Fixed composite index query response types marking pk/sk composite attributes as optional even though composite indexes are sparse — items only appear in the index if all key attributes are present, so they are always defined in query results.
+
+## [3.7.5]
+- [Issue #554](https://github.com/tywalch/electrodb/issues/554); Fixed `hydrate: true` returning no items when querying composite type indexes with `keys_only` or `include` projections.
+
 ## [3.8.0]
+### Added
+- [Issue #545](https://github.com/tywalch/electrodb/issues/545); Added support for passing an `abortSignal` to the `go()` query options, allowing users to cancel in-flight DynamoDB requests.
+
+### Updated
+- [Issue #571](https://github.com/tywalch/electrodb/issues/571) Upgrading to jsonschema@1.5.0 removes the url module entirely in favour of the WHATWG URL global, silencing the warning. Thank you for your first contribution to the project, [@willmizzi](https://github.com/willmizzi)!
+
+## [3.9.0]
+### Added
+- Added a new `returnOnConditionCheckFailure` execution option for write operations. Instead of throwing when a condition expression fails, the call resolves with `{ rejected: true }`. Pass `true` to get just the rejection flag, or `"all_old"` to also receive the existing item under `data`. The `"all_old"` mode requires AWS SDK v3, or AWS SDK v2 >= `2.1408.0`.
+
+## [3.10.0]
 ### Added
 - [Issue #565](https://github.com/tywalch/electrodb/issues/565); Added `and` and `or` logical operators to the WHERE clause `operations` object.

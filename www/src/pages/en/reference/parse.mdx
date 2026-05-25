@@ -18,11 +18,11 @@ ElectroDB's `parse()` method accepts results from `get`, `delete`, `put`, `updat
 
 ```typescript
 const myEntity = new Entity({...});
-const getResults = await docClient.get({...}).promise();
-const queryResults = await docClient.query({...}).promise();
-const updateResults = await docClient.update({...}).promise();
+const getResults = await docClient.send(new GetCommand({...}));
+const queryResults = await docClient.send(new QueryCommand({...}));
+const updateResults = await docClient.send(new UpdateCommand({...}));
 const formattedGetResults = myEntity.parse(getResults);
-const formattedQueryResults = myEntity.parse(formattedQueryResults);
+const formattedQueryResults = myEntity.parse(queryResults);
 ```
 
 ### Dynamo Streams

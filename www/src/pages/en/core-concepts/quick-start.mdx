@@ -10,6 +10,8 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
+import PackageInstall from "../../../components/PageContent/PackageInstall";
+
 ## Getting Started
 
 If you're looking to get started right away with ElectroDB, checkout code examples in the /examples directory, or for guided examples in this document below. Additionally, the section Building Queries shows examples of every and has descriptions of all methods available in ElectroDB. If you use TypeScript, the section TypeScript contains useful exported types to use in your project.
@@ -22,7 +24,11 @@ If you're looking to get started right away with ElectroDB, checkout code exampl
   <a href="https://electrodb.fun">
     <img
       src="https://github.com/tywalch/electrodb/blob/master/assets/playground.jpg?raw=true"
-      width="400"
+      alt="ElectroDB Playground"
+      width="1606"
+      height="456"
+      loading="lazy"
+      style={{ display: "block", width: "100%", maxWidth: "400px", height: "auto" }}
     />
   </a>
 </p>
@@ -31,21 +37,9 @@ Try out and share ElectroDB Models, Services, and Single Table Design at <a href
 
 ## Installation
 
-ElectroDB exists as package available in NPM
+ElectroDB is available on every major package registry.
 
-### NPM
-
-```shell
-# install as a dependency in your project
-npm install electrodb --save
-```
-
-### Yarn
-
-```shell
-# install as a dependency in your project
-yarn add electrodb
-```
+<PackageInstall packages="electrodb" client:load />
 
 ## Usage
 
@@ -69,19 +63,7 @@ In this section you will model a simple entity: a Book inside a used book store.
 
 ### Install dependencies
 
-#### NPM
-
-```shell title="npm"
-# install as a dependency in your project
-npm install electrodb aws-sdk --save
-```
-
-#### Yarn
-
-```shell title="yarn"
-# install as a dependency in your project
-yarn add electrodb aws-sdk
-```
+<PackageInstall packages="electrodb @aws-sdk/client-dynamodb @aws-sdk/lib-dynamodb" client:load />
 
 ### Create your table
 
@@ -157,10 +139,11 @@ With Single-Table Design, generic key and indexes names are preferred. The follo
 After creating the table defined above, we can begin modeling our Entity. Note and compare the highlighted lines as they are mappings to the table definition above.
 
 ```typescript
-import DynamoDB from "aws-sdk/clients/dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { Entity } from "electrodb";
 
-const client = new DynamoDB.DocumentClient();
+const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 // highlight-next-line
 const table = "electro";
