@@ -3,6 +3,7 @@ import {
   UpdateEntityItem,
   Schema,
   EntityItem,
+  UpdateEntityResponseItem,
   Entity,
   Service,
   UpdateEntityResponse,
@@ -5383,3 +5384,106 @@ normalEntity2
       attr9?: number | undefined;
     }>(magnify(results.data));
   });
+
+entityWithSK.put(putItemFull).go().then((result) => {
+  expectType<EntityItem<typeof entityWithSK>>(result.data);
+  expectError(() => result.rejected);
+});
+
+entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: false }).then((result) => {
+  expectType<EntityItem<typeof entityWithSK>>(result.data);
+  expectError(() => result.rejected);
+});
+
+entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: false }).then((result) => {
+  expectType<UpdateEntityResponseItem<typeof entityWithSK>>(result.data);
+  expectError(() => result.rejected);
+});
+
+entityWithSK.delete({ attr1: "abc", attr2: "def" }).go({ returnOnConditionCheckFailure: false }).then((result) => {
+  expectType<UpdateEntityResponseItem<typeof entityWithSK>>(result.data);
+  expectError(() => result.rejected);
+});
+
+expectError(() => entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: "none" }));
+expectError(() => entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: "invalid" }));
+
+entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: true }).then((result) => {
+  if (result.rejected) {
+    expectType<true>(result.rejected);
+    expectType<undefined>(result.data);
+  } else {
+    expectType<false>(result.rejected);
+    expectType<EntityItem<typeof entityWithSK>>(result.data);
+  }
+});
+
+entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: true }).then((result) => {
+  if (result.rejected) {
+    expectType<true>(result.rejected);
+    expectType<undefined>(result.data);
+  } else {
+    expectType<false>(result.rejected);
+    expectType<UpdateEntityResponseItem<typeof entityWithSK>>(result.data);
+  }
+});
+
+entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: true, response: "all_new" }).then((result) => {
+  if (result.rejected) {
+    expectType<true>(result.rejected);
+    expectType<undefined>(result.data);
+  } else {
+    expectType<false>(result.rejected);
+    expectType<Partial<EntityItem<typeof entityWithSK>>>(result.data);
+  }
+});
+
+entityWithSK.delete({ attr1: "abc", attr2: "def" }).go({ returnOnConditionCheckFailure: true }).then((result) => {
+  if (result.rejected) {
+    expectType<true>(result.rejected);
+    expectType<undefined>(result.data);
+  } else {
+    expectType<false>(result.rejected);
+    expectType<UpdateEntityResponseItem<typeof entityWithSK>>(result.data);
+  }
+});
+
+entityWithSK.put(putItemFull).go({ returnOnConditionCheckFailure: "all_old" }).then((result) => {
+  if (result.rejected) {
+    expectType<true>(result.rejected);
+    expectType<EntityItem<typeof entityWithSK> | null>(result.data);
+  } else {
+    expectType<false>(result.rejected);
+    expectType<EntityItem<typeof entityWithSK>>(result.data);
+  }
+});
+
+entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: "all_old" }).then((result) => {
+  if (result.rejected) {
+    expectType<true>(result.rejected);
+    expectType<EntityItem<typeof entityWithSK> | null>(result.data);
+  } else {
+    expectType<false>(result.rejected);
+    expectType<UpdateEntityResponseItem<typeof entityWithSK>>(result.data);
+  }
+});
+
+entityWithSK.update({ attr1: "abc", attr2: "def" }).set({ attr6: 13 }).go({ returnOnConditionCheckFailure: "all_old", response: "all_new" }).then((result) => {
+  if (result.rejected) {
+    expectType<true>(result.rejected);
+    expectType<EntityItem<typeof entityWithSK> | null>(result.data);
+  } else {
+    expectType<false>(result.rejected);
+    expectType<Partial<EntityItem<typeof entityWithSK>>>(result.data);
+  }
+});
+
+entityWithSK.delete({ attr1: "abc", attr2: "def" }).go({ returnOnConditionCheckFailure: "all_old" }).then((result) => {
+  if (result.rejected) {
+    expectType<true>(result.rejected);
+    expectType<EntityItem<typeof entityWithSK> | null>(result.data);
+  } else {
+    expectType<false>(result.rejected);
+    expectType<UpdateEntityResponseItem<typeof entityWithSK>>(result.data);
+  }
+});

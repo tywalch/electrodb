@@ -661,3 +661,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ### Updated
 - [Issue #571](https://github.com/tywalch/electrodb/issues/571) Upgrading to jsonschema@1.5.0 removes the url module entirely in favour of the WHATWG URL global, silencing the warning. Thank you for your first contribution to the project, [@willmizzi](https://github.com/willmizzi)!
+
+## [3.9.0]
+### Added
+- Added a new `returnOnConditionCheckFailure` execution option for write operations. Instead of throwing when a condition expression fails, the call resolves with `{ rejected: true }`. Pass `true` to get just the rejection flag, or `"all_old"` to also receive the existing item under `data`. The `"all_old"` mode requires AWS SDK v3, or AWS SDK v2 >= `2.1408.0`.
