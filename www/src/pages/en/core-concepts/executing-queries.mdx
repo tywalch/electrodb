@@ -62,7 +62,7 @@ Additionally, ElectroDB offers a few mutation methods beyond `put`, `update`, an
 
 ## Execution Methods
 
-All query chains end with either a `.go()`, `.params()` method invocation. These terminal methods will either execute the query to DynamoDB (`.go()`) or return formatted parameters for use with the DynamoDB docClient (`.params()`).
+All query chains end with either a `.go()` or a `.params()` method invocation. These terminal methods will either execute the query to DynamoDB (`.go()`) or return formatted parameters for use with the DynamoDB docClient (`.params()`).
 
 Both `.params()` and `.go()` take a query configuration object which is detailed more in the section [Execution Options](/en/core-concepts/executing-queries).
 
