@@ -9011,5 +9011,166 @@ describe("Entity", () => {
       }, { ignoreOwnership: false });
       expect(result.data).to.deep.equal({ id: "123", name: "test", description: "desc" });
     });
+
+    describe("with watch attributes", () => {
+      const makeWatcherEntity = (updatedAt) =>
+        new Entity(
+          {
+            model: {
+              entity: "watcherItem",
+              service: "Playground",
+              version: "1",
+            },
+            attributes: {
+              id: { type: "string", required: true },
+              name: { type: "string", required: true },
+              updatedAt,
+            },
+            indexes: {
+              byId: {
+                pk: { field: "pk", composite: ["id"] },
+                sk: { field: "sk", composite: ["id"] },
+              },
+            },
+          },
+          { table: "electro" },
+        );
+
+      const pk = "$playground#id_123";
+      const sk = "$watcheritem_1#id_123";
+
+      it("should not add a watch-all attribute that only defines a setter when it is absent from the item", () => {
+        const entity = makeWatcherEntity({
+          type: "number",
+          watch: "*",
+          set: () => 1234567890,
+          readOnly: true,
+        });
+
+        const result = entity.parse({
+          Item: { pk, sk, id: "123", name: "test" },
+        });
+
+        expect(result.data).to.deep.equal({ id: "123", name: "test" });
+        expect(result.data).to.not.have.property("updatedAt");
+      });
+
+      it("should still return a setter-only watch-all attribute when it is present on the item", () => {
+        const entity = makeWatcherEntity({
+          type: "number",
+          watch: "*",
+          set: () => 1234567890,
+        });
+
+        const result = entity.parse({
+          Item: { pk, sk, id: "123", name: "test", updatedAt: 999 },
+        });
+
+        expect(result.data).to.deep.equal({
+          id: "123",
+          name: "test",
+          updatedAt: 999,
+        });
+      });
+
+      it("should still generate a setter-only watch-all attribute on the write path", () => {
+        const entity = makeWatcherEntity({
+          type: "number",
+          watch: "*",
+          set: () => 1234567890,
+          readOnly: true,
+        });
+
+        const params = entity.create({ id: "123", name: "test" }).params();
+
+        expect(params.Item.updatedAt).to.equal(1234567890);
+      });
+
+      it("should still compute a getter-only watch-all attribute on read when it is absent from the item", () => {
+        const entity = makeWatcherEntity({
+          type: "string",
+          watch: "*",
+          get: (_value, { id }) => `computed-${id}`,
+        });
+
+        const result = entity.parse({
+          Item: { pk, sk, id: "123", name: "test" },
+        });
+
+        expect(result.data).to.deep.equal({
+          id: "123",
+          name: "test",
+          updatedAt: "computed-123",
+        });
+      });
+
+      it("should run the getter of a watch-all attribute that defines both a getter and a setter on read", () => {
+        const entity = makeWatcherEntity({
+          type: "string",
+          watch: "*",
+          get: (_value, { id }) => `computed-${id}`,
+          set: () => "set-value",
+        });
+
+        const result = entity.parse({
+          Item: { pk, sk, id: "123", name: "test" },
+        });
+
+        expect(result.data).to.deep.equal({
+          id: "123",
+          name: "test",
+          updatedAt: "computed-123",
+        });
+      });
+
+      it("should still trigger a getter on a named (non-watch-all) watcher on read", () => {
+        const entity = makeWatcherEntity({
+          type: "string",
+          watch: ["name"],
+          get: (_value, { name }) => `named-${name}`,
+        });
+
+        const result = entity.parse({
+          Item: { pk, sk, id: "123", name: "test" },
+        });
+
+        expect(result.data).to.deep.equal({
+          id: "123",
+          name: "test",
+          updatedAt: "named-test",
+        });
+      });
+
+      it("should not add a named (non-watch-all) setter-only watcher when it is absent from the item", () => {
+        const entity = makeWatcherEntity({
+          type: "string",
+          watch: ["name"],
+          set: () => "set-value",
+        });
+
+        const result = entity.parse({
+          Item: { pk, sk, id: "123", name: "test" },
+        });
+
+        expect(result.data).to.deep.equal({ id: "123", name: "test" });
+        expect(result.data).to.not.have.property("updatedAt");
+      });
+
+      it("should exclude a setter-only watch-all attribute when specific attributes are requested", () => {
+        const entity = makeWatcherEntity({
+          type: "number",
+          watch: "*",
+          set: () => 1234567890,
+        });
+
+        const result = entity.parse(
+          { Item: { pk, sk, id: "123", name: "test", updatedAt: 999 } },
+          { attributes: ["id"] },
+        );
+
+        expect(result.data).to.deep.equal({ id: "123" });
+        expect(result.data).to.not.have.property("updatedAt");
+      });
+    });
   });
 });
