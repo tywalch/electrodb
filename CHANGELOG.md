@@ -665,3 +665,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.9.0]
 ### Added
 - Added a new `returnOnConditionCheckFailure` execution option for write operations. Instead of throwing when a condition expression fails, the call resolves with `{ rejected: true }`. Pass `true` to get just the rejection flag, or `"all_old"` to also receive the existing item under `data`. The `"all_old"` mode requires AWS SDK v3, or AWS SDK v2 >= `2.1408.0`.
+
+## [3.9.1]
+### Fixed
+- [Issue #578](https://github.com/tywalch/electrodb/issues/578); Watchers no longer do unnecessary work for methods they don't define: a watcher only runs on `get` if it has a getter, and on `set` if it has a setter. This also fixes a setter-only `watch` attribute (e.g. an `updatedAt` timestamp) being returned as `undefined` on reads when absent from the item.

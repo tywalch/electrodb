@@ -147,7 +147,15 @@ class Attribute {
     this.parent = { parentType: this.type, parentPath: this.path };
     this.get = this._makeGet(definition.get);
     this.set = this._makeSet(definition.set);
+    this._hasMutationHandler = {
+      [AttributeMutationMethods.get]: typeof definition.get === "function",
+      [AttributeMutationMethods.set]: typeof definition.set === "function",
+    };
     this.getClient = definition.getClient;
+  }
+
+  hasMutationHandler(method) {
+    return !!this._hasMutationHandler[method];
   }
 
   static buildChildAttributes(type, definition, parent) {
@@ -1601,28 +1609,38 @@ class Schema {
   _validateProperties() {}
 
   _formatWatchTranslations(attributes) {
-    let watchersToAttributes = {};
-    let attributesToWatchers = {};
-    let watchAllAttributes = {};
-    let hasWatchers = false;
-    for (let name of Object.keys(attributes)) {
-      if (attributes[name].isWatcher()) {
-        hasWatchers = true;
-        watchersToAttributes[name] = attributes[name].watching;
-      } else if (attributes[name].watchAll) {
-        hasWatchers = true;
-        watchAllAttributes[name] = name;
-      } else {
-        attributesToWatchers[name] = attributesToWatchers[name] || {};
-        attributesToWatchers[name] = attributes[name].watchedBy;
+    const translations = {};
+    for (let method of Object.values(AttributeMutationMethods)) {
+      let watchersToAttributes = {};
+      let attributesToWatchers = {};
+      let watchAllAttributes = {};
+      let hasWatchers = false;
+      for (let name of Object.keys(attributes)) {
+        const attribute = attributes[name];
+        const hasMutationHandler = attribute.hasMutationHandler(method);
+        if (attribute.isWatcher() && hasMutationHandler) {
+          hasWatchers = true;
+          watchersToAttributes[name] = attribute.watching;
+        } else if (attribute.watchAll && hasMutationHandler) {
+          hasWatchers = true;
+          watchAllAttributes[name] = name;
+        } else {
+          attributesToWatchers[name] = {};
+          for (let watcher of Object.keys(attribute.watchedBy)) {
+            if (attributes[watcher] && attributes[watcher].hasMutationHandler(method)) {
+              attributesToWatchers[name][watcher] = watcher;
+            }
+          }
+        }
       }
+      translations[method] = {
+        hasWatchers,
+        watchAllAttributes,
+        watchersToAttributes,
+        attributesToWatchers,
+      };
     }
-    return {
-      hasWatchers,
-      watchAllAttributes,
-      watchersToAttributes,
-      attributesToWatchers,
-    };
+    return translations;
   }
 
   getAttribute(path) {
@@ -1667,21 +1685,21 @@ class Schema {
 
   _fulfillAttributeMutationMethod(method, payload) {
     let watchersToTrigger = {};
+    const translation = this.translationForWatching[method];
     // include: payload               | We want to hit the getters/setters for any attributes coming in to be changed
     // avoid: watchersToAttributes    | We want to avoid anything that is a watcher, even if it was included
     let avoid = {
-      ...this.translationForWatching.watchersToAttributes,
-      ...this.translationForWatching.watchAllAttributes,
+      ...translation.watchersToAttributes,
+      ...translation.watchAllAttributes,
     };
     let data = this._applyAttributeMutation(method, payload, avoid, payload);
     // `data` here will include all the original payload values, but with the mutations applied to on non-watchers
-    if (!this.translationForWatching.hasWatchers) {
+    if (!translation.hasWatchers) {
       // exit early, why not
       return data;
     }
     for (let attribute of Object.keys(data)) {
-      let watchers =
-        this.translationForWatching.attributesToWatchers[attribute];
+      let watchers = translation.attributesToWatchers[attribute];
       // Any of the attributes on data have a watcher?
       if (watchers !== undefined) {
         watchersToTrigger = { ...watchersToTrigger, ...watchers };
@@ -1693,12 +1711,12 @@ class Schema {
     let include = {
       ...data,
       ...watchersToTrigger,
-      ...this.translationForWatching.watchAllAttributes,
+      ...translation.watchAllAttributes,
     };
     return this._applyAttributeMutation(
       method,
       include,
-      this.translationForWatching.attributesToWatchers,
+      translation.attributesToWatchers,
       data,
     );
   }
