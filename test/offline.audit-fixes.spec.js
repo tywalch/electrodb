@@ -13,72 +13,9 @@ const {
 const { DynamoDBSet } = require("../src/set");
 const { TableIndex } = require("../src/types");
 const { expect } = require("chai");
+const { makeMockV2Client } = require("./fixtures/mock-client");
 
 const table = "electro";
-
-// A minimal v2-style DocumentClient mock. Non-transaction methods return an
-// object with `.promise()`; transaction methods return a request-like object
-// (`on`/`abort`/`promise`) so it works both directly (via `_exec`) and through
-// the v2 wrapper. `handlers` maps a method name to a canned response (or a
-// function of the params). Transaction handlers may return
-// `{ cancellationReasons: [...] }` to simulate a canceled transaction.
-function makeMockV2Client(handlers = {}) {
-  const calls = [];
-  const transactMethods = new Set(["transactWrite", "transactGet"]);
-  const methods = [
-    "get",
-    "put",
-    "update",
-    "delete",
-    "batchWrite",
-    "batchGet",
-    "scan",
-    "query",
-    "transactWrite",
-    "transactGet",
-  ];
-  const client = {
-    createSet: (value) => new Set([].concat(value)),
-  };
-  for (const method of methods) {
-    client[method] = (params) => {
-      calls.push({ method, params });
-      const handler = handlers[method];
-      const value = typeof handler === "function" ? handler(params) : handler;
-      if (transactMethods.has(method)) {
-        const stored = {};
-        return {
-          on: (event, cb) => {
-            stored[event] = cb;
-          },
-          abort: () => {},
-          promise: () => {
-            if (value && value.cancellationReasons) {
-              if (stored.extractError) {
-                stored.extractError({
-                  httpResponse: {
-                    body: {
-                      toString: () =>
-                        JSON.stringify({
-                          CancellationReasons: value.cancellationReasons,
-                        }),
-                    },
-                  },
-                });
-              }
-              return Promise.reject(new Error("TransactionCanceledException"));
-            }
-            return Promise.resolve(value === undefined ? {} : value);
-          },
-        };
-      }
-      return {
-        promise: () => Promise.resolve(value === undefined ? {} : value),
-      };
-    };
-  }
-  return { client, calls };
-}
 
 // ---------------------------------------------------------------------------
 // B1: `unprocessed: "raw"` execution option is dropped due to a property typo
