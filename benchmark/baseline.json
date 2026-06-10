@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-06-10T03:31:53.192Z",
+  "node": "v24.3.0",
+  "referenceHz": 2327.262141538007,
+  "tasks": {
+    "reference/parse-500-items": {
+      "hz": 2327.262141538007,
+      "mean": 0.42968945446735735,
+      "normalized": 1
+    },
+    "batch-get-format/100-items": {
+      "hz": 4519.7695369513285,
+      "mean": 0.22125021902654782,
+      "normalized": 1.9420973066507965
+    },
+    "entity-construction/new-entity": {
+      "hz": 5731.994118974018,
+      "mean": 0.1744593555478023,
+      "normalized": 2.4629774259920465
+    },
+    "entity-construction/new-entity-watchers": {
+      "hz": 5468.781577339595,
+      "mean": 0.18285608702011302,
+      "normalized": 2.3498777725681843
+    },
+    "params-chain/get": {
+      "hz": 416715.25824700115,
+      "mean": 0.00239972014513389,
+      "normalized": 179.05815198437784
+    },
+    "params-chain/query": {
+      "hz": 302041.66219756944,
+      "mean": 0.0033108015388482624,
+      "normalized": 129.78411705608744
+    },
+    "params-chain/query-where": {
+      "hz": 119115.32935451993,
+      "mean": 0.008395225076561938,
+      "normalized": 51.18260088904326
+    },
+    "params-chain/update-set": {
+      "hz": 93418.97855690971,
+      "mean": 0.010704463005777912,
+      "normalized": 40.14114993301629
+    },
+    "params-chain/upsert": {
+      "hz": 82706.38805249817,
+      "mean": 0.01209096447743851,
+      "normalized": 35.538062763243495
+    },
+    "parse-format/100-items": {
+      "hz": 11449.031595110766,
+      "mean": 0.08734363179039907,
+      "normalized": 4.919528140282683
+    },
+    "parse-format/1000-items": {
+      "hz": 1159.505939157333,
+      "mean": 0.8624362896551843,
+      "normalized": 0.49822747444817517
+    },
+    "parse-format/1000-items-watchers": {
+      "hz": 794.5887420594664,
+      "mean": 1.258512670854278,
+      "normalized": 0.3414264031014358
+    },
+    "query-pagination/10-pages-x100": {
+      "hz": 1454.944405824759,
+      "mean": 0.6873114848901278,
+      "normalized": 0.6251742680191741
+    },
+    "query-pagination/100-pages-x100": {
+      "hz": 140.09983739361508,
+      "mean": 7.137767028169114,
+      "normalized": 0.060199422700627926
+    }
+  }
+}

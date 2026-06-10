@@ -35,6 +35,10 @@
     "local:stop": "npm run ddb:stop",
     "local:exec": "LOCAL_DYNAMO_ENDPOINT='http://localhost:8000' ts-node ./test/debug.ts",
     "local:debug": "npm run local:start && npm run local:exec",
+    "benchmark": "node ./benchmark/run.js",
+    "benchmark:json": "node ./benchmark/run.js --json",
+    "benchmark:compare": "node ./benchmark/run.js --compare",
+    "benchmark:update": "node ./benchmark/run.js --update-baseline",
     "format": "prettier -w src/**/*.js examples/**/* --log-level=error"
   },
   "repository": {
@@ -70,6 +74,7 @@
     "prettier-plugin-astro": "^0.12.0",
     "source-map-support": "^0.5.19",
     "sst": "^2.28.0",
+    "tinybench": "^2.9.0",
     "ts-node": "^10.9.1",
     "tsd": "^0.28.1",
     "typescript": "^5.2.2",
