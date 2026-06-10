@@ -753,12 +753,14 @@ class Entity {
               config,
             );
             items = hydrated.data;
-            hydratedUnprocessed = hydratedUnprocessed.concat(
-              hydrated.unprocessed,
-            );
+            for (const unprocessed of hydrated.unprocessed) {
+              hydratedUnprocessed.push(unprocessed);
+            }
           }
-          results[entity] = results[entity] || [];
-          results[entity] = [...results[entity], ...items];
+          const entityResults = (results[entity] = results[entity] || []);
+          for (const item of items) {
+            entityResults.push(item);
+          }
         }
       } else if (Array.isArray(response.data)) {
         let prevCount = count;
@@ -777,11 +779,13 @@ class Entity {
             config,
           );
           items = hydrated.data;
-          hydratedUnprocessed = hydratedUnprocessed.concat(
-            hydrated.unprocessed,
-          );
+          for (const unprocessed of hydrated.unprocessed) {
+            hydratedUnprocessed.push(unprocessed);
+          }
         }
-        results = [...results, ...items];
+        for (const item of items) {
+          results.push(item);
+        }
         if (moreItemsThanRequired || count === config.count) {
           const lastItem = results[results.length - 1];
           ExclusiveStartKey = this._fromCompositeToKeysByIndex({
