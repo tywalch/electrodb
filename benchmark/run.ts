@@ -354,6 +354,10 @@ function t95(df: number): number {
   return df <= 0 ? Infinity : df <= T95.length ? T95[df - 1] : 1.96;
 }
 
+function average(values: number[]): number {
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
 /**
  * Collapse N independent runs into one result. For N > 1, each task's
  * normalized value is averaged across runs and its margin of error is
@@ -366,17 +370,14 @@ function aggregateRuns(runs: RunResults[]): RunResults {
   if (runs.length === 1) {
     return runs[0];
   }
+  // collectResults aborts the process on any task failure, so every run
+  // contains every task
+  const n = runs.length;
   const tasks: Record<string, TaskStats> = {};
-  const names = Object.keys(runs[0].tasks);
-  for (const name of names) {
-    const perRun = runs
-      .map((run) => run.tasks[name])
-      .filter((task): task is TaskStats => task !== undefined);
-    const n = perRun.length;
-    const avg = (values: number[]) =>
-      values.reduce((sum, value) => sum + value, 0) / values.length;
+  for (const name of Object.keys(runs[0].tasks)) {
+    const perRun = runs.map((run) => run.tasks[name]);
     const normalizedValues = perRun.map((task) => task.normalized ?? 0);
-    const normalizedMean = avg(normalizedValues);
+    const normalizedMean = average(normalizedValues);
     const variance =
       normalizedValues.reduce(
         (sum, value) => sum + (value - normalizedMean) ** 2,
@@ -385,10 +386,10 @@ function aggregateRuns(runs: RunResults[]): RunResults {
       (n - 1);
     const ciHalfWidth = t95(n - 1) * Math.sqrt(variance / n);
     tasks[name] = {
-      hz: avg(perRun.map((task) => task.hz)),
-      mean: avg(perRun.map((task) => task.mean)),
-      p99: avg(perRun.map((task) => task.p99)),
-      rme: avg(perRun.map((task) => task.rme)),
+      hz: average(perRun.map((task) => task.hz)),
+      mean: average(perRun.map((task) => task.mean)),
+      p99: average(perRun.map((task) => task.p99)),
+      rme: average(perRun.map((task) => task.rme)),
       samples: perRun.reduce((sum, task) => sum + task.samples, 0),
       normalized: normalizedMean,
       normalizedRme:
@@ -396,13 +397,9 @@ function aggregateRuns(runs: RunResults[]): RunResults {
     };
   }
   return {
-    referenceHz: avg2(runs.map((run) => run.referenceHz ?? 0)),
+    referenceHz: average(runs.map((run) => run.referenceHz ?? 0)),
     tasks,
   };
-}
-
-function avg2(values: number[]): number {
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
 async function main(): Promise<void> {
