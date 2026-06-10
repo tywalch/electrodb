@@ -287,7 +287,7 @@ const VerdictDisplayText: Record<Verdict, string> = {
 // ---------------------------------------------------------------------------
 
 const useColor =
-  process.stdout.isTTY === true && process.env.NO_COLOR === undefined;
+  process.stdout.isTTY && process.env.NO_COLOR === undefined;
 
 function paint(code: number): (text: string) => string {
   return (text) => (useColor ? `\u001b[${code}m${text}\u001b[0m` : text);
