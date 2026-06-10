@@ -28,7 +28,7 @@ const { Service } = require("../src/service");
 // ---------------------------------------------------------------------------
 describe("P5: model validation short-circuits", () => {
   const validations = require("../src/validations");
-  const u = require("../src/util");
+  const util = require("../src/util");
   const { ElectroInstance, ElectroInstanceTypes } = require("../src/types");
 
   // captured verbatim from the pre-fix validateModel implementation
@@ -114,23 +114,23 @@ describe("P5: model validation short-circuits", () => {
 
   it("resolves instance types via symbols and bare models via validation", () => {
     const entity = makeFixtureEntity();
-    expect(u.getInstanceType(entity)).to.equal(ElectroInstanceTypes.entity);
-    expect(u.getInstanceType({ _instance: ElectroInstance.service })).to.equal(
-      ElectroInstanceTypes.service,
-    );
-    expect(u.getInstanceType({ _instance: ElectroInstance.electro })).to.equal(
-      ElectroInstanceTypes.electro,
-    );
+    expect(util.getInstanceType(entity)).to.equal(ElectroInstanceTypes.entity);
     expect(
-      u.getInstanceType({
+      util.getInstanceType({ _instance: ElectroInstance.service }),
+    ).to.equal(ElectroInstanceTypes.service);
+    expect(
+      util.getInstanceType({ _instance: ElectroInstance.electro }),
+    ).to.equal(ElectroInstanceTypes.electro);
+    expect(
+      util.getInstanceType({
         model: { entity: "e", service: "s", version: "1" },
         attributes: { id: { type: "string" } },
         indexes: { main: { pk: { field: "pk", composite: ["id"] } } },
       }),
     ).to.equal(ElectroInstanceTypes.model);
-    expect(u.getInstanceType({})).to.equal("");
-    expect(u.getInstanceType(undefined)).to.equal("");
-    expect(u.getInstanceType({ anything: "else" })).to.equal("");
+    expect(util.getInstanceType({})).to.equal("");
+    expect(util.getInstanceType(undefined)).to.equal("");
+    expect(util.getInstanceType({ anything: "else" })).to.equal("");
   });
 });
 
@@ -363,7 +363,9 @@ describe("P4: attribute mutation passes", () => {
     const entity = makeFixtureEntity();
     const params = entity
       .update({ org: "org1", id: "id1" })
-      .data((attr: any, op: any) => op.set(attr.notes[0].body, "edited"))
+      .data((attributes: any, operations: any) =>
+        operations.set(attributes.notes[0].body, "edited"),
+      )
       .params();
     expect(params.UpdateExpression).to.equal(
       "SET #notes[0].#body = :body_u0, #org = :org_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
@@ -509,7 +511,9 @@ describe("P3: lazy update machinery on chain construction", () => {
 
     const query = entity.query
       .records({ org: "org1" })
-      .where((attr: any, op: any) => op.gt(attr.count, 10))
+      .where((attributes: any, operations: any) =>
+        operations.gt(attributes.count, 10),
+      )
       .params();
     expect(query).to.deep.equal({
       KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",

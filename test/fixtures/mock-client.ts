@@ -1,7 +1,7 @@
 /**
  * Shared offline client mocks. These fixtures are used by both the offline
  * test suites (test/offline.*.spec.*) and the benchmark scenarios
- * (benchmark/scenarios/*.bench.ts); they must stay dependency-free and
+ * (benchmark/scenarios/*.benchmark.ts); they must stay dependency-free and
  * synchronous so neither consumer needs network or DynamoDB access.
  */
 
@@ -57,8 +57,8 @@ export function makeMockV2Client(
       if (transactMethods.has(method)) {
         const stored: Record<string, (input: any) => void> = {};
         return {
-          on: (event: string, cb: (input: any) => void) => {
-            stored[event] = cb;
+          on: (event: string, callback: (input: any) => void) => {
+            stored[event] = callback;
           },
           abort: () => {},
           promise: () => {
@@ -124,9 +124,11 @@ export function makePagingQueryHandler({
   }
   return (params: Record<string, any>) => {
     let start = 0;
-    const esk = params.ExclusiveStartKey;
-    if (esk !== undefined) {
-      const index = indexBySortKey.get(`${esk.pk}|${esk.sk}`);
+    const exclusiveStartKey = params.ExclusiveStartKey;
+    if (exclusiveStartKey !== undefined) {
+      const index = indexBySortKey.get(
+        `${exclusiveStartKey.pk}|${exclusiveStartKey.sk}`,
+      );
       if (index === undefined) {
         throw new Error("Unknown ExclusiveStartKey provided to paging mock");
       }

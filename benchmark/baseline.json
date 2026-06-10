@@ -1,106 +1,107 @@
 {
-  "schemaVersion": 2,
-  "generatedAt": "2026-06-10T04:11:58.119Z",
+  "schemaVersion": 3,
+  "generatedAt": "2026-06-10T18:25:03.362Z",
   "node": "v24.3.0",
-  "referenceHz": 2424.4644886571928,
+  "runs": 10,
+  "referenceOperationsPerSecond": 2433.0243439650476,
   "tasks": {
     "reference/parse-500-items": {
-      "hz": 2424.4644886571928,
-      "mean": 0.41253856308994147,
+      "operationsPerSecond": 2433.0243439650476,
+      "mean": 0.4111418215058819,
       "normalized": 1,
-      "normalizedRme": 0,
-      "samples": 3638
+      "normalizedRelativeMarginOfErrorPercent": 0,
+      "samples": 12171
     },
     "batch-get-format/100-items": {
-      "hz": 3844.0481109727643,
-      "mean": 0.26058448713831844,
-      "normalized": 1.5863465726981503,
-      "normalizedRme": 15.279148606132178,
-      "samples": 5770
+      "operationsPerSecond": 3858.3806990022845,
+      "mean": 0.2592887852712155,
+      "normalized": 1.585890381497777,
+      "normalizedRelativeMarginOfErrorPercent": 1.013746647150447,
+      "samples": 19320
     },
     "entity-construction/new-entity": {
-      "hz": 6171.908033589301,
-      "mean": 0.16210953335278167,
-      "normalized": 2.5469529411935015,
-      "normalizedRme": 11.232955822414702,
-      "samples": 9260
+      "operationsPerSecond": 6254.40892557932,
+      "mean": 0.15991138163073665,
+      "normalized": 2.5710560328456022,
+      "normalizedRelativeMarginOfErrorPercent": 0.9698110978836614,
+      "samples": 31277
     },
     "entity-construction/new-entity-watchers": {
-      "hz": 5685.492287082828,
-      "mean": 0.17594353779412905,
-      "normalized": 2.3459484941148427,
-      "normalizedRme": 9.202963391510739,
-      "samples": 8535
+      "operationsPerSecond": 5711.937004785308,
+      "mean": 0.17507553094332612,
+      "normalized": 2.348459472810711,
+      "normalizedRelativeMarginOfErrorPercent": 1.4770300388933606,
+      "samples": 28565
     },
     "params-chain/get": {
-      "hz": 388292.19723028206,
-      "mean": 0.002576322384780131,
-      "normalized": 160.1758691120667,
-      "normalizedRme": 6.285730042215901,
-      "samples": 582975
+      "operationsPerSecond": 387973.2106890793,
+      "mean": 0.002577654861021239,
+      "normalized": 159.52233021131025,
+      "normalizedRelativeMarginOfErrorPercent": 1.7151408896518312,
+      "samples": 1939870
     },
     "params-chain/query": {
-      "hz": 260867.58213501098,
-      "mean": 0.00383364114333602,
-      "normalized": 107.62911073619341,
-      "normalizedRme": 6.596224300497242,
-      "samples": 391302
+      "operationsPerSecond": 259533.33275631623,
+      "mean": 0.003855515012352204,
+      "normalized": 106.72685226798549,
+      "normalizedRelativeMarginOfErrorPercent": 2.7938466279878544,
+      "samples": 1297941
     },
     "params-chain/query-where": {
-      "hz": 114070.16974197427,
-      "mean": 0.008767453305424373,
-      "normalized": 47.064258493790426,
-      "normalizedRme": 7.115991189239105,
-      "samples": 171106
+      "operationsPerSecond": 112780.48112728125,
+      "mean": 0.008868369193681808,
+      "normalized": 46.37406347031307,
+      "normalizedRelativeMarginOfErrorPercent": 2.0433268693388253,
+      "samples": 564575
     },
     "params-chain/update-set": {
-      "hz": 88781.91955723667,
-      "mean": 0.011286994319514502,
-      "normalized": 36.646340920850015,
-      "normalizedRme": 17.661690693644044,
-      "samples": 133187
+      "operationsPerSecond": 90675.1380517179,
+      "mean": 0.01103189367465487,
+      "normalized": 37.283339936275425,
+      "normalizedRelativeMarginOfErrorPercent": 2.1245831960796413,
+      "samples": 453519
     },
     "params-chain/upsert": {
-      "hz": 76100.52166636738,
-      "mean": 0.013204382836770964,
-      "normalized": 31.413345966819623,
-      "normalizedRme": 23.45776790528955,
-      "samples": 114152
+      "operationsPerSecond": 78631.54163923618,
+      "mean": 0.01272494054815596,
+      "normalized": 32.33392307722848,
+      "normalizedRelativeMarginOfErrorPercent": 2.6188127725487638,
+      "samples": 393253
     },
     "parse-format/100-items": {
-      "hz": 12222.4801025672,
-      "mean": 0.08184534482640307,
-      "normalized": 5.043073744962243,
-      "normalizedRme": 8.92464931196236,
-      "samples": 18335
+      "operationsPerSecond": 12200.533019125965,
+      "mean": 0.08200320403389624,
+      "normalized": 5.017144207152649,
+      "normalizedRelativeMarginOfErrorPercent": 2.5964103316993548,
+      "samples": 61010
     },
     "parse-format/1000-items": {
-      "hz": 1220.4660830788864,
-      "mean": 0.82037659733162,
-      "normalized": 0.5036812142834938,
-      "normalizedRme": 14.156044011327662,
-      "samples": 1832
+      "operationsPerSecond": 1226.9213915426685,
+      "mean": 0.8154303062335536,
+      "normalized": 0.50445033377815,
+      "normalizedRelativeMarginOfErrorPercent": 2.1773722652963046,
+      "samples": 6141
     },
     "parse-format/1000-items-watchers": {
-      "hz": 853.6491345659579,
-      "mean": 1.1720107583020443,
-      "normalized": 0.35221239509147423,
-      "normalizedRme": 9.357872920197668,
-      "samples": 1282
+      "operationsPerSecond": 836.0174721181766,
+      "mean": 1.1979540983114136,
+      "normalized": 0.34373482855789816,
+      "normalizedRelativeMarginOfErrorPercent": 3.236479099054849,
+      "samples": 4184
     },
     "query-pagination/10-pages-x100": {
-      "hz": 1566.1567517550523,
-      "mean": 0.6386070826937228,
-      "normalized": 0.6461657403932399,
-      "normalizedRme": 7.1360968374326,
-      "samples": 2350
+      "operationsPerSecond": 1516.132762922901,
+      "mean": 0.6604050249489395,
+      "normalized": 0.6234040932196916,
+      "normalizedRelativeMarginOfErrorPercent": 3.1251304614877977,
+      "samples": 7587
     },
     "query-pagination/100-pages-x100": {
-      "hz": 139.20933634125876,
-      "mean": 7.226922047990283,
-      "normalized": 0.057446423042089835,
-      "normalizedRme": 24.407407433915417,
-      "samples": 210
+      "operationsPerSecond": 136.18571131973573,
+      "mean": 7.350136782834127,
+      "normalized": 0.056003780045826124,
+      "normalizedRelativeMarginOfErrorPercent": 3.1941200045888243,
+      "samples": 687
     }
   }
 }

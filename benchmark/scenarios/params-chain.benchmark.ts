@@ -22,7 +22,9 @@ const scenarios: ScenarioEntry[] = [
     fn: () =>
       entity.query
         .records({ org: "org1" })
-        .where((attr: any, op: any) => op.gt(attr.count, 10))
+        .where((attributes: any, operations: any) =>
+          operations.gt(attributes.count, 10),
+        )
         .params(),
   },
   {
