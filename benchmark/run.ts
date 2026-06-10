@@ -214,13 +214,25 @@ function collectResults(bench: Bench): RunResults {
   return { referenceHz: reference ? reference.hz : null, tasks };
 }
 
-type Verdict =
-  | "REGRESSION"
-  | "improved"
-  | "within threshold"
-  | "~noise"
-  | "added (not in baseline)"
-  | "removed";
+const Verdicts = {
+  regression: "regression",
+  improved: "improved",
+  within_threshold: "within_threshold",
+  noise: "noise",
+  added: "added",
+  removed: "removed",
+} as const;
+
+type Verdict = keyof typeof Verdicts;
+
+const VerdictDisplayText: Record<Verdict, string> = {
+  regression: "REGRESSION",
+  improved: "improved",
+  within_threshold: "within threshold",
+  noise: "~noise",
+  added: "added (not in baseline)",
+  removed: "removed",
+};
 
 interface CompareRow {
   task: string;
@@ -272,7 +284,7 @@ function compare(
       task.normalized === undefined ||
       task.normalizedRme === undefined
     ) {
-      rows.push({ task: name, verdict: "removed" });
+      rows.push({ task: name, verdict: Verdicts.removed });
       continue;
     }
     const deltaPct = (task.normalized / base.normalized - 1) * 100;
@@ -283,12 +295,12 @@ function compare(
     const significant = Math.abs(deltaPct) > noiseFloorPct;
     const material = Math.abs(deltaPct) >= threshold;
     const verdict: Verdict = !significant
-      ? "~noise"
+      ? Verdicts.noise
       : !material
-      ? "within threshold"
+      ? Verdicts.within_threshold
       : deltaPct < 0
-      ? "REGRESSION"
-      : "improved";
+      ? Verdicts.regression
+      : Verdicts.improved;
     if (noiseFloorPct > threshold) {
       insensitive++;
     }
@@ -301,14 +313,18 @@ function compare(
       verdict,
     };
     rows.push(row);
-    if (verdict === "REGRESSION") regressions.push(row);
+    if (verdict === Verdicts.regression) regressions.push(row);
   }
   for (const name of Object.keys(current.tasks)) {
     if (name !== REFERENCE_TASK && !baseline.tasks[name]) {
-      rows.push({ task: name, verdict: "added (not in baseline)" });
+      rows.push({ task: name, verdict: Verdicts.added });
     }
   }
-  console.table(rows);
+  const formatted = rows.map((row) => ({
+    ...row,
+    verdict: VerdictDisplayText[row.verdict],
+  }))
+  console.table(formatted);
   console.log(
     `Gates: statistical (|delta| must beat the per-task noise floor, from both runs' 95% CIs) and practical (|delta| >= ${threshold}%). Baseline: ${baseline.generatedAt}, node ${baseline.node}.`,
   );
