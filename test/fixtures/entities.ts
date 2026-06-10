@@ -4,16 +4,36 @@
  * produce from-DynamoDB-shaped stored items for feeding `parse`/
  * `formatResponse` without a database.
  */
+import type { StoredItem } from "./mock-client";
+
+// internals are untyped; required (not imported) per repo test convention
 const { Entity } = require("../../src/entity");
 
-const table = "electro";
+export const table = "electro";
 
-function makeFixtureModel({
+export interface FixtureModelOptions {
+  entity?: string;
+  service?: string;
+  withWatchers?: boolean;
+}
+
+export interface FixtureItemData {
+  org: string;
+  id: string;
+  name: string;
+  count: number;
+  active: boolean;
+  tags: string[];
+  profile: { nickname: string; age: number };
+  notes: { body: string }[];
+}
+
+export function makeFixtureModel({
   entity = "perfFixture",
   service = "perfService",
   withWatchers = false,
-} = {}) {
-  const attributes = {
+}: FixtureModelOptions = {}): Record<string, any> {
+  const attributes: Record<string, any> = {
     org: { type: "string" },
     id: { type: "string" },
     name: { type: "string" },
@@ -41,7 +61,7 @@ function makeFixtureModel({
     attributes.displayName = {
       type: "string",
       watch: ["name"],
-      set: (_, item) =>
+      set: (_: unknown, item: Record<string, any>) =>
         typeof item.name === "string" ? item.name.toUpperCase() : undefined,
     };
   }
@@ -58,11 +78,11 @@ function makeFixtureModel({
   };
 }
 
-function makeFixtureEntity(options = {}) {
+export function makeFixtureEntity(options: FixtureModelOptions = {}): any {
   return new Entity(makeFixtureModel(options), { table });
 }
 
-function makeItemData(i) {
+export function makeItemData(i: number): FixtureItemData {
   return {
     org: "org1",
     id: `id${String(i).padStart(8, "0")}`,
@@ -79,18 +99,10 @@ function makeItemData(i) {
 // `__edb_e__`/`__edb_v__` identifiers, field names) by reusing the entity's
 // own put-params formatting, then normalizing set attributes to plain arrays
 // (the shape a v3 DocumentClient unmarshalls to).
-function makeStoredItem(entity, i) {
+export function makeStoredItem(entity: any, i: number): StoredItem {
   const { Item } = entity.put(makeItemData(i)).params();
   if (Item.tags && Array.isArray(Item.tags.values)) {
     Item.tags = [...Item.tags.values];
   }
   return Item;
 }
-
-module.exports = {
-  table,
-  makeFixtureModel,
-  makeFixtureEntity,
-  makeItemData,
-  makeStoredItem,
-};

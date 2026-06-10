@@ -2,16 +2,18 @@
  * P2 + P4 — response formatting: per-item getter passes, sibling snapshots,
  * path lookups, and (formerly) per-call error allocation.
  */
-const {
+import type { ScenarioEntry } from "../run";
+import type { StoredItem } from "../../test/fixtures/mock-client";
+import {
   makeFixtureEntity,
   makeStoredItem,
-} = require("../../test/fixtures/entities");
+} from "../../test/fixtures/entities";
 
 const entity = makeFixtureEntity();
 const watcherEntity = makeFixtureEntity({ withWatchers: true });
 
-function makeItems(owner, count) {
-  const Items = [];
+function makeItems(owner: any, count: number): StoredItem[] {
+  const Items: StoredItem[] = [];
   for (let i = 0; i < count; i++) {
     Items.push(makeStoredItem(owner, i));
   }
@@ -22,7 +24,7 @@ const items100 = makeItems(entity, 100);
 const items1000 = makeItems(entity, 1000);
 const watcherItems1000 = makeItems(watcherEntity, 1000);
 
-module.exports = [
+const scenarios: ScenarioEntry[] = [
   {
     name: "parse-format/100-items",
     fn: () => entity.parse({ Items: items100 }),
@@ -36,3 +38,5 @@ module.exports = [
     fn: () => watcherEntity.parse({ Items: watcherItems1000 }),
   },
 ];
+
+export default scenarios;

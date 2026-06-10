@@ -1,31 +1,77 @@
-#!/usr/bin/env node
+#!/usr/bin/env ts-node
 /**
  * ElectroDB benchmark runner (manual/local — not wired into the test gate).
  *
- *   npm run benchmark            run all scenarios, print a table
+ *   npm run benchmark           run all scenarios, print a table
  *   npm run benchmark:json      print machine-readable results
  *   npm run benchmark:update    write benchmark/baseline.json
  *   npm run benchmark:compare   compare against baseline.json (advisory)
  *     --strict                  exit 1 when the compare finds regressions
  *     --filter <substring>      only run tasks whose name includes substring
  *
- * Scenarios live in benchmark/scenarios/*.bench.js; each exports an array of
- * `{ name, fn, opts? }` entries (see README.md). A fixed reference task runs
- * with every invocation and task throughput is recorded relative to it
- * (`normalized = hz / referenceHz`), which makes the committed baseline
+ * Scenarios live in benchmark/scenarios/*.bench.ts; each default-exports an
+ * array of `{ name, fn, opts? }` entries (see README.md). A fixed reference
+ * task runs with every invocation and task throughput is recorded relative to
+ * it (`normalized = hz / referenceHz`), which makes the committed baseline
  * roughly machine-independent.
  */
-const fs = require("fs");
-const path = require("path");
-const { Bench } = require("tinybench");
+import * as fs from "fs";
+import * as path from "path";
+import { Bench } from "tinybench";
+import { makeFixtureEntity, makeStoredItem } from "../test/fixtures/entities";
+
+export interface ScenarioEntry {
+  /** task name, conventionally `group/task` */
+  name: string;
+  /** the operation under test; may be async */
+  fn: () => unknown | Promise<unknown>;
+  /** optional tinybench task options (beforeAll/beforeEach/...) */
+  opts?: Record<string, unknown>;
+}
+
+interface TaskStats {
+  hz: number;
+  mean: number;
+  p99: number;
+  rme: number;
+  samples: number;
+  normalized?: number;
+}
+
+interface RunResults {
+  referenceHz: number | null;
+  tasks: Record<string, TaskStats>;
+}
+
+interface BaselineTask {
+  hz: number;
+  mean: number;
+  normalized: number;
+}
+
+interface BaselineFile {
+  schemaVersion: number;
+  generatedAt: string;
+  node: string;
+  referenceHz: number | null;
+  tasks: Record<string, BaselineTask>;
+}
+
+interface CliArgs {
+  json: boolean;
+  compare: boolean;
+  updateBaseline: boolean;
+  strict: boolean;
+  filter: string | null;
+}
 
 const SCENARIO_DIR = path.join(__dirname, "scenarios");
 const BASELINE_PATH = path.join(__dirname, "baseline.json");
 const REFERENCE_TASK = "reference/parse-500-items";
 const DEFAULT_TOLERANCE = 0.2;
 
-function parseArgs(argv) {
-  const args = {
+function parseArgs(argv: string[]): CliArgs {
+  const args: CliArgs = {
     json: false,
     compare: false,
     updateBaseline: false,
@@ -38,7 +84,7 @@ function parseArgs(argv) {
     else if (arg === "--compare") args.compare = true;
     else if (arg === "--update-baseline") args.updateBaseline = true;
     else if (arg === "--strict") args.strict = true;
-    else if (arg === "--filter") args.filter = argv[++i];
+    else if (arg === "--filter") args.filter = argv[++i] ?? null;
     else {
       console.error(`Unknown argument: ${arg}`);
       process.exit(1);
@@ -47,29 +93,33 @@ function parseArgs(argv) {
   return args;
 }
 
-function makeReferenceTask() {
-  const { makeFixtureEntity, makeStoredItem } = require("../test/fixtures/entities");
+function makeReferenceTask(): ScenarioEntry {
   const entity = makeFixtureEntity();
-  const Items = [];
+  const Items: Record<string, any>[] = [];
   for (let i = 0; i < 500; i++) {
     Items.push(makeStoredItem(entity, i));
   }
   return { name: REFERENCE_TASK, fn: () => entity.parse({ Items }) };
 }
 
-function loadScenarios() {
-  const entries = [makeReferenceTask()];
+function loadScenarios(): ScenarioEntry[] {
+  const entries: ScenarioEntry[] = [makeReferenceTask()];
   const files = fs
     .readdirSync(SCENARIO_DIR)
-    .filter((file) => file.endsWith(".bench.js"))
+    .filter((file) => file.endsWith(".bench.ts") || file.endsWith(".bench.js"))
     .sort();
   for (const file of files) {
-    const scenario = require(path.join(SCENARIO_DIR, file));
+    const mod = require(path.join(SCENARIO_DIR, file));
+    const scenario: unknown = mod.default ?? mod;
     if (!Array.isArray(scenario)) {
       throw new Error(`${file} must export an array of {name, fn, opts?}`);
     }
     for (const entry of scenario) {
-      if (!entry || typeof entry.name !== "string" || typeof entry.fn !== "function") {
+      if (
+        !entry ||
+        typeof entry.name !== "string" ||
+        typeof entry.fn !== "function"
+      ) {
         throw new Error(`${file} exported an entry without {name, fn}`);
       }
       entries.push(entry);
@@ -78,8 +128,8 @@ function loadScenarios() {
   return entries;
 }
 
-function collectResults(bench) {
-  const tasks = {};
+function collectResults(bench: Bench): RunResults {
+  const tasks: Record<string, TaskStats> = {};
   let failed = false;
   for (const task of bench.tasks) {
     if (!task.result || task.result.error) {
@@ -108,14 +158,18 @@ function collectResults(bench) {
   return { referenceHz, tasks };
 }
 
-function compare(baseline, current, { strict }) {
+function compare(
+  baseline: BaselineFile,
+  current: RunResults,
+  { strict }: { strict: boolean },
+): void {
   const tolerance = DEFAULT_TOLERANCE;
-  const rows = [];
-  const regressions = [];
+  const rows: Record<string, string>[] = [];
+  const regressions: Record<string, string>[] = [];
   for (const [name, base] of Object.entries(baseline.tasks)) {
     if (name === REFERENCE_TASK) continue;
     const task = current.tasks[name];
-    if (!task) {
+    if (!task || task.normalized === undefined) {
       rows.push({ task: name, status: "removed" });
       continue;
     }
@@ -129,8 +183,8 @@ function compare(baseline, current, { strict }) {
         ratio < 1 - tolerance
           ? "REGRESSION"
           : ratio > 1 + tolerance
-            ? "improved"
-            : "ok",
+          ? "improved"
+          : "ok",
     };
     rows.push(row);
     if (row.status === "REGRESSION") regressions.push(row);
@@ -143,23 +197,29 @@ function compare(baseline, current, { strict }) {
   console.table(rows);
   if (regressions.length) {
     console.error(
-      `${regressions.length} regression(s) beyond ${tolerance * 100}% tolerance (vs baseline from ${baseline.generatedAt}, node ${baseline.node}).`,
+      `${regressions.length} regression(s) beyond ${
+        tolerance * 100
+      }% tolerance (vs baseline from ${baseline.generatedAt}, node ${
+        baseline.node
+      }).`,
     );
     if (strict) process.exit(1);
   } else {
     console.log(
-      `No regressions beyond ${tolerance * 100}% tolerance (vs baseline from ${baseline.generatedAt}).`,
+      `No regressions beyond ${tolerance * 100}% tolerance (vs baseline from ${
+        baseline.generatedAt
+      }).`,
     );
   }
 }
 
-async function main() {
+async function main(): Promise<void> {
   const args = parseArgs(process.argv);
   let entries = loadScenarios();
-  if (args.filter) {
+  if (args.filter !== null) {
+    const filter = args.filter;
     entries = entries.filter(
-      (entry) =>
-        entry.name === REFERENCE_TASK || entry.name.includes(args.filter),
+      (entry) => entry.name === REFERENCE_TASK || entry.name.includes(filter),
     );
   }
 
@@ -191,7 +251,7 @@ async function main() {
   }
 
   if (args.updateBaseline) {
-    const baseline = {
+    const baseline: BaselineFile = {
       schemaVersion: 1,
       generatedAt: new Date().toISOString(),
       node: process.version,
@@ -202,11 +262,13 @@ async function main() {
       baseline.tasks[name] = {
         hz: task.hz,
         mean: task.mean,
-        normalized: task.normalized,
+        normalized: task.normalized ?? 0,
       };
     }
     fs.writeFileSync(BASELINE_PATH, `${JSON.stringify(baseline, null, 2)}\n`);
-    console.log(`Baseline written to ${path.relative(process.cwd(), BASELINE_PATH)}`);
+    console.log(
+      `Baseline written to ${path.relative(process.cwd(), BASELINE_PATH)}`,
+    );
   }
 
   if (args.compare) {
@@ -216,7 +278,9 @@ async function main() {
       );
       process.exit(1);
     }
-    const baseline = JSON.parse(fs.readFileSync(BASELINE_PATH, "utf8"));
+    const baseline: BaselineFile = JSON.parse(
+      fs.readFileSync(BASELINE_PATH, "utf8"),
+    );
     compare(baseline, current, { strict: args.strict });
   }
 }

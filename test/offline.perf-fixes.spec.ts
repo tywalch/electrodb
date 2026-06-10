@@ -3,19 +3,21 @@
  * ("stage 2"). Each describe block pins user-visible behavior that the
  * corresponding optimization must preserve; none of these rely on timing.
  */
-const { expect } = require("chai");
-const { Entity } = require("../src/entity");
-const { Service } = require("../src/service");
-const {
+import { expect } from "chai";
+import {
   makeMockV2Client,
   makePagingQueryHandler,
-} = require("./fixtures/mock-client");
-const {
+} from "./fixtures/mock-client";
+import {
   table,
   makeFixtureEntity,
   makeStoredItem,
   makeItemData,
-} = require("./fixtures/entities");
+} from "./fixtures/entities";
+
+// internals are untyped; required (not imported) per repo test convention
+const { Entity } = require("../src/entity");
+const { Service } = require("../src/service");
 
 // ---------------------------------------------------------------------------
 // P5: validateModel ran the (always-failing) ModelBeta schema pass for every
@@ -80,7 +82,7 @@ describe("P5: model validation short-circuits", () => {
 
   for (const { name, model, message } of invalidModelFixtures) {
     it(`throws the exact pre-fix message for: ${name}`, () => {
-      let thrown;
+      let thrown: any;
       try {
         validations.model(model);
       } catch (err) {
@@ -141,7 +143,7 @@ describe("P5: model validation short-circuits", () => {
 describe("P2: formatResponse error wrapping", () => {
   const { ElectroError, ErrorCodes } = require("../src/errors");
 
-  function makeThrowingEntity(makeError) {
+  function makeThrowingEntity(makeError: () => Error) {
     return new Entity(
       {
         model: { entity: "thrower", service: "perfService", version: "1" },
@@ -167,7 +169,7 @@ describe("P2: formatResponse error wrapping", () => {
     );
   }
 
-  function makeGetClient(entity) {
+  function makeGetClient(entity: any) {
     const { Item } = entity
       .put({ org: "org1", id: "id1", boom: "value" })
       .params();
@@ -178,7 +180,7 @@ describe("P2: formatResponse error wrapping", () => {
     const original = new Error("boom");
     const entity = makeThrowingEntity(() => original);
     const { client } = makeGetClient(entity);
-    let thrown;
+    let thrown: any;
     try {
       await entity.get({ org: "org1", id: "id1" }).go({ client });
     } catch (err) {
@@ -201,7 +203,7 @@ describe("P2: formatResponse error wrapping", () => {
     );
     const entity = makeThrowingEntity(() => original);
     const { client } = makeGetClient(entity);
-    let thrown;
+    let thrown: any;
     try {
       await entity.get({ org: "org1", id: "id1" }).go({ client });
     } catch (err) {
@@ -214,7 +216,7 @@ describe("P2: formatResponse error wrapping", () => {
     const original = new Error("boom");
     const entity = makeThrowingEntity(() => original);
     const { client } = makeGetClient(entity);
-    let thrown;
+    let thrown: any;
     try {
       await entity
         .get({ org: "org1", id: "id1" })
@@ -232,7 +234,7 @@ describe("P2: formatResponse error wrapping", () => {
     const { Item } = entity
       .put({ org: "org1", id: "id1", boom: "value" })
       .params();
-    let thrown;
+    let thrown: any;
     try {
       entity.parse({ Item });
     } catch (err) {
@@ -259,8 +261,14 @@ describe("P4: attribute mutation passes", () => {
         attributes: {
           org: { type: "string" },
           id: { type: "string" },
-          a: { type: "string", set: (value, item) => `${value}:${item.b}` },
-          b: { type: "string", set: (value, item) => `${value}:${item.a}` },
+          a: {
+            type: "string",
+            set: (value: any, item: any) => `${value}:${item.b}`,
+          },
+          b: {
+            type: "string",
+            set: (value: any, item: any) => `${value}:${item.a}`,
+          },
         },
         indexes: {
           records: {
@@ -290,7 +298,7 @@ describe("P4: attribute mutation passes", () => {
           id: { type: "string" },
           name: {
             type: "string",
-            set: (value) => {
+            set: (value: any) => {
               counts.name++;
               return `${value}!`;
             },
@@ -298,7 +306,7 @@ describe("P4: attribute mutation passes", () => {
           display: {
             type: "string",
             watch: ["name"],
-            set: (_, item) => {
+            set: (_: any, item: any) => {
               counts.display++;
               return `D:${item.name}`;
             },
@@ -332,7 +340,7 @@ describe("P4: attribute mutation passes", () => {
           id: { type: "string" },
           label: {
             type: "string",
-            get: (value, item) => `${value}@${item.org}`,
+            get: (value: any, item: any) => `${value}@${item.org}`,
           },
         },
         indexes: {
@@ -355,7 +363,7 @@ describe("P4: attribute mutation passes", () => {
     const entity = makeFixtureEntity();
     const params = entity
       .update({ org: "org1", id: "id1" })
-      .data((attr, op) => op.set(attr.notes[0].body, "edited"))
+      .data((attr: any, op: any) => op.set(attr.notes[0].body, "edited"))
       .params();
     expect(params.UpdateExpression).to.equal(
       "SET #notes[0].#body = :body_u0, #org = :org_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
@@ -396,7 +404,7 @@ describe("P3: lazy update machinery on chain construction", () => {
       state.query,
       "updateProxy",
     );
-    expect(descriptor.get, "updateProxy should be an accessor").to.be.a(
+    expect(descriptor?.get, "updateProxy should be an accessor").to.be.a(
       "function",
     );
     const first = state.query.updateProxy;
@@ -409,7 +417,10 @@ describe("P3: lazy update machinery on chain construction", () => {
     // buildAttributes, so spying on it counts constructions
     const original = AttributeOperationProxy.buildAttributes;
     let constructions = 0;
-    AttributeOperationProxy.buildAttributes = function (...args) {
+    AttributeOperationProxy.buildAttributes = function (
+      this: any,
+      ...args: any[]
+    ) {
       constructions++;
       return original.apply(this, args);
     };
@@ -498,7 +509,7 @@ describe("P3: lazy update machinery on chain construction", () => {
 
     const query = entity.query
       .records({ org: "org1" })
-      .where((attr, op) => op.gt(attr.count, 10))
+      .where((attr: any, op: any) => op.gt(attr.count, 10))
       .params();
     expect(query).to.deep.equal({
       KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
@@ -527,7 +538,13 @@ describe("P3: lazy update machinery on chain construction", () => {
 describe("P1: executeQuery result accumulation", () => {
   const entity = makeFixtureEntity();
 
-  function makePagingClient({ pages, perPage }) {
+  function makePagingClient({
+    pages,
+    perPage,
+  }: {
+    pages: number;
+    perPage: number;
+  }) {
     const query = makePagingQueryHandler({
       pages,
       perPage,
@@ -545,7 +562,7 @@ describe("P1: executeQuery result accumulation", () => {
       .go({ client, pages: "all" });
     expect(calls.length).to.equal(pages);
     expect(cursor).to.equal(null);
-    expect(data.map((item) => item.id)).to.deep.equal(
+    expect(data.map((item: any) => item.id)).to.deep.equal(
       Array.from({ length: pages * perPage }, (_, i) => makeItemData(i).id),
     );
     // items keep full attribute formatting, not just identity
@@ -562,21 +579,23 @@ describe("P1: executeQuery result accumulation", () => {
       .records({ org: "org1" })
       .go({ client, count });
     expect(first.data.length).to.equal(count);
-    expect(first.data.map((item) => item.count)).to.deep.equal([0, 1, 2, 3, 4]);
+    expect(first.data.map((item: any) => item.count)).to.deep.equal([
+      0, 1, 2, 3, 4,
+    ]);
     expect(first.cursor).to.be.a("string");
 
     // resuming from the returned cursor picks up at the very next item
     const rest = await entity.query
       .records({ org: "org1" })
       .go({ client, cursor: first.cursor, pages: "all" });
-    expect(rest.data.map((item) => item.count)).to.deep.equal([
+    expect(rest.data.map((item: any) => item.count)).to.deep.equal([
       5, 6, 7, 8, 9, 10, 11,
     ]);
     expect(rest.cursor).to.equal(null);
   });
 
   describe("collection queries", () => {
-    function makeCollectionModel(name) {
+    function makeCollectionModel(name: string) {
       return {
         model: { entity: name, service: "perfService", version: "1" },
         table,
@@ -626,10 +645,10 @@ describe("P1: executeQuery result accumulation", () => {
         { length: pages * perPage },
         (_, i) => `id${String(i).padStart(4, "0")}`,
       );
-      expect(data.alpha.map((item) => item.id)).to.deep.equal(
+      expect(data.alpha.map((item: any) => item.id)).to.deep.equal(
         expectedIds.filter((_, i) => i % 2 === 0),
       );
-      expect(data.beta.map((item) => item.id)).to.deep.equal(
+      expect(data.beta.map((item: any) => item.id)).to.deep.equal(
         expectedIds.filter((_, i) => i % 2 === 1),
       );
       expect(data.alpha[0]).to.deep.equal({

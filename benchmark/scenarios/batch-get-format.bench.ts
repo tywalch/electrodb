@@ -1,19 +1,20 @@
 /**
  * P2 — batchGet response formatting calls formatResponse once per item.
  */
-const { makeMockV2Client } = require("../../test/fixtures/mock-client");
-const {
+import type { ScenarioEntry } from "../run";
+import { makeMockV2Client, StoredItem } from "../../test/fixtures/mock-client";
+import {
   table,
   makeFixtureEntity,
   makeStoredItem,
   makeItemData,
-} = require("../../test/fixtures/entities");
+} from "../../test/fixtures/entities";
 
 const entity = makeFixtureEntity();
 
-function makeBatch(count) {
-  const Responses = { [table]: [] };
-  const keys = [];
+function makeBatch(count: number) {
+  const Responses: Record<string, StoredItem[]> = { [table]: [] };
+  const keys: { org: string; id: string }[] = [];
   for (let i = 0; i < count; i++) {
     Responses[table].push(makeStoredItem(entity, i));
     const { org, id } = makeItemData(i);
@@ -27,7 +28,7 @@ function makeBatch(count) {
 
 const batch100 = makeBatch(100);
 
-module.exports = [
+const scenarios: ScenarioEntry[] = [
   {
     name: "batch-get-format/100-items",
     fn: async () => {
@@ -36,3 +37,5 @@ module.exports = [
     },
   },
 ];
+
+export default scenarios;

@@ -19,13 +19,13 @@ throughput drops more than 20% below the baseline. It always exits 0
 hook for promoting the comparison to CI later:
 
 ```sh
-node ./benchmark/run.js --compare --strict
+npx ts-node ./benchmark/run.ts --compare --strict
 ```
 
 You can also run a subset while iterating:
 
 ```sh
-node ./benchmark/run.js --filter pagination
+npx ts-node ./benchmark/run.ts --filter pagination
 ```
 
 ## Baseline + normalization
@@ -41,21 +41,24 @@ first (`npm run benchmark:update`), apply your change, then
 
 ## Adding a scenario
 
-Drop a file matching `benchmark/scenarios/*.bench.js` that exports an array of
-entries — there is no registration list to edit:
+Drop a file matching `benchmark/scenarios/*.bench.ts` that default-exports an
+array of entries — there is no registration list to edit:
 
-```js
-const { makeFixtureEntity } = require("../../test/fixtures/entities");
+```ts
+import type { ScenarioEntry } from "../run";
+import { makeFixtureEntity } from "../../test/fixtures/entities";
 
 const entity = makeFixtureEntity();
 
-module.exports = [
+const scenarios: ScenarioEntry[] = [
   {
     name: "my-scenario/some-task", // group/task; sizes get their own task names
     fn: () => entity.query.records({ org: "org1" }).params(),
     // opts: optional tinybench task options (beforeAll/beforeEach/...)
   },
 ];
+
+export default scenarios;
 ```
 
 Conventions:

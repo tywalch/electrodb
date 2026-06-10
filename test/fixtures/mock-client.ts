@@ -1,9 +1,27 @@
 /**
  * Shared offline client mocks. These fixtures are used by both the offline
- * test suites (test/offline.*.spec.js) and the benchmark scenarios
- * (benchmark/scenarios/*.bench.js); they must stay dependency-free and
+ * test suites (test/offline.*.spec.*) and the benchmark scenarios
+ * (benchmark/scenarios/*.bench.ts); they must stay dependency-free and
  * synchronous so neither consumer needs network or DynamoDB access.
  */
+
+export type StoredItem = Record<string, any>;
+
+export interface MockClientCall {
+  method: string;
+  params: Record<string, any>;
+}
+
+export type MockHandler =
+  | ((params: Record<string, any>) => any)
+  | Record<string, any>;
+
+export interface MockV2Client {
+  /** duck-typed v2 DocumentClient; hand to `.go({ client })` or the Entity config */
+  client: any;
+  /** every call the entity made, in order */
+  calls: MockClientCall[];
+}
 
 // A minimal v2-style DocumentClient mock. Non-transaction methods return an
 // object with `.promise()`; transaction methods return a request-like object
@@ -11,8 +29,10 @@
 // the v2 wrapper. `handlers` maps a method name to a canned response (or a
 // function of the params). Transaction handlers may return
 // `{ cancellationReasons: [...] }` to simulate a canceled transaction.
-function makeMockV2Client(handlers = {}) {
-  const calls = [];
+export function makeMockV2Client(
+  handlers: Record<string, MockHandler> = {},
+): MockV2Client {
+  const calls: MockClientCall[] = [];
   const transactMethods = new Set(["transactWrite", "transactGet"]);
   const methods = [
     "get",
@@ -26,18 +46,18 @@ function makeMockV2Client(handlers = {}) {
     "transactWrite",
     "transactGet",
   ];
-  const client = {
-    createSet: (value) => new Set([].concat(value)),
+  const client: Record<string, any> = {
+    createSet: (value: any) => new Set([].concat(value)),
   };
   for (const method of methods) {
-    client[method] = (params) => {
+    client[method] = (params: Record<string, any>) => {
       calls.push({ method, params });
       const handler = handlers[method];
       const value = typeof handler === "function" ? handler(params) : handler;
       if (transactMethods.has(method)) {
-        const stored = {};
+        const stored: Record<string, (input: any) => void> = {};
         return {
-          on: (event, cb) => {
+          on: (event: string, cb: (input: any) => void) => {
             stored[event] = cb;
           },
           abort: () => {},
@@ -69,22 +89,40 @@ function makeMockV2Client(handlers = {}) {
   return { client, calls };
 }
 
+export interface PagingQueryHandlerOptions {
+  pages: number;
+  perPage: number;
+  /** produces the i-th stored item (from-DynamoDB shape, including key fields) */
+  makeItem: (i: number) => StoredItem;
+}
+
+export interface PagingQueryResponse {
+  Items: StoredItem[];
+  Count: number;
+  LastEvaluatedKey?: { pk: any; sk: any };
+}
+
 // Builds a `query`/`scan` handler that pages through `pages` responses of
 // `perPage` items each, emitting a `LastEvaluatedKey` on every page but the
-// last. `makeItem(i)` produces the i-th stored item (from-DynamoDB shape,
-// including key fields; sort keys must be unique across items). Like DynamoDB,
-// the handler resumes from the params' `ExclusiveStartKey` by locating the
-// item whose pk/sk match, so it also honors cursors ElectroDB synthesizes
-// mid-page (e.g. when a `count` limit lands inside a page).
-function makePagingQueryHandler({ pages, perPage, makeItem }) {
-  const items = [];
-  const indexBySortKey = new Map();
+// last. Sort keys must be unique across items. Like DynamoDB, the handler
+// resumes from the params' `ExclusiveStartKey` by locating the item whose
+// pk/sk match, so it also honors cursors ElectroDB synthesizes mid-page
+// (e.g. when a `count` limit lands inside a page).
+export function makePagingQueryHandler({
+  pages,
+  perPage,
+  makeItem,
+}: PagingQueryHandlerOptions): (
+  params: Record<string, any>,
+) => PagingQueryResponse {
+  const items: StoredItem[] = [];
+  const indexBySortKey = new Map<string, number>();
   for (let i = 0; i < pages * perPage; i++) {
     const item = makeItem(i);
     items.push(item);
     indexBySortKey.set(`${item.pk}|${item.sk}`, i);
   }
-  return (params) => {
+  return (params: Record<string, any>) => {
     let start = 0;
     const esk = params.ExclusiveStartKey;
     if (esk !== undefined) {
@@ -95,7 +133,7 @@ function makePagingQueryHandler({ pages, perPage, makeItem }) {
       start = index + 1;
     }
     const Items = items.slice(start, start + perPage);
-    const response = { Items, Count: Items.length };
+    const response: PagingQueryResponse = { Items, Count: Items.length };
     const lastReturned = start + Items.length - 1;
     if (lastReturned < items.length - 1 && Items.length > 0) {
       const lastItem = Items[Items.length - 1];
@@ -104,8 +142,3 @@ function makePagingQueryHandler({ pages, perPage, makeItem }) {
     return response;
   };
 }
-
-module.exports = {
-  makeMockV2Client,
-  makePagingQueryHandler,
-};
