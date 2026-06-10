@@ -18,6 +18,121 @@ const {
 } = require("./fixtures/entities");
 
 // ---------------------------------------------------------------------------
+// P5: validateModel ran the (always-failing) ModelBeta schema pass for every
+//     modern v1 model before validating Modelv1, and getInstanceType ran full
+//     jsonschema validation before the cheap `_instance` symbol checks. These
+//     tests pin the thrown messages byte-for-byte (captured from the pre-fix
+//     implementation) and the instance-type resolution order.
+// ---------------------------------------------------------------------------
+describe("P5: model validation short-circuits", () => {
+  const validations = require("../src/validations");
+  const u = require("../src/util");
+  const { ElectroInstance, ElectroInstanceTypes } = require("../src/types");
+
+  // captured verbatim from the pre-fix validateModel implementation
+  const invalidModelFixtures = [
+    {
+      name: "empty object",
+      model: {},
+      message:
+        'instance.model is required, instance requires property "model", instance requires property "attributes", instance requires property "indexes" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-model',
+    },
+    {
+      name: "v1 model missing indexes",
+      model: {
+        model: { entity: "e", service: "s", version: "1" },
+        attributes: { id: { type: "string" } },
+      },
+      message:
+        'instance requires property "indexes" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-model',
+    },
+    {
+      name: "v1 model with non-function getter",
+      model: {
+        model: { entity: "e", service: "s", version: "1" },
+        attributes: { id: { type: "string", get: "not-a-function" } },
+        indexes: { main: { pk: { field: "pk", composite: ["id"] } } },
+      },
+      message:
+        "instance.attributes.id.get must be a function - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-model",
+    },
+    {
+      name: "beta-shaped model missing indexes (still throws v1 messages)",
+      model: {
+        entity: "e",
+        service: "s",
+        attributes: { id: { type: "string" } },
+      },
+      message:
+        'instance.model is required, instance requires property "model", instance requires property "indexes" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-model',
+    },
+    {
+      name: "non-object model namespace",
+      model: {
+        model: "nope",
+        attributes: { id: { type: "string" } },
+        indexes: { main: { pk: { field: "pk", composite: ["id"] } } },
+      },
+      message:
+        "instance.model is not of a type(s) object - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#invalid-model",
+    },
+  ];
+
+  for (const { name, model, message } of invalidModelFixtures) {
+    it(`throws the exact pre-fix message for: ${name}`, () => {
+      let thrown;
+      try {
+        validations.model(model);
+      } catch (err) {
+        thrown = err;
+      }
+      expect(thrown, "expected validateModel to throw").to.not.equal(undefined);
+      expect(thrown.isElectroError).to.equal(true);
+      expect(thrown.message).to.equal(message);
+    });
+  }
+
+  it("accepts a valid v1 model and a valid beta model", () => {
+    const v1Model = {
+      model: { entity: "e", service: "s", version: "1" },
+      attributes: { id: { type: "string" } },
+      indexes: { main: { pk: { field: "pk", composite: ["id"] } } },
+    };
+    const betaModel = {
+      entity: "e",
+      service: "s",
+      version: "1",
+      attributes: { id: { type: "string" } },
+      indexes: { main: { pk: { field: "pk", facets: ["id"] } } },
+    };
+    expect(() => validations.model(v1Model)).to.not.throw();
+    expect(() => validations.model(betaModel)).to.not.throw();
+    expect(() => new Entity(v1Model, { table })).to.not.throw();
+  });
+
+  it("resolves instance types via symbols and bare models via validation", () => {
+    const entity = makeFixtureEntity();
+    expect(u.getInstanceType(entity)).to.equal(ElectroInstanceTypes.entity);
+    expect(u.getInstanceType({ _instance: ElectroInstance.service })).to.equal(
+      ElectroInstanceTypes.service,
+    );
+    expect(u.getInstanceType({ _instance: ElectroInstance.electro })).to.equal(
+      ElectroInstanceTypes.electro,
+    );
+    expect(
+      u.getInstanceType({
+        model: { entity: "e", service: "s", version: "1" },
+        attributes: { id: { type: "string" } },
+        indexes: { main: { pk: { field: "pk", composite: ["id"] } } },
+      }),
+    ).to.equal(ElectroInstanceTypes.model);
+    expect(u.getInstanceType({})).to.equal("");
+    expect(u.getInstanceType(undefined)).to.equal("");
+    expect(u.getInstanceType({ anything: "else" })).to.equal("");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // P1: executeQuery accumulated results by rebuilding the whole accumulator on
 //     every page (`results = [...results, ...items]`), making auto-paging
 //     O(pages²). These tests pin paging semantics: order, count truncation,
