@@ -11,6 +11,11 @@ function parseJSONPath(path = "") {
 }
 
 function genericizeJSONPath(path = "") {
+  // the regex only rewrites `[digits]` segments; skip it for the common
+  // bracket-free attribute paths resolved on every getter/setter pass
+  if (path.indexOf("[") === -1) {
+    return path;
+  }
   return path.replace(/\[\d+\]/g, "[*]");
 }
 

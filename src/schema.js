@@ -1656,7 +1656,11 @@ class Schema {
 
   _applyAttributeMutation(method, include, avoid, payload) {
     let data = { ...payload };
-    const getSiblings = () => ({ ...payload });
+    // one read-only snapshot shared across the pass; `payload` is never
+    // mutated inside the loop (mutations land on `data`), so building it
+    // lazily on first use returns the same values a per-call copy would
+    let siblings;
+    const getSiblings = () => (siblings = siblings || { ...payload });
     for (let path of Object.keys(include)) {
       // this.attributes[attribute] !== undefined | Attribute exists as actual attribute. If `includeKeys` is turned on for example this will include values that do not have a presence in the model and therefore will not have a `.get()` method
       // avoid[attribute] === undefined           | Attribute shouldn't be in the avoided

@@ -244,6 +244,135 @@ describe("P2: formatResponse error wrapping", () => {
 });
 
 // ---------------------------------------------------------------------------
+// P4: each getter/setter pass copied the entire payload once per attribute
+//     (`getSiblings`) and re-ran a regex per path lookup. The snapshot is now
+//     shared per pass and the regex skipped for bracket-free paths. These
+//     tests pin the sibling-visibility semantics and bracketed-path
+//     resolution the optimizations must preserve.
+// ---------------------------------------------------------------------------
+describe("P4: attribute mutation passes", () => {
+  it("setters see original sibling values, not other setters' output", () => {
+    const entity = new Entity(
+      {
+        model: { entity: "siblings", service: "perfService", version: "1" },
+        table,
+        attributes: {
+          org: { type: "string" },
+          id: { type: "string" },
+          a: { type: "string", set: (value, item) => `${value}:${item.b}` },
+          b: { type: "string", set: (value, item) => `${value}:${item.a}` },
+        },
+        indexes: {
+          records: {
+            pk: { field: "pk", composite: ["org"] },
+            sk: { field: "sk", composite: ["id"] },
+          },
+        },
+      },
+      { table },
+    );
+    const { Item } = entity
+      .put({ org: "org1", id: "id1", a: "1", b: "2" })
+      .params();
+    // each setter saw the *original* value of its sibling
+    expect(Item.a).to.equal("1:2");
+    expect(Item.b).to.equal("2:1");
+  });
+
+  it("watchers fire exactly once and see the watched attribute's set output", () => {
+    const counts = { name: 0, display: 0 };
+    const entity = new Entity(
+      {
+        model: { entity: "watchers", service: "perfService", version: "1" },
+        table,
+        attributes: {
+          org: { type: "string" },
+          id: { type: "string" },
+          name: {
+            type: "string",
+            set: (value) => {
+              counts.name++;
+              return `${value}!`;
+            },
+          },
+          display: {
+            type: "string",
+            watch: ["name"],
+            set: (_, item) => {
+              counts.display++;
+              return `D:${item.name}`;
+            },
+          },
+        },
+        indexes: {
+          records: {
+            pk: { field: "pk", composite: ["org"] },
+            sk: { field: "sk", composite: ["id"] },
+          },
+        },
+      },
+      { table },
+    );
+    const { Item } = entity
+      .put({ org: "org1", id: "id1", name: "joe" })
+      .params();
+    expect(counts).to.deep.equal({ name: 1, display: 1 });
+    expect(Item.name).to.equal("joe!");
+    // the watcher pass runs against the first pass's output
+    expect(Item.display).to.equal("D:joe!");
+  });
+
+  it("getters see sibling values during retrieval formatting", () => {
+    const entity = new Entity(
+      {
+        model: { entity: "getters", service: "perfService", version: "1" },
+        table,
+        attributes: {
+          org: { type: "string" },
+          id: { type: "string" },
+          label: {
+            type: "string",
+            get: (value, item) => `${value}@${item.org}`,
+          },
+        },
+        indexes: {
+          records: {
+            pk: { field: "pk", composite: ["org"] },
+            sk: { field: "sk", composite: ["id"] },
+          },
+        },
+      },
+      { table },
+    );
+    const { Item } = entity
+      .put({ org: "org1", id: "id1", label: "x" })
+      .params();
+    const { data } = entity.parse({ Item });
+    expect(data.label).to.equal("x@org1");
+  });
+
+  it("resolves bracketed list paths through update validation", () => {
+    const entity = makeFixtureEntity();
+    const params = entity
+      .update({ org: "org1", id: "id1" })
+      .data((attr, op) => op.set(attr.notes[0].body, "edited"))
+      .params();
+    expect(params.UpdateExpression).to.equal(
+      "SET #notes[0].#body = :body_u0, #org = :org_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0",
+    );
+    expect(params.ExpressionAttributeNames).to.deep.equal({
+      "#notes": "notes",
+      "#body": "body",
+      "#org": "org",
+      "#id": "id",
+      "#__edb_e__": "__edb_e__",
+      "#__edb_v__": "__edb_v__",
+    });
+    expect(params.ExpressionAttributeValues[":body_u0"]).to.equal("edited");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // P1: executeQuery accumulated results by rebuilding the whole accumulator on
 //     every page (`results = [...results, ...items]`), making auto-paging
 //     O(pages²). These tests pin paging semantics: order, count truncation,
