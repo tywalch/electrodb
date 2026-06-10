@@ -1662,7 +1662,7 @@ class Schema {
     let siblings;
     const getSiblings = () => (siblings = siblings || { ...payload });
     for (let path of Object.keys(include)) {
-      // this.attributes[attribute] !== undefined | Attribute exists as actual attribute. If `includeKeys` is turned on for example this will include values that do not have a presence in the model and therefore will not have a `.get()` method
+      // this.attributes[attribute] !== undefined | Attribute exists as an actual attribute. If `includeKeys` is turned on for example this will include values that do not have a presence in the model and therefore will not have a `.get()` method
       // avoid[attribute] === undefined           | Attribute shouldn't be in the avoided
       const attribute = this.getAttribute(path);
       if (attribute !== undefined && avoid[path] === undefined) {
