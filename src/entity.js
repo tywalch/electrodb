@@ -2118,7 +2118,6 @@ class Entity {
       update = {},
       filter = {},
       upsert,
-      updateProxy,
     } = state.query;
     let consolidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
     let params = {};
@@ -2133,8 +2132,10 @@ class Entity {
         );
         break;
       case MethodTypes.upsert:
+        // updateProxy is read inside the case (not destructured above) so
+        // read methods never trigger its lazy construction
         params = this._makeUpsertParams(
-          { update, upsert, updateProxy },
+          { update, upsert, updateProxy: state.query.updateProxy },
           keys.pk,
           ...keys.sk,
         );

@@ -373,6 +373,152 @@ describe("P4: attribute mutation passes", () => {
 });
 
 // ---------------------------------------------------------------------------
+// P3: every chain construction (including get/query/scan) eagerly built an
+//     AttributeOperationProxy — an Object.defineProperty per attribute and
+//     per operation — that read chains never use. It is now a cached lazy
+//     getter on ChainState's query object. These tests pin laziness, instance
+//     identity (write clauses accumulate into one builder), and exact params
+//     parity with the eager implementation (fixtures captured pre-change).
+// ---------------------------------------------------------------------------
+describe("P3: lazy update machinery on chain construction", () => {
+  const { ChainState } = require("../src/clauses");
+  const { AttributeOperationProxy } = require("../src/operations");
+  const entity = makeFixtureEntity();
+
+  it("exposes updateProxy as a cached lazy getter with stable identity", () => {
+    const state = new ChainState({
+      index: "",
+      attributes: entity.model.schema.attributes,
+      hasSortKey: true,
+      options: {},
+    });
+    const descriptor = Object.getOwnPropertyDescriptor(
+      state.query,
+      "updateProxy",
+    );
+    expect(descriptor.get, "updateProxy should be an accessor").to.be.a(
+      "function",
+    );
+    const first = state.query.updateProxy;
+    expect(first).to.be.instanceOf(AttributeOperationProxy);
+    expect(state.query.updateProxy).to.equal(first);
+  });
+
+  it("never builds the proxy for read chains, builds once for writes", () => {
+    // AttributeOperationProxy's constructor always calls the static
+    // buildAttributes, so spying on it counts constructions
+    const original = AttributeOperationProxy.buildAttributes;
+    let constructions = 0;
+    AttributeOperationProxy.buildAttributes = function (...args) {
+      constructions++;
+      return original.apply(this, args);
+    };
+    try {
+      entity.query.records({ org: "org1" }).params();
+      entity.query.records({ org: "org1" }).gt({ id: "id1" }).params();
+      entity.get({ org: "org1", id: "id1" }).params();
+      entity.scan.params();
+      expect(constructions, "read chains should not build the proxy").to.equal(
+        0,
+      );
+      entity.update({ org: "org1", id: "id1" }).set({ name: "x" }).params();
+      expect(constructions).to.equal(1);
+    } finally {
+      AttributeOperationProxy.buildAttributes = original;
+    }
+  });
+
+  it("produces params identical to the eager implementation", () => {
+    // fixtures captured from the pre-change (eager) implementation
+    const update = entity
+      .update({ org: "org1", id: "id1" })
+      .set({ name: "newname" })
+      .add({ count: 5 })
+      .append({ notes: [{ body: "extra" }] })
+      .remove(["active"])
+      .params();
+    expect(update).to.deep.equal({
+      UpdateExpression:
+        "SET #name = :name_u0, #notes = list_append(if_not_exists(#notes, :notes_default_value_u0), :notes_u0), #org = :org_u0, #id = :id_u0, #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0 REMOVE #active ADD #count :count_u0",
+      ExpressionAttributeNames: {
+        "#name": "name",
+        "#count": "count",
+        "#notes": "notes",
+        "#active": "active",
+        "#org": "org",
+        "#id": "id",
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+      },
+      ExpressionAttributeValues: {
+        ":name_u0": "newname",
+        ":count_u0": 5,
+        ":notes_u0": [{ body: "extra" }],
+        ":notes_default_value_u0": [],
+        ":org_u0": "org1",
+        ":id_u0": "id1",
+        ":__edb_e___u0": "perfFixture",
+        ":__edb_v___u0": "1",
+      },
+      TableName: "electro",
+      Key: {
+        pk: "$perfservice#org_org1",
+        sk: "$perffixture_1#id_id1",
+      },
+    });
+
+    const upsert = entity
+      .upsert({ org: "org1", id: "id1", name: "n", count: 1 })
+      .params();
+    expect(upsert).to.deep.equal({
+      TableName: "electro",
+      UpdateExpression:
+        "SET #__edb_e__ = :__edb_e___u0, #__edb_v__ = :__edb_v___u0, #org = :org_u0, #id = :id_u0, #name = :name_u0, #count = :count_u0",
+      ExpressionAttributeNames: {
+        "#__edb_e__": "__edb_e__",
+        "#__edb_v__": "__edb_v__",
+        "#org": "org",
+        "#id": "id",
+        "#name": "name",
+        "#count": "count",
+      },
+      ExpressionAttributeValues: {
+        ":__edb_e___u0": "perfFixture",
+        ":__edb_v___u0": "1",
+        ":org_u0": "org1",
+        ":id_u0": "id1",
+        ":name_u0": "n",
+        ":count_u0": 1,
+      },
+      Key: {
+        pk: "$perfservice#org_org1",
+        sk: "$perffixture_1#id_id1",
+      },
+    });
+
+    const query = entity.query
+      .records({ org: "org1" })
+      .where((attr, op) => op.gt(attr.count, 10))
+      .params();
+    expect(query).to.deep.equal({
+      KeyConditionExpression: "#pk = :pk and begins_with(#sk1, :sk1)",
+      TableName: "electro",
+      ExpressionAttributeNames: {
+        "#count": "count",
+        "#pk": "pk",
+        "#sk1": "sk",
+      },
+      ExpressionAttributeValues: {
+        ":count0": 10,
+        ":pk": "$perfservice#org_org1",
+        ":sk1": "$perffixture_1#id_",
+      },
+      FilterExpression: "#count > :count0",
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // P1: executeQuery accumulated results by rebuilding the whole accumulator on
 //     every page (`results = [...results, ...items]`), making auto-paging
 //     O(pages²). These tests pin paging semantics: order, count truncation,
