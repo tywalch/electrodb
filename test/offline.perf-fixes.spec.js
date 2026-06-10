@@ -133,6 +133,117 @@ describe("P5: model validation short-circuits", () => {
 });
 
 // ---------------------------------------------------------------------------
+// P2: formatResponse eagerly allocated an ElectroError (with stack capture)
+//     on every call — once per item on batchGet/collection paths — only to
+//     discard it on success. The error is now built lazily on the throw path;
+//     these tests pin the wrapping contract, which had no prior coverage.
+// ---------------------------------------------------------------------------
+describe("P2: formatResponse error wrapping", () => {
+  const { ElectroError, ErrorCodes } = require("../src/errors");
+
+  function makeThrowingEntity(makeError) {
+    return new Entity(
+      {
+        model: { entity: "thrower", service: "perfService", version: "1" },
+        table,
+        attributes: {
+          org: { type: "string" },
+          id: { type: "string" },
+          boom: {
+            type: "string",
+            get: () => {
+              throw makeError();
+            },
+          },
+        },
+        indexes: {
+          records: {
+            pk: { field: "pk", composite: ["org"] },
+            sk: { field: "sk", composite: ["id"] },
+          },
+        },
+      },
+      { table },
+    );
+  }
+
+  function makeGetClient(entity) {
+    const { Item } = entity
+      .put({ org: "org1", id: "id1", boom: "value" })
+      .params();
+    return makeMockV2Client({ get: { Item } });
+  }
+
+  it("wraps a plain error thrown during formatting in an ElectroError", async () => {
+    const original = new Error("boom");
+    const entity = makeThrowingEntity(() => original);
+    const { client } = makeGetClient(entity);
+    let thrown;
+    try {
+      await entity.get({ org: "org1", id: "id1" }).go({ client });
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown, "expected go() to reject").to.not.equal(undefined);
+    expect(thrown.isElectroError).to.equal(true);
+    expect(thrown.code).to.equal(ErrorCodes.AWSError.code);
+    expect(thrown.cause).to.equal(original);
+    expect(thrown.message).to.equal(
+      'Error thrown by DynamoDB client: "boom" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error',
+    );
+    expect(thrown.stack).to.be.a("string").and.to.have.length.greaterThan(0);
+  });
+
+  it("rethrows an ElectroError unwrapped (same instance)", async () => {
+    const original = new ElectroError(
+      ErrorCodes.InvalidAttribute,
+      "already electro",
+    );
+    const entity = makeThrowingEntity(() => original);
+    const { client } = makeGetClient(entity);
+    let thrown;
+    try {
+      await entity.get({ org: "org1", id: "id1" }).go({ client });
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).to.equal(original);
+  });
+
+  it("rethrows the raw error when originalErr is set", async () => {
+    const original = new Error("boom");
+    const entity = makeThrowingEntity(() => original);
+    const { client } = makeGetClient(entity);
+    let thrown;
+    try {
+      await entity
+        .get({ org: "org1", id: "id1" })
+        .go({ client, originalErr: true });
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).to.equal(original);
+    expect(thrown.isElectroError).to.equal(undefined);
+  });
+
+  it("wraps errors surfaced through the public parse() path", () => {
+    const original = new Error("parse boom");
+    const entity = makeThrowingEntity(() => original);
+    const { Item } = entity
+      .put({ org: "org1", id: "id1", boom: "value" })
+      .params();
+    let thrown;
+    try {
+      entity.parse({ Item });
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown.isElectroError).to.equal(true);
+    expect(thrown.cause).to.equal(original);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // P1: executeQuery accumulated results by rebuilding the whole accumulator on
 //     every page (`results = [...results, ...items]`), making auto-paging
 //     O(pages²). These tests pin paging semantics: order, count truncation,
