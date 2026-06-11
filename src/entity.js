@@ -713,6 +713,7 @@ class Entity {
     let iterations = 0;
     let count = 0;
     let hydratedUnprocessed = [];
+    let rawResult = null;
     const shouldHydrate =
       config.hydrate &&
       (method === MethodTypes.query || method === MethodTypes.scan);
@@ -741,7 +742,22 @@ class Entity {
         ignoreOwnership: shouldHydrate || config.ignoreOwnership,
       });
       if (config.data === DataOptions.raw) {
-        return response;
+        if (rawResult === null) {
+          rawResult = response;
+        } else {
+          rawResult.data.Items = [
+            ...(rawResult.data.Items || []),
+            ...(response.data.Items || []),
+          ];
+          if (typeof response.data.Count === "number") {
+            rawResult.data.Count = (rawResult.data.Count || 0) + response.data.Count;
+          }
+          if (typeof response.data.ScannedCount === "number") {
+            rawResult.data.ScannedCount = (rawResult.data.ScannedCount || 0) + response.data.ScannedCount;
+          }
+          rawResult.data.LastEvaluatedKey = response.data.LastEvaluatedKey;
+          rawResult.cursor = response.cursor ?? null;
+        }
       } else if (config._isCollectionQuery) {
         for (const entity in response.data) {
           let items = response.data[entity];
@@ -801,6 +817,10 @@ class Entity {
         iterations < pages) &&
       (config.count === undefined || count < config.count)
     );
+
+    if (rawResult !== null) {
+      return rawResult;
+    }
 
     const cursor = this._formatReturnPager(config, ExclusiveStartKey);
 
