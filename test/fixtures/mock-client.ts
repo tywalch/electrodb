@@ -1,5 +1,3 @@
-// type-only imports: erased at compile time, so the fixture remains
-// dependency-free at runtime (aws-sdk is already a dev dependency)
 import type { DocumentClient } from "aws-sdk/clients/dynamodb";
 import type { V2DocumentClient } from "../../index";
 
@@ -20,12 +18,6 @@ const MockableMethods: Record<MockableMethod, MockableMethod> = {
   transactGet: "transactGet",
 }
 
-/**
- * Instruction understood only by transaction handlers: returning this from a
- * `transactWrite`/`transactGet` handler makes the mock simulate a canceled
- * transaction (rejecting with `TransactionCanceledException` and feeding the
- * reasons through the v2 request's `extractError` listener).
- */
 export type CanceledTransactionSimulation = {
   cancellationReasons: Array<{
     Code?: string;
@@ -64,13 +56,6 @@ type MethodOutput = {
     | CanceledTransactionSimulation;
 };
 
-/**
- * A handler is either a canned response for its method, or a function of
- * that method's request parameters producing one. Response and parameter
- * shapes are the v2 DocumentClient's own types for that method, so a handler
- * for `batchGet` cannot be given a `query`-shaped response, and only
- * transaction handlers may return a CanceledTransactionSimulation.
- */
 export type MockHandler<Method extends MockableMethod = MockableMethod> =
   | MethodOutput[Method]
   | ((params: MethodInput[Method]) => MethodOutput[Method]);
@@ -85,22 +70,12 @@ export type MockClientCall = {
   params: Record<string, any>;
 };
 
-/**
- * The contract the mocked client fulfills: ElectroDB's own exported
- * V2DocumentClient (the promise-returning arm of its client union), plus
- * `createSet`, which ElectroDB calls to construct DynamoDB Sets when a
- * client is attached. Typing against the library's contract means the mock
- * cannot silently drift from what `.go({ client })` and the Entity config
- * accept.
- */
 export type MockedV2DocumentClient = V2DocumentClient & {
   createSet: (value: any) => Set<any>;
 };
 
 export type MockV2Client = {
-  /** mocked v2 DocumentClient; hand to `.go({ client })` or the Entity config */
   client: MockedV2DocumentClient;
-  /** every call the entity made, in order */
   calls: MockClientCall[];
 };
 
@@ -110,15 +85,13 @@ export function makeMockV2Client(handlers: MockHandlers = {}): MockV2Client {
     "transactWrite",
     "transactGet",
   ]);
-  const client: Record<string, any> = {
+  const client: any = {
     createSet: (value: any) => new Set([].concat(value)),
   };
   for (const method of Object.values(MockableMethods)) {
     client[method] = (params: Record<string, any>) => {
       calls.push({ method, params });
       const handler = handlers[method];
-      // the per-method precision exists for callers; internally the handler
-      // union is collapsed since `method` is not narrowed inside the loop
       const value: any =
         typeof handler === "function"
           ? (handler as (input: Record<string, any>) => unknown)(params)
@@ -155,10 +128,8 @@ export function makeMockV2Client(handlers: MockHandlers = {}): MockV2Client {
       };
     };
   }
-  // the client is assembled dynamically, so the compiler cannot connect the
-  // loop above to the contract; the cast is sound because mockableMethods
-  // mirrors every method V2DocumentClient requires
-  return { client: client as MockedV2DocumentClient, calls };
+
+  return { client, calls };
 }
 
 export type MakePagingQueryHandlerOptions = {
