@@ -5,26 +5,20 @@ import type { V2DocumentClient } from "../../index";
 
 export type StoredItem = Record<string, any>;
 
-/** every DocumentClient method the mock implements */
-export const mockableMethods = [
-  "get",
-  "put",
-  "update",
-  "delete",
-  "batchWrite",
-  "batchGet",
-  "scan",
-  "query",
-  "transactWrite",
-  "transactGet",
-] as const;
+export type MockableMethod = keyof V2DocumentClient;
 
-export type MockableMethod = (typeof mockableMethods)[number];
-
-export type TransactionMethod = Extract<
-  MockableMethod,
-  "transactWrite" | "transactGet"
->;
+const MockableMethods: Record<MockableMethod, MockableMethod> = {
+  get: "get",
+  put: "put",
+  update: "update",
+  delete: "delete",
+  batchWrite: "batchWrite",
+  batchGet: "batchGet",
+  scan: "scan",
+  query: "query",
+  transactWrite: "transactWrite",
+  transactGet: "transactGet",
+}
 
 /**
  * Instruction understood only by transaction handlers: returning this from a
@@ -92,12 +86,12 @@ export type MockClientCall = {
 };
 
 /**
- * The contract the mocked client fulfills: the v2 (promise-returning) arm of
- * ElectroDB's own exported DocumentClient union — extracted by the `get`
- * method only the v2 arm has — plus `createSet`, which ElectroDB calls to
- * construct DynamoDB Sets when a client is attached. Typing against the
- * library's contract means the mock cannot silently drift from what
- * `.go({ client })` and the Entity config accept.
+ * The contract the mocked client fulfills: ElectroDB's own exported
+ * V2DocumentClient (the promise-returning arm of its client union), plus
+ * `createSet`, which ElectroDB calls to construct DynamoDB Sets when a
+ * client is attached. Typing against the library's contract means the mock
+ * cannot silently drift from what `.go({ client })` and the Entity config
+ * accept.
  */
 export type MockedV2DocumentClient = V2DocumentClient & {
   createSet: (value: any) => Set<any>;
@@ -119,7 +113,7 @@ export function makeMockV2Client(handlers: MockHandlers = {}): MockV2Client {
   const client: Record<string, any> = {
     createSet: (value: any) => new Set([].concat(value)),
   };
-  for (const method of mockableMethods) {
+  for (const method of Object.values(MockableMethods)) {
     client[method] = (params: Record<string, any>) => {
       calls.push({ method, params });
       const handler = handlers[method];
@@ -161,9 +155,9 @@ export function makeMockV2Client(handlers: MockHandlers = {}): MockV2Client {
       };
     };
   }
-  // the client is assembled dynamically, so the loop above is what actually
-  // fulfills the contract; the compile-time probe asserting assignability to
-  // ElectroDB's DocumentClient type keeps this assertion honest
+  // the client is assembled dynamically, so the compiler cannot connect the
+  // loop above to the contract; the cast is sound because mockableMethods
+  // mirrors every method V2DocumentClient requires
   return { client: client as MockedV2DocumentClient, calls };
 }
 
