@@ -7984,3 +7984,66 @@ describe("index projection", () => {
     });
   });
 });
+
+// The `unprocessed: "raw"` execution option was once dropped entirely due to
+// a property typo (`config.unproessed`) in `_normalizeExecutionOptions`;
+// these tests pin both the option normalization and the raw/deconstructed
+// shapes of unprocessed batchGet keys. They use a mocked DocumentClient and
+// run without a database connection.
+describe("unprocessed execution option", () => {
+  const { makeMockV2Client } = require("./fixtures/mock-client");
+  const MallStores = new Entity(
+    {
+      model: { service: "BugBeater", entity: "TEST_ENTITY", version: "1" },
+      attributes: {
+        id: { type: "string", field: "storeLocationId" },
+        sector: { type: "string" },
+      },
+      indexes: {
+        store: {
+          pk: { field: "pk", composite: ["sector"] },
+          sk: { field: "sk", composite: ["id"] },
+        },
+      },
+    },
+    { table: "electro" },
+  );
+
+  const rawKey = {
+    pk: "$bugbeater#sector_a1",
+    sk: "$test_entity_1#id_abc",
+  };
+  const cannedBatchGet = {
+    Responses: { electro: [] },
+    UnprocessedKeys: { electro: { Keys: [rawKey] } },
+  };
+
+  it("normalizes onto config.unprocessed (not a typo'd property)", () => {
+    const config = (MallStores as any)._normalizeExecutionOptions({
+      provided: [{ unprocessed: "raw" }],
+    });
+    expect(config.unprocessed).to.equal("raw");
+    expect(config).to.not.have.property("unproessed");
+  });
+
+  it("returns raw DynamoDB keys when unprocessed:'raw'", async () => {
+    const { client: mockClient } = makeMockV2Client({
+      batchGet: cannedBatchGet,
+    });
+    const results = await MallStores.get([{ sector: "a1", id: "abc" }]).go({
+      client: mockClient,
+      unprocessed: "raw",
+    } as any);
+    expect(results.unprocessed).to.deep.equal([rawKey]);
+  });
+
+  it("still returns deconstructed composite attributes by default", async () => {
+    const { client: mockClient } = makeMockV2Client({
+      batchGet: cannedBatchGet,
+    });
+    const results = await MallStores.get([{ sector: "a1", id: "abc" }]).go({
+      client: mockClient,
+    } as any);
+    expect(results.unprocessed).to.deep.equal([{ sector: "a1", id: "abc" }]);
+  });
+});
