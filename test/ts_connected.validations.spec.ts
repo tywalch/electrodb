@@ -1986,3 +1986,36 @@ describe("index projection validation", () => {
     }
   });
 })
+// An invalid `watch` value once died with a raw ReferenceError (the error
+// message template referenced an undefined identifier) instead of raising a
+// descriptive ElectroError. The model is cast because the compiler rejects
+// the invalid `watch` shape this test exists to exercise at runtime.
+describe("invalid watch definition", () => {
+  const build = () =>
+    new Entity({
+      model: { service: "audit", entity: "watcher", version: "1" },
+      table: "electro",
+      attributes: {
+        id: { type: "string" },
+        a: { type: "string", watch: "notvalid" },
+      },
+      indexes: {
+        primary: {
+          pk: { field: "pk", composite: ["id"] },
+          sk: { field: "sk", composite: [] },
+        },
+      },
+    } as any);
+
+  it("throws a descriptive ElectroError, not a ReferenceError", () => {
+    let error: any;
+    try {
+      build();
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error, "expected model construction to throw").to.exist;
+    expect(error).to.not.be.an.instanceof(ReferenceError);
+    expect(error.message).to.match(/array of attribute names/);
+  });
+});

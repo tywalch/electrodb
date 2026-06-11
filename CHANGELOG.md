@@ -665,3 +665,14 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.9.0]
 ### Added
 - Added a new `returnOnConditionCheckFailure` execution option for write operations. Instead of throwing when a condition expression fails, the call resolves with `{ rejected: true }`. Pass `true` to get just the rejection flag, or `"all_old"` to also receive the existing item under `data`. The `"all_old"` mode requires AWS SDK v3, or AWS SDK v2 >= `2.1408.0`.
+
+## [3.9.1]
+### Fixed
+- The `unprocessed: "raw"` execution option now works as documented. Previously the option was silently ignored, and unprocessed keys returned from batch operations were always deconstructed into composite attributes; passing `"raw"` now returns them in their raw key format.
+- Set attributes flagged `hidden: true` are no longer returned when nested inside a `map` attribute. Hidden attributes of every type and depth now stay hidden — if your application was reading these values on parent map attributes despite the flag, they will no longer be present in responses.
+- Set attributes defined with enum items now produce a valid, typed DynamoDB Set when generating parameters without an attached client. Previously the generated set was malformed (missing its type) and could be rejected by DynamoDB if sent as-is. Relatedly, defining a set with an unsupported member type now fails immediately with an `Invalid Set type` error instead of continuing with an invalid set.
+- Defining an attribute with an invalid `watch` value now fails with a validation error explaining the accepted values (an array of attribute names or `"*"`). Previously entity construction crashed with an unhelpful `ReferenceError`.
+- Transaction results are now reliable in several edge cases: `transactGet` results keep their expected order and count even when a returned item cannot be matched to one of your entities (such slots resolve to `null`); canceled transactions containing such items no longer throw; each result in a transaction response is now a distinct object, so modifying one no longer silently modifies the others; and passing the same options object to multiple `.go()` calls no longer causes loggers and listeners to fire additional times with each call.
+
+### Changed
+- Corrected documentation that had drifted from actual behavior. Most notably, the descriptions of `find` and `match` were swapped: `match` is the method that applies your provided values as query filters, while `find` only uses them to seek an index. If you chose between these methods based on the documentation, double-check you are using the one you intended.

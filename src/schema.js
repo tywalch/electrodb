@@ -1125,6 +1125,9 @@ class SetAttribute extends Attribute {
       ? (value, getSiblings) => get(value, getSiblings())
       : (attr) => attr;
     return (values, getSiblings) => {
+      if (this.hidden) {
+        return;
+      }
       if (values !== undefined) {
         const data = this.fromDDBSet(values);
         return getter(data, getSiblings);
@@ -1423,7 +1426,7 @@ class Schema {
         } else {
           throw new e.ElectroError(
             e.ErrorCodes.InvalidAttributeWatchDefinition,
-            `Attribute Validation Error. The attribute '${name}' is defined to "watch" an invalid value of: '${attribute.watch}'. The watch property must either be a an array of attribute names, or the single string value of "${WatchAll}".`,
+            `Attribute Validation Error. The attribute '${name}' is defined to "watch" an invalid value of: '${attribute.watch}'. The watch property must either be a an array of attribute names, or the single string value of "${AttributeWildCard}".`,
           );
         }
       } else {
