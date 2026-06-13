@@ -1194,3 +1194,116 @@ describe("service transactions", () => {
     });
   }
 });
+
+// Offline unit tests for transaction result handling, pinning fixes for a
+// batch of result-handling defects: transactGet results losing their position
+// when an item belonged to an unjoined entity, cleanseCanceledData crashing
+// on an unmatched canceled Item, every result slot sharing one mutable
+// object, and `.go(options)` mutating the caller's options object. They use a
+// mocked DocumentClient and run without a database connection.
+describe("transaction result handling", () => {
+  const { makeMockV2Client } = require("./fixtures/mock-client");
+  const {
+    cleanseTransactionData,
+    cleanseCanceledData,
+    createWriteTransaction,
+  } = require("../src/transaction");
+  const { TableIndex } = require("../src/types");
+
+  const makeEntity = (entityName: string, extraAttribute: string) =>
+    new Entity({
+      model: { service: "txtest", entity: entityName, version: "1" },
+      table: "electro",
+      attributes: {
+        id: { type: "string" },
+        [extraAttribute]: { type: "string" },
+      },
+      indexes: {
+        primary: {
+          pk: { field: "pk", composite: ["id"] },
+          sk: { field: "sk", composite: [] },
+        },
+      },
+    } as any);
+
+  const alpha = makeEntity("alpha", "name");
+  const bravo = makeEntity("bravo", "label");
+  const unjoined = makeEntity("xray", "value"); // never joined to the entities map
+
+  const recordAlpha = alpha.put({ id: "a1", name: "alice" }).params().Item;
+  const recordBravo = bravo.put({ id: "b1", label: "bob" }).params().Item;
+  const recordUnjoined = unjoined
+    .put({ id: "x1", value: "ghost" })
+    .params().Item;
+
+  it("preserves position and size of transactGet results when an item is unmatched", () => {
+    const results = cleanseTransactionData(
+      TableIndex,
+      { a: alpha, b: bravo },
+      { Items: [recordAlpha, recordUnjoined, recordBravo] },
+      {},
+    );
+    expect(results).to.have.length(3);
+    expect(results[0].item).to.deep.equal({ id: "a1", name: "alice" });
+    expect(results[1].item).to.equal(null); // unmatched -> null placeholder
+    expect(results[2].item).to.deep.equal({ id: "b1", label: "bob" });
+  });
+
+  it("does not crash on a canceled reason whose Item is unmatched", () => {
+    let results: any;
+    expect(() => {
+      results = cleanseCanceledData(
+        TableIndex,
+        { a: alpha, b: bravo },
+        {
+          canceled: [
+            { Code: "None", Item: recordAlpha },
+            { Code: "ConditionalCheckFailed", Item: recordUnjoined },
+            { Code: "None", Item: recordBravo },
+          ],
+        },
+        {},
+      );
+    }).to.not.throw();
+    expect(results).to.have.length(3);
+    expect(results[0].item).to.deep.equal({ id: "a1", name: "alice" });
+    expect(results[1]).to.deep.include({
+      rejected: true,
+      code: "ConditionalCheckFailed",
+      item: null,
+    });
+    expect(results[2].item).to.deep.equal({ id: "b1", label: "bob" });
+  });
+
+  it("does not share a single result object across all slots", async () => {
+    const { client: mockClient } = makeMockV2Client({ transactWrite: {} });
+    const transaction = createWriteTransaction({ alpha }, (entities: any) => [
+      entities.alpha.put({ id: "a1", name: "alice" }).commit(),
+      entities.alpha.put({ id: "a2", name: "amy" }).commit(),
+    ]);
+    const result = await transaction.go({ client: mockClient });
+    expect(result.data).to.have.length(2);
+    result.data[0].code = "MUTATED";
+    expect(result.data[1].code).to.equal("None");
+  });
+
+  it("does not mutate the caller's options object", async () => {
+    const { client: mockClient } = makeMockV2Client({ transactWrite: {} });
+    const events: string[] = [];
+    const options: Record<string, any> = {
+      client: mockClient,
+      logger: (event: any) => events.push(event.type),
+    };
+    const makeTransaction = () =>
+      createWriteTransaction({ alpha }, (entities: any) => [
+        entities.alpha.put({ id: "a1", name: "alice" }).commit(),
+      ]);
+    await makeTransaction().go(options);
+    const eventsAfterFirstCall = events.length;
+    await makeTransaction().go(options);
+    const eventsAfterSecondCall = events.length - eventsAfterFirstCall;
+    expect(options).to.not.have.property("listeners");
+    // logger should fire the same number of times on each identical call
+    expect(eventsAfterSecondCall).to.equal(eventsAfterFirstCall);
+  });
+});

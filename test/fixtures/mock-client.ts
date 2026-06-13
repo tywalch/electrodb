@@ -1,59 +1,101 @@
-/**
- * Shared offline client mocks. These fixtures are used by both the offline
- * test suites (test/offline.*.spec.*) and the benchmark scenarios
- * (benchmark/scenarios/*.benchmark.ts); they must stay dependency-free and
- * synchronous so neither consumer needs network or DynamoDB access.
- */
+import type { DocumentClient } from "aws-sdk/clients/dynamodb";
+import type { V2DocumentClient } from "../../index";
 
 export type StoredItem = Record<string, any>;
 
-export interface MockClientCall {
-  method: string;
+export type MockableMethod = keyof V2DocumentClient;
+
+const MockableMethods: Record<MockableMethod, MockableMethod> = {
+  get: "get",
+  put: "put",
+  update: "update",
+  delete: "delete",
+  batchWrite: "batchWrite",
+  batchGet: "batchGet",
+  scan: "scan",
+  query: "query",
+  transactWrite: "transactWrite",
+  transactGet: "transactGet",
+}
+
+export type CanceledTransactionSimulation = {
+  cancellationReasons: Array<{
+    Code?: string;
+    Item?: StoredItem;
+    Message?: string;
+  }>;
+};
+
+type MethodInput = {
+  get: DocumentClient.GetItemInput;
+  put: DocumentClient.PutItemInput;
+  update: DocumentClient.UpdateItemInput;
+  delete: DocumentClient.DeleteItemInput;
+  batchWrite: DocumentClient.BatchWriteItemInput;
+  batchGet: DocumentClient.BatchGetItemInput;
+  scan: DocumentClient.ScanInput;
+  query: DocumentClient.QueryInput;
+  transactWrite: DocumentClient.TransactWriteItemsInput;
+  transactGet: DocumentClient.TransactGetItemsInput;
+};
+
+type MethodOutput = {
+  get: DocumentClient.GetItemOutput;
+  put: DocumentClient.PutItemOutput;
+  update: DocumentClient.UpdateItemOutput;
+  delete: DocumentClient.DeleteItemOutput;
+  batchWrite: DocumentClient.BatchWriteItemOutput;
+  batchGet: DocumentClient.BatchGetItemOutput;
+  scan: DocumentClient.ScanOutput;
+  query: DocumentClient.QueryOutput;
+  transactWrite:
+    | DocumentClient.TransactWriteItemsOutput
+    | CanceledTransactionSimulation;
+  transactGet:
+    | DocumentClient.TransactGetItemsOutput
+    | CanceledTransactionSimulation;
+};
+
+export type MockHandler<Method extends MockableMethod = MockableMethod> =
+  | MethodOutput[Method]
+  | ((params: MethodInput[Method]) => MethodOutput[Method]);
+
+/** method-name-keyed map: unknown method names are compile errors */
+export type MockHandlers = {
+  [Method in MockableMethod]?: MockHandler<Method>;
+};
+
+export type MockClientCall = {
+  method: MockableMethod;
   params: Record<string, any>;
-}
+};
 
-export type MockHandler =
-  | ((params: Record<string, any>) => any)
-  | Record<string, any>;
+export type MockedV2DocumentClient = V2DocumentClient & {
+  createSet: (value: any) => Set<any>;
+};
 
-export interface MockV2Client {
-  /** duck-typed v2 DocumentClient; hand to `.go({ client })` or the Entity config */
-  client: any;
-  /** every call the entity made, in order */
+export type MockV2Client = {
+  client: MockedV2DocumentClient;
   calls: MockClientCall[];
-}
+};
 
-// A minimal v2-style DocumentClient mock. Non-transaction methods return an
-// object with `.promise()`; transaction methods return a request-like object
-// (`on`/`abort`/`promise`) so it works both directly (via `_exec`) and through
-// the v2 wrapper. `handlers` maps a method name to a canned response (or a
-// function of the params). Transaction handlers may return
-// `{ cancellationReasons: [...] }` to simulate a canceled transaction.
-export function makeMockV2Client(
-  handlers: Record<string, MockHandler> = {},
-): MockV2Client {
+export function makeMockV2Client(handlers: MockHandlers = {}): MockV2Client {
   const calls: MockClientCall[] = [];
-  const transactMethods = new Set(["transactWrite", "transactGet"]);
-  const methods = [
-    "get",
-    "put",
-    "update",
-    "delete",
-    "batchWrite",
-    "batchGet",
-    "scan",
-    "query",
+  const transactMethods = new Set<MockableMethod>([
     "transactWrite",
     "transactGet",
-  ];
-  const client: Record<string, any> = {
+  ]);
+  const client: any = {
     createSet: (value: any) => new Set([].concat(value)),
   };
-  for (const method of methods) {
+  for (const method of Object.values(MockableMethods)) {
     client[method] = (params: Record<string, any>) => {
       calls.push({ method, params });
       const handler = handlers[method];
-      const value = typeof handler === "function" ? handler(params) : handler;
+      const value: any =
+        typeof handler === "function"
+          ? (handler as (input: Record<string, any>) => unknown)(params)
+          : handler;
       if (transactMethods.has(method)) {
         const stored: Record<string, (input: any) => void> = {};
         return {
@@ -86,21 +128,26 @@ export function makeMockV2Client(
       };
     };
   }
+
   return { client, calls };
 }
 
-export interface PagingQueryHandlerOptions {
+export type MakePagingQueryHandlerOptions = {
   pages: number;
   perPage: number;
   /** produces the i-th stored item (from-DynamoDB shape, including key fields) */
   makeItem: (i: number) => StoredItem;
-}
+};
 
-export interface PagingQueryResponse {
+export type PagingQueryResponse = {
   Items: StoredItem[];
   Count: number;
   LastEvaluatedKey?: { pk: any; sk: any };
-}
+};
+
+export type MakePagingQueryHandlerResponse = (
+  params: Record<string, any>,
+) => PagingQueryResponse;
 
 // Builds a `query`/`scan` handler that pages through `pages` responses of
 // `perPage` items each, emitting a `LastEvaluatedKey` on every page but the
@@ -108,13 +155,10 @@ export interface PagingQueryResponse {
 // resumes from the params' `ExclusiveStartKey` by locating the item whose
 // pk/sk match, so it also honors cursors ElectroDB synthesizes mid-page
 // (e.g. when a `count` limit lands inside a page).
-export function makePagingQueryHandler({
-  pages,
-  perPage,
-  makeItem,
-}: PagingQueryHandlerOptions): (
-  params: Record<string, any>,
-) => PagingQueryResponse {
+export function makePagingQueryHandler(
+  options: MakePagingQueryHandlerOptions,
+): MakePagingQueryHandlerResponse {
+  const { pages, perPage, makeItem } = options;
   const items: StoredItem[] = [];
   const indexBySortKey = new Map<string, number>();
   for (let i = 0; i < pages * perPage; i++) {
