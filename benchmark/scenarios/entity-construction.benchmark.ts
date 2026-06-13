@@ -1,6 +1,3 @@
-/**
- * P5 — Entity construction cost (model validation dominates).
- */
 import type { ScenarioEntry } from "../run";
 import { table, makeFixtureModel } from "../../test/fixtures/entities";
 

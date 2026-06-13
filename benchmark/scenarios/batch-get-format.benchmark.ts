@@ -1,6 +1,3 @@
-/**
- * P2 — batchGet response formatting calls formatResponse once per item.
- */
 import type { ScenarioEntry } from "../run";
 import { makeMockV2Client, StoredItem } from "../../test/fixtures/mock-client";
 import {

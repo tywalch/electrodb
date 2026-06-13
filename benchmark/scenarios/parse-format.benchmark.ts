@@ -1,7 +1,3 @@
-/**
- * P2 + P4 — response formatting: per-item getter passes, sibling snapshots,
- * path lookups, and (formerly) per-call error allocation.
- */
 import type { ScenarioEntry } from "../run";
 import type { StoredItem } from "../../test/fixtures/mock-client";
 import {

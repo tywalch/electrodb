@@ -1,7 +1,3 @@
-/**
- * P3 — chain construction + params building. Read chains (get/query/scan)
- * should never build update machinery; update/upsert chains pay for it once.
- */
 import type { ScenarioEntry } from "../run";
 import { makeFixtureEntity } from "../../test/fixtures/entities";
 

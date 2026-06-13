@@ -1,7 +1,3 @@
-/**
- * P1 — auto-paging accumulation across many pages (`pages: "all"`). The
- * O(pages²) → O(pages) change shows up most at high page counts.
- */
 import type { ScenarioEntry } from "../run";
 import {
   makeMockV2Client,
