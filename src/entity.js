@@ -753,12 +753,14 @@ class Entity {
               config,
             );
             items = hydrated.data;
-            hydratedUnprocessed = hydratedUnprocessed.concat(
-              hydrated.unprocessed,
-            );
+            for (const unprocessed of hydrated.unprocessed) {
+              hydratedUnprocessed.push(unprocessed);
+            }
           }
-          results[entity] = results[entity] || [];
-          results[entity] = [...results[entity], ...items];
+          const entityResults = (results[entity] = results[entity] || []);
+          for (const item of items) {
+            entityResults.push(item);
+          }
         }
       } else if (Array.isArray(response.data)) {
         let prevCount = count;
@@ -777,11 +779,13 @@ class Entity {
             config,
           );
           items = hydrated.data;
-          hydratedUnprocessed = hydratedUnprocessed.concat(
-            hydrated.unprocessed,
-          );
+          for (const unprocessed of hydrated.unprocessed) {
+            hydratedUnprocessed.push(unprocessed);
+          }
         }
-        results = [...results, ...items];
+        for (const item of items) {
+          results.push(item);
+        }
         if (moreItemsThanRequired || count === config.count) {
           const lastItem = results[results.length - 1];
           ExclusiveStartKey = this._fromCompositeToKeysByIndex({
@@ -989,10 +993,6 @@ class Entity {
   }
 
   formatResponse(response, index, config = {}) {
-    let stackTrace;
-    if (!config.originalErr) {
-      stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
-    }
     try {
       let results = {};
       if (validations.isFunction(config.parse)) {
@@ -1058,13 +1058,12 @@ class Entity {
 
       return { data: results };
     } catch (err) {
-      if (
-        config.originalErr ||
-        stackTrace === undefined ||
-        err.isElectroError
-      ) {
+      if (config.originalErr || err.isElectroError) {
         throw err;
       } else {
+        // built only on the throw path; formatResponse is synchronous so the
+        // stack captured here matches what eager construction produced
+        const stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
         stackTrace.message = `Error thrown by DynamoDB client: "${err.message}" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error`;
         stackTrace.cause = err;
         throw stackTrace;
@@ -2119,7 +2118,6 @@ class Entity {
       update = {},
       filter = {},
       upsert,
-      updateProxy,
     } = state.query;
     let consolidatedQueryFacets = this._consolidateQueryFacets(keys.sk);
     let params = {};
@@ -2134,8 +2132,10 @@ class Entity {
         );
         break;
       case MethodTypes.upsert:
+        // updateProxy is read inside the case (not destructured above) so
+        // read methods never trigger its lazy construction
         params = this._makeUpsertParams(
-          { update, upsert, updateProxy },
+          { update, upsert, updateProxy: state.query.updateProxy },
           keys.pk,
           ...keys.sk,
         );
