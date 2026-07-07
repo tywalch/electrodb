@@ -1,5 +1,3 @@
-/** @jsxImportSource preact */
-import type { FunctionalComponent } from "preact";
 import "./ThemeToggleButton.css";
 
 const SunIcon = (
@@ -44,7 +42,7 @@ const MoonIcon = (
   </svg>
 );
 
-const ThemeToggle: FunctionalComponent = () => {
+const ThemeToggle = () => {
   const handleClick = () => {
     const root = document.documentElement;
     let isDark: boolean;

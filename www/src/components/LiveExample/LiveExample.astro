@@ -23,7 +23,8 @@ const LABELS: Record<string, string> = {
 const ORDER = ["example.ts", "entity.ts", "table.ts"];
 
 const sources = import.meta.glob("/src/examples/*/*.ts", {
-  as: "raw",
+  query: "?raw",
+  import: "default",
   eager: true,
 }) as Record<string, string>;
 

@@ -4,8 +4,6 @@
     "jsx": "preserve",
     "skipLibCheck": true,
     "noEmit": true,
-    // astro v1's base tsconfig sets importsNotUsedAsValues, deprecated in TS 5
-    "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "paths": {
       // Resolves imports in src/examples/** against the actual ElectroDB
@@ -13,5 +11,6 @@
       // against the current API.
       "electrodb": ["../index.d.ts"]
     }
-  }
+  },
+  "exclude": ["dist", "public"]
 }
