@@ -4043,12 +4043,14 @@ function configure(custom = {}) {
   };
 }
 
-function printToScreen({ params, state, entity, cache } = {}) {
+function printToScreen({ params, state, entity, cache, stack } = {}) {
   const label = formatParamLabel(state, entity);
   if (cache) {
     window.electroParams.push({ title: label, json: params });
   }
-  listener.onParams({ label, params, cache });
+  // `stack` is the call stack captured where the operation was invoked;
+  // listeners can use it to associate output with the source that created it.
+  listener.onParams({ label, params, cache, stack });
 }
 
 function printMessage(type, message) {
@@ -4065,6 +4067,25 @@ function promiseCallback(results) {
   return {
     promise: async () => results,
   };
+}
+
+// Some operations (collections, create) sit many frames deep in electrodb
+// internals; the default stack limit (10 in V8) can truncate the stack
+// before it reaches the calling user code.
+function captureStack() {
+  const limit = Error.stackTraceLimit;
+  try {
+    Error.stackTraceLimit = 64;
+  } catch (err) {
+    // not configurable in this engine
+  }
+  const stack = new Error().stack;
+  try {
+    Error.stackTraceLimit = limit;
+  } catch (err) {
+    // ignore
+  }
+  return stack;
 }
 
 class Entity extends ElectroDB.Entity {
@@ -4088,6 +4109,7 @@ class Entity extends ElectroDB.Entity {
             UnprocessedKeys: { [options.table]: { Keys: [] } },
           }),
         transactWrite: (params) => {
+          const stack = captureStack();
           return {
             promise: async () => {
               printToScreen({
@@ -4095,6 +4117,7 @@ class Entity extends ElectroDB.Entity {
                 entity: this,
                 cache: true,
                 state: "Performs a TransactWrite operation",
+                stack,
               });
               return {};
             },
@@ -4102,6 +4125,7 @@ class Entity extends ElectroDB.Entity {
           };
         },
         transactGet: (params) => {
+          const stack = captureStack();
           return {
             promise: async () => {
               printToScreen({
@@ -4109,6 +4133,7 @@ class Entity extends ElectroDB.Entity {
                 entity: this,
                 cache: true,
                 state: "Performs a TransactGet operation",
+                stack,
               });
               return { Responses: [] };
             },
@@ -4121,6 +4146,9 @@ class Entity extends ElectroDB.Entity {
   }
 
   _demoParams(method, state, config) {
+    // Param creation happens synchronously inside the user's `.go()`/
+    // `.params()` call, so the stack still contains their call site.
+    const stack = captureStack();
     try {
       const params = super[method](state, config);
       if (params && typeof params.catch === "function") {
@@ -4130,7 +4158,7 @@ class Entity extends ElectroDB.Entity {
         });
       }
       if (state.self !== "commit") {
-        printToScreen({ params, state, entity: this, cache: true });
+        printToScreen({ params, state, entity: this, cache: true, stack });
       }
       return params;
     } catch (err) {
