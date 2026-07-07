@@ -2,6 +2,16 @@
   "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
     "jsx": "preserve",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "noEmit": true,
+    // astro v1's base tsconfig sets importsNotUsedAsValues, deprecated in TS 5
+    "ignoreDeprecations": "5.0",
+    "baseUrl": ".",
+    "paths": {
+      // Resolves imports in src/examples/** against the actual ElectroDB
+      // typings at the repo root so documentation examples are type-checked
+      // against the current API.
+      "electrodb": ["../index.d.ts"]
+    }
   }
 }

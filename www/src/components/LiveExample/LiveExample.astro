@@ -1,0 +1,71 @@
+---
+import ts from "typescript";
+import lzString from "lz-string";
+import { LiveExampleControl } from "./LiveExampleControl";
+import type { ExampleFile } from "./runtime";
+import "./LiveExample.css";
+
+export interface Props {
+  /** Directory name under src/examples containing the example files */
+  name: string;
+}
+
+const { name } = Astro.props as Props;
+
+const LABELS: Record<string, string> = {
+  "example.ts": "Example",
+  "entity.ts": "Entity",
+  "table.ts": "Table Definition",
+};
+
+// example.ts must come first: it is the program entry point (the other
+// files execute when imported), and it is the tab shown by default.
+const ORDER = ["example.ts", "entity.ts", "table.ts"];
+
+const sources = import.meta.glob("/src/examples/*/*.ts", {
+  as: "raw",
+  eager: true,
+}) as Record<string, string>;
+
+const files: ExampleFile[] = Object.entries(sources)
+  .filter(([path]) => path.includes(`/examples/${name}/`))
+  .map(([path, source]) => {
+    const fileName = path.split("/").pop() as string;
+    const trimmed = source.trim();
+    return {
+      name: fileName,
+      label: LABELS[fileName] ?? fileName,
+      source: trimmed,
+      compiled: ts.transpileModule(trimmed, {
+        fileName,
+        compilerOptions: {
+          module: ts.ModuleKind.CommonJS,
+          target: ts.ScriptTarget.ES2017,
+          esModuleInterop: true,
+        },
+      }).outputText,
+    };
+  })
+  .sort((a, b) => {
+    const left = ORDER.indexOf(a.name);
+    const right = ORDER.indexOf(b.name);
+    return (left === -1 ? ORDER.length : left) - (right === -1 ? ORDER.length : right);
+  });
+
+if (files.length === 0) {
+  throw new Error(
+    `LiveExample: no files found for example "${name}" (expected TypeScript files under src/examples/${name}/)`,
+  );
+}
+
+// Deep-link into the playground's multi-file format so readers can edit and
+// run this exact example at electrodb.fun.
+const playgroundUrl = `https://electrodb.fun/#files/${lzString.compressToEncodedURIComponent(
+  JSON.stringify({
+    v: 1,
+    files: files.map((file) => ({ name: file.name, content: file.source })),
+  }),
+)}`;
+---
+
+<LiveExampleControl client:visible files={files} playgroundUrl={playgroundUrl} />
