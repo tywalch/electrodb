@@ -30,3 +30,15 @@ step, examples cannot silently drift out of sync with the ElectroDB API: if
 an example stops compiling, the docs build fails. An example that needs a
 schema tweak can modify its own `entity.ts`/`table.ts` copies without
 affecting other pages.
+
+## Testing
+
+`npm run test:examples` (run in CI by `.github/workflows/docs.yml` alongside
+`npm run check` and the site build) executes every example against the
+repository's own ElectroDB with a mocked DynamoDB client and fails if any
+example throws.
+
+Examples that are *supposed* to throw — pages that intentionally demonstrate
+an error — opt in by adding an `expected-error.txt` file (containing a short
+explanation) to their directory; for those, completing without an error is
+the test failure. The file is not rendered by the control.

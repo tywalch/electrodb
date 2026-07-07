@@ -1,0 +1,1 @@
+This example intentionally omits the "cityId" partition key composite attribute; ElectroDB cannot build a key and throws. The docs render this error on purpose.

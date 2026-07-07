@@ -217,7 +217,7 @@ class Entity extends ElectroDB.Entity {
         scan: () => promiseCallback({ Items: [] }),
         batchWrite: () =>
           promiseCallback({
-            UnprocessedKeys: { [options.table]: { Keys: [] } },
+            UnprocessedItems: { [options.table]: [] },
           }),
         batchGet: () =>
           promiseCallback({
