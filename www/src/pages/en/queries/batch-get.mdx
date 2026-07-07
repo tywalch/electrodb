@@ -14,6 +14,8 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
+import LiveExample from "../../../components/LiveExample/LiveExample.astro";
+
 Provide all Table Index composite attributes in an array of objects to the `get` method to perform a BatchGet query.
 
 > When performing a BatchGet the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchGet allows queries larger than the docClient's limit of 100 records
@@ -30,26 +32,9 @@ It is important to consider your Table's throughput considerations when setting 
 
 ## Example
 
-import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
+> The **Entity** and **Table Definition** tabs show the setup this example runs against, and the generated parameters below are produced live by executing the example.
 
-<ExampleSetup />
-
-```javascript
-const { data, unprocessed } = await StoreLocations.get([
-  {
-    storeId: "LatteLarrys",
-    mallId: "EastPointe",
-    buildingId: "F34",
-    cityId: "Atlanta1",
-  },
-  {
-    storeId: "MochaJoes",
-    mallId: "WestEnd",
-    buildingId: "A21",
-    cityId: "Madison2",
-  },
-]).go({ concurrent: 1 }); // `concurrent` value is optional and default's to `1`
-```
+<LiveExample name="batch-get-store-locations" />
 
 ## Response Format
 
@@ -57,27 +42,6 @@ const { data, unprocessed } = await StoreLocations.get([
 {
   data: Array<YOUR_SCHEMA>,
   unprocessed: Array<YOUR_COMPOSITE_ATTRIBUTES>
-}
-```
-
-## Equivalent Parameters
-
-```json
-{
-  "RequestItems": {
-    ["YOUR_TABLE_NAME"]: {
-      "Keys": [
-        {
-          "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
-          "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
-        },
-        {
-          "pk": "$mallstoredirectory#cityid_madison2#mallid_westend",
-          "sk": "$mallstore_1#buildingid_a21#storeid_mochajoes"
-        }
-      ]
-    }
-  }
 }
 ```
 

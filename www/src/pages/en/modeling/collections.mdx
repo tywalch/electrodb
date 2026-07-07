@@ -14,6 +14,8 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
+import LiveExample from "../../../components/LiveExample/LiveExample.astro";
+
 ## Overview
 
 A Collection is a grouping of Entities with the same Partition Key and allows you to make an efficient query across multiple entities. If your background is SQL, imagine Partition Keys as Foreign Keys, a Collection represents a View with multiple joined Entities.
@@ -137,20 +139,9 @@ const Task = new Entity({
 
 ### Example
 
-```typescript
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+> The **Entities** and **Service** tabs show the setup this example runs against, and the generated parameters below are produced live by executing the example.
 
-const table = "projectmanagement";
-const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
-
-const TaskApp = new Service({
-  employee: Employee,
-  task: Task,
-});
-
-await TaskApp.collections.assignments({ employeeId: "JExotic" }).go();
-```
+<LiveExample name="collections-taskapp-assignments" />
 
 ### Response Format
 
@@ -164,23 +155,6 @@ await TaskApp.collections.assignments({ employeeId: "JExotic" }).go();
 }
 ```
 
-### Equivalent Parameters
-
-```json
-{
-  "TableName": "projectmanagement",
-  "ExpressionAttributeNames": { "#pk": "gsi2pk", "#sk1": "gsi2sk" },
-  "ExpressionAttributeValues": {
-    ":pk": "$taskapp_1#employeeid_joeexotic",
-    ":sk1": "$assignments"
-  },
-  "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
-  "IndexName": "gsi2"
-}
-```
-
-[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAngGjgZQFMoA3YAY0LgF84AzKCEOAIkIBtDyZGATAIxYBuAFAjyEVAGd4MAIb9OcALyswjAFZcYIOajkBzQiELphYidPjGw7CFkKEpKuKkIB3FOkxYAFAhE4OBAIXg4ALkRAoLhTDGxItnA7BycWHGigkmIpYElEgEZ0zLgpYjJKRPkpAGs5MDBioOoMoLkYHmB+AFcYJ0iAmNjk+0cASV4BkqDsMEJEmShgVAMWEpaS6AM9YAAvdrzUCamhmaw5hc6VtaGNof0TE9PZ+dZF5dX11pi+uRAnoYvSIAbRYGm6YEwxHSrBMUHI3SgWBhLCk7URqBYAF11tE7nBlmEAB79KJDGRyOh0AExMA1GlDOjADiTNQ1JqnIIScAQXJ9EEsLY7fYYSQTbHTGjfcn0smc+jM9is1Hs6WnbmQPmvUE2FLjXgSznUL4lXWjV6DdUQdicbiHRJyKS5AyoEzoKQcoaEwhExIGXIAJk9tNlls5TJZfsDdODQw1vKhArNqXFWLVzXTpVDkqCEaVUeAAdqsZi8a1ILTkvxzTxIhaiDg8kUVGoAEoLJIZI3HTVnKo3J40PE-JaQmF2DS4j4qj2PWrslBcvlWEU1WVSBRXixqnUGhz8e1Oj0+lIaTvjnLAect+9riahsn9QzG9fLks77c1eoIFpuBewz8r5vFcnyfiU8ScM+QLAe+oExNWcD8KEWBQUBqIgTc8F4t83okqel5wN+v4wM+dLPrmirKjGmZckwmqJnAoJEdoqZVpmtTkQqkZvKqOZwGWDGgueBo4ka94xI6zpuKyAG0Ta2j2qwknAC6bowHOkq4QWQaZmRBGMpR2nUXxAn8oxSS2OaqaZghQQcfpMR5sq-qFsWNH8XRCZmUxmgsSJNlqsaNb1kgTZKG2ojiJ2sg9vUYAuAOBDlJu-iPk4eA7lIEViDucUAHQSPJdqdiIACQeXKapcRSKlIwpsqABSyBEhAGDkCwbZlXlBgQL4rZCEAA)
-
 ## Collection Queries vs Entity Queries
 
 To query across entities, collection queries make use of ElectroDB's Sort Key structure, which prefixes Sort Key fields with the collection name. Unlike an Entity Query, Collection queries for [isolated indexes](/en/modeling/indexes#isolated-indexes) only leverage [Composite Attributes](/en/modeling/indexes#composite-attribute-arrays) from an access pattern's Partition Key, while Collection queries for [clustered indexes](/en/modeling/indexes#clustered-indexes) allow you to query on both Partition and Sort Keys.
@@ -191,54 +165,13 @@ To better explain how Collection Queries are formed, here is a juxtaposition of 
 
 #### Example
 
-```typescript
-await TaskApp.entities.task.query.assigned({ employeeId: "JExotic" }).go();
-```
-
-#### Equivalent Parameters
-
-```json
-{
-  "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
-  "TableName": "projectmanagement",
-  "ExpressionAttributeNames": {
-    "#pk": "gsi2pk",
-    "#sk1": "gsi2sk"
-  },
-  "ExpressionAttributeValues": {
-    ":pk": "$taskapp#employeeid_jexotic",
-    ":sk1": "$assignments#tasks_1"
-  },
-  "IndexName": "gsi2"
-}
-```
-
-[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAngGjgZQFMoA3YAY0LgF84AzKCEOAIkIBtDyZGATAIxYBuAFAjyEVAGd4MAIb9OcALyswjAFZcYIOajkBzQiELphYidPjGw7CFkKEpKuKkIB3FOkxYAFAhE4OBAIXg4ALkRAoLhTDGxItnA7BycWHGigkmIpYElEgEZ0zLgpYjJKRPkpAGs5MDBioOoMoLkYHmB+AFcYJ0iAmNjk+0cASV4BkqDsMEJEmShgVAMWEpaS6AM9YAAvdrzUCamhmaw5hc6VtaGNof0TE9PZ+dZF5dX11pi+uRAnoYvSIAbRYGm6YEwxHSrBMUHI3SgWBhLCk7URqBYAF11tE7nBlmEAB79KJDGRyOh0AExMA1GlDOjADiTNQ1JqnIIScAQXJ9EEsLY7fYYSQTbHTGjfcn0smc+jM9is1Hs6WnbmQPmvUE2FLjXgSznUL4lXWjV6DdUQdicbiHRJyKS5AyoEzoKQcoaEwhExIGXIAJk9tNlls5TJZfsDdODQw1vKhArNqXFWLVzXTpVDkqCEaVUeAAdqsZi8a1ILTkvxzTxIhaiDg8kUVGoAEoLJIZI3HTVnKo3J40PE-JaQmF2DS4j4qj2PWrslBcvlWEU1WVSBRXixqnUGhz8e1Oj0+lIaTvjnLAect+9riahsn9QzG9fLks77c1eoIFpuBewz8r5vFcnyfiU8ScM+QLAe+oExNWcD8KEWBQUBqIgTc8F4t83okqel5wN+v4wM+dLPrmirKjGmZckwmqJnAoJEdoqZVpmtTkQqkZvKqOZwGWDGgueBo4ka94xI6zpuKyAG0Ta2j2qwknAC6bowHOkq4QWQaZmRBGMpR2nUXxAn8oxSS2OaqaZghQQcfpMR5sq-qFsWNH8XRCZmUxmgsSJNlqsaNb1kgTZKG2ojiJ2sg9vUYAuAOBDlJu-iPk4eA7lIEViDucUAHRThgTjRHlmV5QAjt0xBYCIACQeXKS6hC8KlIwpsqABSyBEhAGDkCwbZ1XlBgQL4rZCEAA)
+<LiveExample name="collections-entity-query-assigned" />
 
 ### Collection Query
 
 #### Example
 
-```typescript
-await TaskApp.collections.assignments({ employeeId: "JExotic" }).go();
-```
-
-#### Equivalent Parameters
-
-```json
-{
-  "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
-  "TableName": "projectmanagement",
-  "ExpressionAttributeNames": { "#pk": "gsi2pk", "#sk1": "gsi2sk" },
-  "ExpressionAttributeValues": {
-    ":pk": "$taskapp#employeeid_jexotic",
-    ":sk1": "$assignments"
-  },
-  "IndexName": "gsi2"
-}
-```
-
-[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAngGjgZQFMoA3YAY0LgF84AzKCEOAIkIBtDyZGATAIxYBuAFAjyEVAGd4MAIb9OcALyswjAFZcYIOajkBzQiELphYidPjGw7CFkKEpKuKkIB3FOkxYAFAhE4OBAIXg4ALkRAoLhTDGxItnA7BycWHGigkmIpYElEgEZ0zLgpYjJKRPkpAGs5MDBioOoMoLkYHmB+AFcYJ0iAmNjk+0cASV4BkqDsMEJEmShgVAMWEpaS6AM9YAAvdrzUCamhmaw5hc6VtaGNof0TE9PZ+dZF5dX11pi+uRAnoYvSIAbRYGm6YEwxHSrBMUHI3SgWBhLCk7URqBYAF11tE7nBlmEAB79KJDGRyOh0AExMA1GlDOjADiTNQ1JqnIIScAQXJ9EEsLY7fYYSQTbHTGjfcn0smc+jM9is1Hs6WnbmQPmvUE2FLjXgSznUL4lXWjV6DdUQdicbiHRJyKS5AyoEzoKQcoaEwhExIGXIAJk9tNlls5TJZfsDdODQw1vKhArNqXFWLVzXTpVDkqCEaVUeAAdqsZi8a1ILTkvxzTxIhaiDg8kUVGoAEoLJIZI3HTVnKo3J40PE-JaQmF2DS4j4qj2PWrslBcvlWEU1WVSBRXixqnUGhz8e1Oj0+lIaTvjnLAect+9riahsn9QzG9fLks77c1eoIFpuBewz8r5vFcnyfiU8ScM+QLAe+oExNWcD8KEWBQUBqIgTc8F4t83okqel5wN+v4wM+dLPrmirKjGmZckwmqJnAoJEdoqZVpmtTkQqkZvKqOZwGWDGgueBo4ka94xI6zpuKyAG0Ta2j2qwknAC6bowHOkq4QWQaZmRBGMpR2nUXxAn8oxSS2OaqaZghQQcfpMR5sq-qFsWNH8XRCZmUxmgsSJNlqsaNb1kgTZKG2ojiJ2sg9vUYAuAOBDlJu-iPk4eA7lIEViDucUAHQSPJdqdiIACQeXKapcRSKlIwpsqABSyBEhAGDkCwbZlXlBgQL4rZCEAA)
+<LiveExample name="collections-collection-query-assignments" />
 
 The notable difference between the two is how much of the Sort Key is specified at query time.
 
@@ -266,11 +199,7 @@ For example, using the "TaskApp" models defined [above](#entities), we would exp
 
 ### Example
 
-```typescript
-const results = await TaskApp.collections
-  .assignments({ employeeId: "JExotic" })
-  .go();
-```
+<LiveExample name="collections-response-structure-assignments" />
 
 ### Response Format
 
@@ -281,21 +210,6 @@ const results = await TaskApp.collections
     employees: [...] // employee record(s) with employeeId "JExotic"
   },
   cursor: null
-}
-```
-
-### Equivalent Parameters
-
-```json
-{
-  "TableName": "projectmanagement",
-  "ExpressionAttributeNames": { "#pk": "gsi2pk", "#sk1": "gsi2sk" },
-  "ExpressionAttributeValues": {
-    ":pk": "$taskapp_1#employeeid_joeexotic",
-    ":sk1": "$assignments"
-  },
-  "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
-  "IndexName": "gsi2"
 }
 ```
 
@@ -343,11 +257,7 @@ The following is an example of functionally identical collections, implemented a
 
 Both implementations above will create a "collections" method called `assignments` when added to a Service.
 
-```typescript
-const results = await TaskApp.collections
-  .assignments({ employeeId: "JExotic" })
-  .go();
-```
+<LiveExample name="collections-subcollection-assignments" />
 
 The advantage to using a string array to define collections is the ability to express sub-collections. Below is an example of three entities using sub-collections, followed by an explanation of their sub-collection definitions:
 
@@ -525,8 +435,6 @@ const TaskApp = new Service(
 );
 ```
 
-[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoMhBQBneDACGvdnAC8zMPQBWHGCEkpJAcwIgCaJgG4BQkeLh6wrCJgIFR8uCgIB3OKnRYAFAgFw4EAhuNgAuRH8AyzQMTHCWcBs7ByZsSIDiIlFgEXiARlT0uFEiUgp4qVEAa0kwMEKAyjSAyRguYF4AVxgHcL8oy0TbewBJbj6igKwwAnjxKGAUbUEBpqLobU1gAC9WnJQxiYGpzBm59qWVqLWBrX0j4+nZ5nnF5aKbqJ7JEAeBp-CAG1JlEmMpOmAMERUnAQQEmPooGROlBMDC4S9WiiUFcBgBdOCSRzCMQwD6RT6LEIAD16EQG4kkNBofyiYCqrIGNGAbHGiiqDWOAWE4Ag2R6QKYGy2u3QIjGTDxIM+DI59KFtB5rD5TGqgqFIsg4uegIS1mGBAVSqFlA+zSiViS9k5cGErHYnH28RJ7S6crE+qiVII1Pi2myACZAwF2S6AtzeWHI+zo1FDWKoZLHRarfbVnmotU45rE8xw8AI3qCwN08agXjq3AVU2KQImog4FIZAQmwBKUwkiyVKqOBQudyeWK+SJBEKsVkGLxxZjD0SBzJQbK5ZgFAslEjkZ5MYe1er2z6tX3dOn9L5EqqHdX-U5H16XO1FbPJR+359nF4XO8+ZFEoECqJwP4ggCAELO+wH-Bg7AutBuqAbiTYFrwwTLr+XwvucsFAdcFL2sGtKiKyoHgTALpuh6-rxBAG6kG4qaxk+xwJtq8Qpo2woMEamZwKaVFqFayqNkWHFclqOpVhitZCaaw7iTaH4DES2TaC4fK4fx7pqF6wkYkwPoLH6+xrrgJmacA2n6Gga4ggSRKuuYMCNmRSYVmxap6VEXE6uWEa8QpAkZhKwlmk6lrcIqjbNgEUn+fGsneZWAp8W5op1lFokQXFDYSeSjRtrgCCdtIsiUL2JhmKScD5TAACyei8FkTjjh4MQ+Les5hBxi6xDxKhqK1IDtZu65ZEZTC7kU+5lEeJ51IKF5tOZ14UYNQzfrpUH4TBbzoc2TWQUKKFvkRjQFnczz+ZdaHqRhkRkTeRT6BNWS0RABmetuUrMTyri+cWgU8ZlYU5UpTBnYVxVCslGLgy8kMatlgmRaaX6jPDanwWyo2cNt-l0YZ27AujpkiFe-pWbCVO2fZi5OUKLnEu5nkoDS6Wg9JAVpWWyZoxqilY9FOaFQlkl+cjgtMMF8no2LJpFTaBa2qV7YVV21W1bC9UWAAKveACCdSdW4+ClIevg4w4uCrrgTXjZNog1SYg7wPbYxOMeriSKwZAABbGKYJvVObYAAHRk-9YiRLHNObXTdu7bjNWJ9oEDeP2ATRzAwcGN43CtJI8gAHwcQA9NXbloCnlluX9-pwFABAwNijjt6InSsDAohFLXtD0Iwhc9jQv02K4bzRF4PIUUUXuIPbojO0TLVtVkjv3u7Til1IJiNP2AgR1UUdJy3lmJ0zKAOQPafmntmf59nueJ+PKAl2Xlc13XZkdG6E3OOrd26dygGINuDg+4DyHnXOgDBOxF1oFPCAM8lhzwwAvUIS93KIBdlvTcO9qh7wUAfSQR8+wmCAA)
-
 > TypeScript Note: Use `as const` syntax when defining `collection` as a string array for improved type support.
 
 The last code block above creates a Service called `TaskApp` using the Entity instances created above its declaration. By creating a Service, ElectroDB will identify and validate the sub-collections defined across all three models. The result in this case are three unique collections: "overview", "contributions", and "assignments".
@@ -537,12 +445,7 @@ The simplest collection to understand is `overview`. This collection is defined 
 
 #### Example
 
-```typescript
-// overview
-const results = await TaskApp.collections
-  .overview({ projectId: "SD-204" })
-  .go();
-```
+<LiveExample name="collections-simple-overview" />
 
 #### Response Format
 
@@ -556,22 +459,6 @@ const results = await TaskApp.collections
 }
 ```
 
-#### Equivalent Parameters
-
-```json
-{
-  "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
-  "TableName": "projectmanagement",
-  "ExpressionAttributeNames": { "#pk": "pk", "#sk1": "sk" },
-  "ExpressionAttributeValues": {
-    ":pk": "$taskapp#projectid_sd-204",
-    ":sk1": "$overview"
-  }
-}
-```
-
-[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoMhBQBneDACGvdnAC8zMPQBWHGCEkpJAcwIgCaJgG4BQkeLh6wrCJgIFR8uCgIB3OKnRYAFAgFw4EAhuNgAuRH8AyzQMTHCWcBs7ByZsSIDiIlFgEXiARlT0uFEiUgp4qVEAa0kwMEKAyjSAyRguYF4AVxgHcL8oy0TbewBJbj6igKwwAnjxKGAUbUEBpqLobU1gAC9WnJQxiYGpzBm59qWVqLWBrX0j4+nZ5nnF5aKbqJ7JEAeBp-CAG1JlEmMpOmAMERUnAQQEmPooGROlBMDC4S9WiiUFcBgBdOCSRzCMQwD6RT6LEIAD16EQG4kkNBofyiYCqrIGNGAbHGiiqDWOAWE4Ag2R6QKYGy2u3QIjGTDxIM+DI59KFtB5rD5TGqgqFIsg4uegIS1mGBAVSqFlA+zSiViS9k5cGErHYnH28RJ7S6crE+qiVII1Pi2myACZAwF2S6AtzeWHI+zo1FDWKoZLHRarfbVnmotU45rE8xw8AI3qCwN08agXjq3AVU2KQImog4FIZAQmwBKUwkiyVKqOBQudyeWK+SJBEKsVkGLxxZjD0SBzJQbK5ZgFAslEjkZ5MYe1er2z6tX3dOn9L5EqqHdX-U5H16XO1FbPJR+359nF4XO8+ZFEoECqJwP4ggCAELO+wH-Bg7AutBuqAbiTYFrwwTLr+XwvucsFAdcFL2sGtKiKyoHgTALpuh6-rxBAG6kG4qaxk+xwJtq8Qpo2woMEamZwKaVFqFayqNkWHFclqOpVhitZCaaw7iTaH4DES2TaC4fK4fx7pqF6wkYkwPoLH6+xrrgJmacA2n6Gga4ggSRKuuYMCNmRSYVmxap6VEXE6uWEa8QpAkZhKwlmk6lrcIqjbNgEUn+fGsneZWAp8W5op1lFokQXFDYSeSjRtrgCCdtIsiUL2JhmKScD5TAACyei8FkTjjh4MQ+Les5hBxi6xDxKhqK1IDtZu65ZEZTC7kU+5lEeJ51IKF5tOZ14UYNQzfrpUH4TBbzoc2TWQUKKFvkRjQFnczz+ZdaHqRhkRkTeRT6BNWS0RABmetuUrMTyri+cWgU8ZlYU5UpTBnYVxVCslGLgy8kMatlgmRaaX6jPDanwWyo2cNt-l0YZ27AujpkiFe-pWbCVO2fZi5OUKLnEu5nkoDS6Wg9JAVpWWyZoxqilY9FOaFQlkl+cjgtMMF8no2LJpFTaBa2qV7YVV21W1bC9UWAAKveACCdSdW4+ClIevg4w4uCrrgTXjZNog1XVJvVObYAAHRk-9YhFL7TE224vhw-EeAACIALQRgADAALEwNXB9oEDeLVQA)
-
 ### Complex Collections
 
 Unlike `overview`, the collections `contributions` and `assignments` are more complex.
@@ -582,12 +469,7 @@ In the case of `contributions`, _all three_ entities implement this collection o
 
 #### Example
 
-```typescript
-// contributions
-const results = await TaskApp.collections
-  .contributions({ employeeId: "JExotic" })
-  .go();
-```
+<LiveExample name="collections-complex-contributions" />
 
 #### Response Format
 
@@ -601,23 +483,6 @@ const results = await TaskApp.collections
   cursor: null,
 }
 ```
-
-#### Equivalent Parameters
-
-```json
-{
-  "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
-  "TableName": "projectmanagement",
-  "ExpressionAttributeNames": { "#pk": "gsi2pk", "#sk1": "gsi2sk" },
-  "ExpressionAttributeValues": {
-    ":pk": "$taskapp#employeeid_jexotic",
-    ":sk1": "$contributions"
-  },
-  "IndexName": "gsi2"
-}
-```
-
-[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?ssl=158&ssc=9&pln=157&pc=1#code/JYWwDg9gTgLgBAbwKIDsbBgTwDRwMoCmUAbsAMYEC+cAZlBCHAEQEA2BZM9AJgEZMAoMhBQBneDACGvdnAC8zMPQBWHGCEkpJAcwIgCaJgG4BQkeLh6wrCJgIFR8uCgIB3OKnRYAFAgFw4EAhuNgAuRH8AyzQMTHCWcBs7ByZsSIDiIlFgEXiARlT0uFEiUgp4qVEAa0kwMEKAyjSAyRguYF4AVxgHcL8oy0TbewBJbj6igKwwAnjxKGAUbUEBpqLobU1gAC9WnJQxiYGpzBm59qWVqLWBrX0j4+nZ5nnF5aKbqJ7JEAeBp-CAG1JlEmMpOmAMERUnAQQEmPooGROlBMDC4S9WiiUFcBgBdOCSRzCMQwD6RT6LEIAD16EQG4kkNBofyiYCqrIGNGAbHGiiqDWOAWE4Ag2R6QKYGy2u3QIjGTDxIM+DI59KFtB5rD5TGqgqFIsg4uegIS1mGBAVSqFlA+zSiViS9k5cGErHYnH28RJ7S6crE+qiVII1Pi2myACZAwF2S6AtzeWHI+zo1FDWKoZLHRarfbVnmotU45rE8xw8AI3qCwN08agXjq3AVU2KQImog4FIZAQmwBKUwkiyVKqOBQudyeWK+SJBEKsVkGLxxZjD0SBzJQbK5ZgFAslEjkZ5MYe1er2z6tX3dOn9L5EqqHdX-U5H16XO1FbPJR+359nF4XO8+ZFEoECqJwP4ggCAELO+wH-Bg7AutBuqAbiTYFrwwTLr+XwvucsFAdcFL2sGtKiKyoHgTALpuh6-rxBAG6kG4qaxk+xwJtq8Qpo2woMEamZwKaVFqFayqNkWHFclqOpVhitZCaaw7iTaH4DES2TaC4fK4fx7pqF6wkYkwPoLH6+xrrgJmacA2n6Gga4ggSRKuuYMCNmRSYVmxap6VEXE6uWEa8QpAkZhKwlmk6lrcIqjbNgEUn+fGsneZWAp8W5op1lFokQXFDYSeSjRtrgCCdtIsiUL2JhmKScD5TAACyei8FkTjjh4MQ+Les5hBxi6xDxKhqK1IDtZu65ZEZTC7kU+5lEeJ51IKF5tOZ14UYNQzfrpUH4TBbzoc2TWQUKKFvkRjQFnczz+ZdaHqRhkRkTeRT6BNWS0RABmetuUrMTyri+cWgU8ZlYU5UpTBnYVxVCslGLgy8kMatlgmRaaX6jPDanwWyo2cNt-l0YZ27AujpkiFe-pWbCVO2fZi5OUKLnEu5nkoDS6Wg9JAVpWWyZoxqilY9FOaFQlkl+cjgtMMF8no2LJpFTaBa2qV7YVV21W1bC9UWAAKveACCdSdW4+ClIevg4w4uCrrgTXjZNog1XVJvVObYAAHRk-9YiRP7NObXTdu7bj8QAFJINSEDoGQTA1cH2gQN4tVAA)
 
 ### Complex Collections (Continued)
 

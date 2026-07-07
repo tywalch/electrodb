@@ -12,15 +12,15 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-import TableDefinition from "../../../partials/table-definition.mdx";
-
-<TableDefinition />
+import LiveExample from "../../../components/LiveExample/LiveExample.astro";
 
 In cases where you must keep multiple records in sync, enforce constraints across entities, and/or ensure request idempotency you can use ElectroDB's Transact [Get](/en/queries/transact-get)/[Write](/en/mutations/transact-write) methods. There are many articles and guides on use-cases for DynamoDB's Transaction APIs, resource links can be found [at the bottom of this document](#resources). This page will focus on how to use ElectroDB's transaction API.
 
 ## Performing Write Transactions
 
 To perform `write` transactions with ElectroDB you will first need to create a [Service](/en/modeling/services). Available on the `Service` exist two methods: `transaction.get()` and `transaction.write()`. These methods accept a callback function, which is then provided with the entities of the service, should return an array of mutations. Creating mutations within a transaction is nearly identical to other mutations except instead of terminating your query with `.go()` or `.params()` you use `.commit()` instead.
+
+> The example below demonstrates the shape of a write transaction. See the Unique Constraint example below for a runnable transaction.
 
 ```typescript
 await yourService.transaction
@@ -93,167 +93,15 @@ Calling the async `.go()` method on a transaction returns the following interfac
 
 ## Examples
 
-The following code creates two [Entities](/en/modeling/entities), and a [Service](/en/modeling/services) to join them, that will be used in our Transact Write examples. This `Service` contains entities/information the top-secret British military intelligence organization: MI6.
-
-### Setup
-
-For the examples below, use the following imports and dependencies at the top of your file.
-
-<details>
-    <summary>Imports</summary>
-
-    ```typescript
-    import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-    import { Entity, Service } from 'electrodb';
-
-    const table = 'electro';
-    const client = new DynamoDBClient({});
-    ```
-
-</details>
-
-#### Agent entity
-
-The `agent` entity models records for each MI6 agents and personnel
-
-```typescript
-const agent = new Entity(
-  {
-    model: {
-      entity: "agent",
-      version: "1",
-      service: "MI6",
-    },
-    attributes: {
-      id: {
-        type: "string",
-      },
-      designation: {
-        type: "string",
-      },
-      email: {
-        type: "string",
-        required: true,
-      },
-      firstName: {
-        type: "string",
-      },
-      lastName: {
-        type: "string",
-      },
-      alive: {
-        type: "boolean",
-        required: true,
-      },
-      kills: {
-        type: "number",
-        default: 0,
-      },
-    },
-    indexes: {
-      operatives: {
-        pk: {
-          field: "pk",
-          composite: ["designation"],
-        },
-        sk: {
-          field: "sk",
-          composite: ["id"],
-        },
-      },
-    },
-  },
-  { table, client },
-);
-```
-
-#### Constraint entity
-
-The `constraint` entity is a utility available to all entities within the `MI6` service. It can be used to enforce uniqueness for any property within a namespace.
-
-```typescript
-// entity that owns unique constraints
-const constraint = new Entity(
-  {
-    model: {
-      entity: "constraint",
-      version: "1",
-      service: "MI6",
-    },
-    attributes: {
-      name: {
-        type: "string",
-        required: true,
-      },
-      value: {
-        type: "string",
-        required: true,
-      },
-      entity: {
-        type: "string",
-        required: true,
-      },
-    },
-    indexes: {
-      value: {
-        pk: {
-          field: "pk",
-          composite: ["value"],
-        },
-        sk: {
-          field: "sk",
-          composite: ["name", "entity"],
-        },
-      },
-      name: {
-        index: "gsi1pk-gsi2sk-index",
-        pk: {
-          field: "gsi1pk",
-          composite: ["name", "entity"],
-        },
-        sk: {
-          field: "gsi1sk",
-          composite: ["value"],
-        },
-      },
-    },
-  },
-  { table, client },
-);
-```
-
-#### MI6 service
-
-Services allow you to build namespaces with a single table, in this case we will create a service called `mi6` with our two entities.
-
-```typescript
-const mi6 = new Service({ constraint, agent });
-```
+The following examples use two [Entities](/en/modeling/entities), and a [Service](/en/modeling/services) to join them. This `Service` contains entities/information the top-secret British military intelligence organization: MI6. The `agent` entity models records for each MI6 agent and their personnel information, and the `constraint` entity is a utility available to all entities within the `MI6` service that can be used to enforce uniqueness for any property within a namespace. Services allow you to build namespaces with a single table, in this case a service called `mi6` joins the two entities together.
 
 ### Example - Unique Constraint
 
 The following is an example of how you might implement a simple unique constraint mechanism to ensure a property (in this case email) remains unique across your service.
 
-```typescript
-import { CreateEntityItem } from "electrodb";
+> The **Entities** and **Service** tabs show the setup this example runs against, and the generated parameters below are produced live by executing the example.
 
-type NewAgent = CreateEntityItem<typeof agent>;
-
-async function createNewAgent(newAgent: NewAgent) {
-  return mi6.transaction
-    .write(({ agent, constraint }) => [
-      agent.create(newAgent).commit({ response: "all_old" }),
-      constraint
-        .create({
-          name: "email",
-          value: newAgent.email,
-          entity: agent.schema.model.entity,
-        })
-        .commit(),
-    ])
-    .go();
-}
-```
+<LiveExample name="transact-write-unique-constraint" />
 
 ### Example - Idempotent writes
 
@@ -261,54 +109,11 @@ Architecting with idempotency in mind is one of the best ways to reduce complexi
 
 Unfortunately some operations, like incrementing a number, can easily cause our app to get out of sync. In failure scenarios where retrying or replaying is necessary, incrementing a number could result in duplicate operations. Transactions can be helpful in the situation by allowing you to provide a [ClientRequestToken](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_RequestParameters) to ensure an operation is only performed once. At the time of writing, request tokens are valid for 10 minutes, though always consult the latest documentation for more information about this feature.
 
-Below is an example of how you might use a `ClientRequestToken`
+Below is an example of how you might use a `ClientRequestToken`. The `token` (a `ClientRequestToken` in DynamoDB parlance) should be unique for a given command. It can be helpful to use a deterministic value (like a composite string) to ensure it is always the same for a given command. Regardless of how many times `incrementAgentKills` is called, so long as the value for `token` remains the same, and you remain within DynamoDB's timing window, your operation will not duplicate your incrementation. Using this functionality can greatly simply your retry logic in the case of failure.
 
-```typescript
-type IncrementAgentKillsOptions = {
-  id: string;
-  kills: number;
-  token: string;
-  designation: string;
-};
+> The **Entities** and **Service** tabs show the setup this example runs against, and the generated parameters below are produced live by executing the example.
 
-async function incrementAgentKills(options: IncrementAgentKillsOptions) {
-  const { id, designation, kills, token } = options;
-
-  return mi6.transaction
-    .write(({ agent }) => [
-      agent.patch({ id, designation }).add({ kills }).commit(),
-    ])
-    .go({ token });
-}
-```
-
-#### Token
-
-The `token` (a `ClientRequestToken` in DynamoDB parlance) should be unique for a given command. It can be helpful to use a deterministic value (like a composite string) to ensure it is always the same for a given command.
-
-```typescript
-const token = "daily-headcount-count-2022-03-16";
-```
-
-Regardless of how many times `incrementAgentKills` is called, so long as the value for `token` remains the same, and you remain within DynamoDB's timing window, your operation will not duplicate your incrementation. Using this functionality can greatly simply your retry logic in the case of failure.
-
-```typescript
-// kills `0` -> `2`
-await incrementAgentKills({
-  token,
-  id: "7",
-  kills: 2,
-  designation: "00",
-});
-
-// still results in `2`
-await incrementAgentKills({
-  token,
-  id: "7",
-  kills: 2,
-  designation: "00",
-});
-```
+<LiveExample name="transact-write-idempotent-writes" />
 
 ## Execution Options
 

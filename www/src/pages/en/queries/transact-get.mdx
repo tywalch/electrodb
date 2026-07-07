@@ -12,9 +12,7 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-import TableDefinition from "../../../partials/table-definition.mdx";
-
-<TableDefinition />
+import LiveExample from "../../../components/LiveExample/LiveExample.astro";
 
 In cases where your data is frequently changing, but you need to ensure that results retrieved from multiple `get` where not modified during retrieval, you can reach for `transaction.get()`.
 
@@ -22,14 +20,11 @@ In cases where your data is frequently changing, but you need to ensure that res
 
 To perform `get` transactions with ElectroDB you will first need to create a [Service](/en/modeling/services). Available on the `Service` exist two methods `transaction.get()` and `transaction.write()`. These methods accept a callback function which is then provided with the entities of the service, and should return an array of queries. Creating a `get` query within a transaction is identical to performing `get` directly on an entity, only instead of terminating your query with a `.go()` or `.params()` you use `.commit()` instead.
 
-```typescript
-await yourService.transaction
-  .get(({ entity1, entity2 }) => [
-    entity1.get({ prop1: "value1", prop2: "value2" }).commit(),
-    entity2.get({ prop1: "value2", prop2: "value3" }).commit(),
-  ])
-  .go();
-```
+The example below uses a `Service` called `workforce` that joins together an `employee` entity and an `office` entity so that an employee's record and their office's record can be retrieved together, atomically.
+
+> The **Entities** and **Service** tabs show the setup this example runs against, and the generated parameters below are produced live by executing the example.
+
+<LiveExample name="transact-get-employee-and-office" />
 
 ### TransactionItem
 

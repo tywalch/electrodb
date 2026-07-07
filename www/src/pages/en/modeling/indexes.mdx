@@ -14,6 +14,8 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
+import LiveExample from "../../../components/LiveExample/LiveExample.astro";
+
 When using ElectroDB, indexes are referenced by their `AccessPatternName`. This allows you to maintain generic index names on your DynamoDB table, but reference domain specific names while using your ElectroDB Entity. These will be referenced as _"Access Patterns"_.
 
 All DynamoDB tables start with at least a PartitionKey with an optional SortKey, this can be referred to as the _"Table Index"_. The `indexes` object requires at least the definition of this _Table Index_ **Partition Key** and (if applicable) **Sort Key**.
@@ -529,75 +531,15 @@ Without the use of `scope`, both entities would share the same partition key and
 
 Without a `scope` value, notice the partition key value at ExpressionAttributeValues[':pk'] is the same for both queries. This occurs when composite attribute array for a partition key matches between entities. Keep in mind that, in most cases, this is desirable because it helps enable querying across entities via [collections](/en/modeling/collections). However, in some cases, this may not be desirable which is why the `scope` property exists.
 
-```typescript
-organization.query.myIndex({organizationId: '123'}).go();
-// {
-//     "KeyConditionExpression": "#pk = :pk and #sk1 = :sk1",
-//     "TableName": "your_table_name",
-//     "ExpressionAttributeNames": {
-//         "#pk": "pk",
-//         "#sk1": "sk"
-//     },
-//     "ExpressionAttributeValues": {
-//         ":pk": "$taskapp",
-//         ":sk1": "$organization_1#organizationid_org123"
-//     }
-// }
-```
+> The **Entities** and **Table Definition** tabs show the setup this example runs against, and the generated parameters below are produced live by executing the example.
 
-```typescript
-user.query.myIndex({userId: '456'}).go();
-// {
-//     "KeyConditionExpression": "#pk = :pk and #sk1 = :sk1",
-//     "TableName": "your_table_name",
-//     "ExpressionAttributeNames": {
-//         "#pk": "pk",
-//         "#sk1": "sk"
-//     },
-//     "ExpressionAttributeValues": {
-//         ":pk": "$taskapp",
-//         ":sk1": "$organization_1#organizationid_org123"
-//     }
-// }
-```
+<LiveExample name="indexes-scope-without-scope" />
 
 #### With Scope
 
 Notice the value at ExpressionAttributeValues[':pk'] now contains the `scope` value that was provided by the user on the index definition.
 
-```typescript
-organization.query.myIndex({organizationId: '123'}).go();
-// {
-//     "KeyConditionExpression": "#pk = :pk and #sk1 = :sk1",
-//     "TableName": "your_table_name",
-//     "ExpressionAttributeNames": {
-//         "#pk": "pk",
-//         "#sk1": "sk"
-//     },
-//     "ExpressionAttributeValues": {
-//         ":pk": "$taskapp_org",
-//         ":sk1": "$organization_1#organizationid_org123"
-//     }
-// }
-```
-
-```typescript
-user.query.myIndex({userId: '456'}).go();
-// {
-//     "KeyConditionExpression": "#pk = :pk and #sk1 = :sk1",
-//     "TableName": "your_table_name",
-//     "ExpressionAttributeNames": {
-//         "#pk": "pk",
-//         "#sk1": "sk"
-//     },
-//     "ExpressionAttributeValues": {
-//         ":pk": "$taskapp_user",
-//         ":sk1": "$organization_1#organizationid_org123"
-//     }
-// }
-```
-
-[![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3jQA5gENUwAF4iMvOAF44qCgHcU6TFgAUCDnDggIjagC5EuvXArrspssLGTpwXmQA05vXwpQAbsFoUtjAifADWImBgbh5wPt58zqi2AIxk5rjuetIMwMwArjAUfKY6FnD24lIyqACSjCUxethggeQCUMCoQmllGemZcJ1GAB5FDWUgWDWoI+NlcHw8LbbCbnAA9OtwADwAtPtwAMpLFIN8CxTwMBBweeIAjnmnPiJUT+SrjXBgoXPzhMBqPVyD9ov89DxwBAEoVTABtAC6Xz6-zCf3mBEBVGBZDCYPBkMgMNacLsUFElScvDqZCR-1wMQZegZGUQcGCzBotiwEDyUAA+hyaPzUCIQBQyHgAJScbi8AS3LxQeSKFRqDDYbTmAxGKjoqwarC2PJK-Gebx+AJBELhSJm2LxRIpHp4AbZDr5QrFMxlE3eOroppYZZtHJdF3MgYowYzCijb2lCyTaazH3zRYQENkP1QNabHb7XZHE5nC5XG53YCPZ6vd7Z01fH6BiyYoG2UEDf6E6GYEl0+bRspotP-VvY2x4zvzbvE+H1-2MWnIxnpDispBC1pkHl8wUiTkUEViiXS2UVRzVAB01agWEvydjw205XJDiqiQDcAA5MkAEwAZi-aVLyECBNBlDgc2vJ5b3vKZH2fHNPy-AAWABWAA2IDcClECwJlIA)
+<LiveExample name="indexes-scope-with-scope" />
 
 ### Attributes as Indexes
 
@@ -714,30 +656,11 @@ When your `string` attribute is also an index key, and using key templates, you 
 
 [![Try it out!](https://img.shields.io/badge/electrodb-try_out_this_example_›-%23f9bd00?style=for-the-badge&logo=amazondynamodb&labelColor=1a212a)](https://electrodb.fun/?#code/JYWwDg9gTgLgBAbzgUQHY2DAnnAvnAMyghDgCIBTAGwoGMZiATAIzIG4AoD2iVAZ3jBUANwrpoOALxxUFAO4p0mLAAoEHOHBARG1AFyINmuGIzYDZLBACuUAPqnld1AEMQFMgBojmvhSjCwLQUFla2dn4BQRTObh7exnCiUHzAvBYAjGRGuAlwLjAMwMzWMBR8BuqJLrQ81ugAkoyVPsbYYCHkAlBCAOZkcAD0g3C8VDjdfXDt5flQFHDMEDAAFnB81mCQsBSMhNDTK8B8JgAebmA0rbmt0L0uqMAAXgVpqE0tiZozFpOo-dc8ppXO5Pl8fl0iv9solcDk8kJdKdymDNDU6ugKoYvsYwABrVE44wEYDUZrkO4PZ6vXhNLytIlwHjgCCpMoGADaZEpjxeGFpjDIAF0GcYboy+ATsYziaSqOSyOibI1BUCZczIGzOlylfUYHShWrGWVwFQCp0yGB5iTTnYACQIXUq3B2TUwG0wonisU5Di5RDTFzMGihGz2GBBmixdwDXAASk43F4AnytWV+r20kVtRgAFoACwAVgAzAAGdhJ-jwHnU-nvTMUqC9XMATjLWUTQlE4igWCMADowKU1KmMRnPKMm1S+W8mng4wPehAVAmuMM4HJMCsbPAnRn1ptLqTGBwu6YJP2AI7Wfx9xL9vd8NQ1mcC+OtftLleJ9d7ucbLYqGPfIThcchmAoXohD4bIzx7LArxvXsP0fZ8p15Gl63fe8IKg-g1D-RhsOMT9l1XDhfzTPV-0PIDdhA8gCGsKhxjgPFUAgORUFgkRz17RDbxQqjMTQ+4MLrJoJ0I4jNFI78gA)
 
-ElectroDB will accept a `get` request like this:
+ElectroDB will accept a `get` request like this (note the pre/postfix on `accountId` in the generated parameters below):
 
-```typescript
-await myEntity
-  .get({
-    accountId: "1111-2222-3333-4444",
-    organizationId: "AAAA-BBBB-CCCC-DDDD",
-  })
-  .go();
-```
+> ElectroDB defaults keys to lowercase, though this can be configured using [Index Casing](#index-casing). The **Entity** and **Table Definition** tabs show the setup this example runs against, and the generated parameters below are produced live by executing the example.
 
-Query DynamoDB with the following params (note the pre/postfix on `accountId`):
-
-> ElectroDB defaults keys to lowercase, though this can be configured using [Index Casing](#index-casing).
-
-```json
-{
-  "Key": {
-    "accountId": "prefix_1111-2222-3333-4444_postfix",
-    "organizationId": "aaaa-bbbb-cccc-dddd"
-  },
-  "TableName": "your_table_name"
-}
-```
+<LiveExample name="indexes-attributes-as-indexes-get" />
 
 When returned from a query, however, ElectroDB will return the following and trim the key of it's prefix and postfix:
 
@@ -879,61 +802,25 @@ Querying a `composite` index works the same as other ElectroDB index types. You 
 
 #### Basic Query
 
-```typescript
-const results = await InventoryItem.query
-  .location({ country: "US", region: "Georgia", city: "Atlanta" })
-  .go();
-```
+> The **Entity** and **Table Definition** tabs show the setup this example runs against, and the generated parameters (including the `KeyConditionExpression`) below are produced live by executing the example.
 
-This generates a `KeyConditionExpression` like:
-
-```
-#country = :country AND #region = :region AND #city = :city
-```
+<LiveExample name="indexes-multi-attribute-basic-query" />
 
 #### Sort Key Operations
 
-Sort key operations apply to the sk composite attributes in order. Preceding sk attributes are matched with equality, and the operation applies to the last provided attribute:
+Sort key operations apply to the sk composite attributes in order. Preceding sk attributes are matched with equality, and the operation applies to the last provided attribute. Note that the pk composite attributes (`country`, `region`, and `city`) must always be fully provided to the `location` Access Pattern method itself; the `begins`, `gt`, and `between` operations below apply only to the sk composite attributes (`manufacturer`, `model`, `count`):
 
-Begins with substring expression on 'manufacturer' (city matched with equality)
+Begins with substring expression on 'manufacturer'
 
-```typescript
-await InventoryItem.query
-  .location({ country: "US", region: "Georgia", })
-  .begins({ city: "Atlanta", manufacturer: "A" })
-  .go();
-// KeyConditionExpression:
-//   #country = :country AND #region = :region AND #city = :city
-//   AND begins_with(#manufacturer, :manufacturer)
-```
+<LiveExample name="indexes-multi-attribute-begins" />
 
-Greater than on 'count' (city and manufacturer matched with equality)
+Greater than on 'count' (manufacturer and model matched with equality)
 
-```typescript
-await InventoryItem.query
-  .location({ country: "US", region: "Georgia" })
-  .gt({ city: "Atlanta", manufacturer: "Acme", count: 100 })
-  .go();
-// KeyConditionExpression:
-//   #country = :country AND #region = :region AND #city = :city
-//   AND #manufacturer = :manufacturer AND #count > :count
-```
+<LiveExample name="indexes-multi-attribute-gt" />
 
-Between on 'count' (city and manufacturer matched with equality)
+Between on 'count' (manufacturer and model matched with equality)
 
-```typescript
-await InventoryItem.query
-  .location({ country: "US", region: "Georgia" })
-  .between(
-    { city: "Atlanta", manufacturer: "Acme", count: 50 },
-    { city: "Atlanta", manufacturer: "Acme", count: 200 },
-  )
-  .go();
-// KeyConditionExpression:
-//   #country = :country AND #region = :region AND #city = :city
-//   AND #manufacturer = :manufacturer
-//   AND #count BETWEEN :count1 AND :count2
-```
+<LiveExample name="indexes-multi-attribute-between" />
 
 ### Multi-Attribute Indexes with Collections
 
@@ -1072,24 +959,13 @@ const Warehouse = new Entity(
 const service = new Service({ InventoryItem, Warehouse });
 ```
 
-Query across both entities via the shared collection
-```typescript
-const results = await service.collections
-  .inventory({ country: "US", region: "Georgia", city: "Atlanta" })
-  .go();
-// results.data.InventoryItem -> InventoryItem[]
-// results.data.Warehouse -> Warehouse[]
-```
+Query across both entities via the shared collection. The **Entities**, **Service**, and **Table Definition** tabs show the setup this example runs against, and the generated parameters below are produced live by executing the example.
+
+<LiveExample name="indexes-multi-attribute-collection-query" />
 
 Collection queries also support sort key operations
-```typescript
-const filtered = await service.collections
-  .inventory({ country: "US", region: "Georgia" })
-  .begins({ city: "A" })
-  .go();
-// results.data.InventoryItem -> InventoryItem[]
-// results.data.Warehouse -> Warehouse[]
-```
+
+<LiveExample name="indexes-multi-attribute-collection-begins" />
 
 ### Constraints and Validations
 

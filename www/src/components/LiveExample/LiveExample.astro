@@ -15,12 +15,14 @@ const { name } = Astro.props as Props;
 const LABELS: Record<string, string> = {
   "example.ts": "Example",
   "entity.ts": "Entity",
+  "entities.ts": "Entities",
+  "service.ts": "Service",
   "table.ts": "Table Definition",
 };
 
 // example.ts must come first: it is the program entry point (the other
 // files execute when imported), and it is the tab shown by default.
-const ORDER = ["example.ts", "entity.ts", "table.ts"];
+const ORDER = ["example.ts", "service.ts", "entity.ts", "entities.ts", "table.ts"];
 
 const sources = import.meta.glob("/src/examples/*/*.ts", {
   query: "?raw",
