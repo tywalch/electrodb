@@ -110,3 +110,5 @@ dist
 
 playground/bundle.js
 test/debug.ts
+
+benchmark/baseline.json

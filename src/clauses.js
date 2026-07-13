@@ -1392,6 +1392,11 @@ class ChainState {
     parentState = null,
   } = {}) {
     const update = new UpdateExpression({ prefix: "_u" });
+    // AttributeOperationProxy defines a property per attribute and per
+    // operation, which makes it the dominant chain-construction cost; read
+    // chains (get/query/scan) never touch it, so it is built lazily and
+    // cached so write clauses keep accumulating into one instance
+    let updateProxy;
     this.parentState = parentState;
     this.error = null;
     this.attributes = attributes;
@@ -1402,11 +1407,16 @@ class ChainState {
       method: "",
       facets: { ...compositeAttributes },
       update,
-      updateProxy: new AttributeOperationProxy({
-        builder: update,
-        attributes: attributes,
-        operations: UpdateOperations,
-      }),
+      get updateProxy() {
+        updateProxy =
+          updateProxy ||
+          new AttributeOperationProxy({
+            builder: update,
+            attributes: attributes,
+            operations: UpdateOperations,
+          });
+        return updateProxy;
+      },
       put: {
         data: {},
       },

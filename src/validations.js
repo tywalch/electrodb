@@ -284,8 +284,13 @@ v.addSchema(Modelv1, "/Modelv1");
 
 function validateModel(model = {}) {
   /** start beta/v1 condition **/
-  let betaErrors = v.validate(model, ModelBeta).errors;
-  if (betaErrors.length) {
+  // ModelBeta requires a root `entity` string; without one that schema can
+  // only fail, so modern (v1-shaped) models skip straight to Modelv1
+  // validation instead of enumerating-and-discarding beta errors on every
+  // construction. Any model that fails (or skips) the beta pass throws the
+  // Modelv1 errors, exactly as before.
+  const couldBeBeta = !!model && isStringHasLength(model.entity);
+  if (!couldBeBeta || v.validate(model, ModelBeta).errors.length) {
     /** end/v1 condition **/
     let errors = v.validate(model, Modelv1).errors;
     if (errors.length) {

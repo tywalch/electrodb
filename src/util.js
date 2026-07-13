@@ -11,24 +11,31 @@ function parseJSONPath(path = "") {
 }
 
 function genericizeJSONPath(path = "") {
+  // the regex only rewrites `[digits]` segments; skip it for the common
+  // bracket-free attribute paths resolved on every getter/setter pass
+  if (path.indexOf("[") === -1) {
+    return path;
+  }
   return path.replace(/\[\d+\]/g, "[*]");
 }
 
 function getInstanceType(instance = {}) {
-  let [isModel, errors] = v.testModel(instance);
+  // check the cheap instance symbols before falling back to testModel, which
+  // runs full jsonschema validation just to be discarded for non-models
   if (!instance || Object.keys(instance).length === 0) {
     return "";
-  } else if (isModel) {
-    return t.ElectroInstanceTypes.model;
   } else if (instance._instance === t.ElectroInstance.entity) {
     return t.ElectroInstanceTypes.entity;
   } else if (instance._instance === t.ElectroInstance.service) {
     return t.ElectroInstanceTypes.service;
   } else if (instance._instance === t.ElectroInstance.electro) {
     return t.ElectroInstanceTypes.electro;
-  } else {
-    return "";
   }
+  let [isModel] = v.testModel(instance);
+  if (isModel) {
+    return t.ElectroInstanceTypes.model;
+  }
+  return "";
 }
 
 function getModelVersion(model = {}) {
