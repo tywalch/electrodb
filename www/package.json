@@ -3,6 +3,9 @@
   "type": "module",
   "version": "0.0.1",
   "private": true,
+  "engines": {
+    "node": "^18.20.8 || ^20.3.0 || >=22.0.0"
+  },
   "scripts": {
     "dev": "astro build && pagefind --site dist && rm -rf public/pagefind && cp -R dist/pagefind public/pagefind && astro dev",
     "dev:fast": "astro dev",
