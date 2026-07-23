@@ -84,27 +84,40 @@ const githubEditUrl = `${CONFIG.GITHUB_EDIT_URL}/${currentFile}`;
 			}
 
 			.hero-title {
-				font-size: clamp(2.75rem, 11vw, 6.5rem);
-				font-weight: 800;
-				letter-spacing: -0.045em;
 				line-height: 1;
 				margin: 0 auto 1.25rem;
-				color: var(--theme-text);
 			}
 
-			.hero-title .electro {
-				font-style: italic;
-				background: linear-gradient(135deg, var(--brand-blue), var(--brand-blue-deep));
-				-webkit-background-clip: text;
-				background-clip: text;
-				color: transparent;
+			.hero-logo {
+				display: block;
+				width: clamp(16rem, 60vw, 32rem);
+				max-width: 100%;
+				height: auto;
+				margin: 0 auto;
 			}
 
-			:root.theme-dark .hero-title .electro {
-				background: linear-gradient(135deg, var(--brand-blue-soft), var(--brand-blue));
-				-webkit-background-clip: text;
-				background-clip: text;
-				color: transparent;
+			/* Dark-text wordmark in light mode, light-text one in dark mode —
+			   same explicit-class / OS-preference logic as the header. */
+			.hero-logo-dark {
+				display: none;
+			}
+
+			:root.theme-dark .hero-logo-light {
+				display: none;
+			}
+
+			:root.theme-dark .hero-logo-dark {
+				display: block;
+			}
+
+			@media (prefers-color-scheme: dark) {
+				:root:not(.theme-light):not(.theme-dark) .hero-logo-light {
+					display: none;
+				}
+
+				:root:not(.theme-light):not(.theme-dark) .hero-logo-dark {
+					display: block;
+				}
 			}
 
 			.hero-tagline {
@@ -322,7 +335,7 @@ const githubEditUrl = `${CONFIG.GITHUB_EDIT_URL}/${currentFile}`;
 	</head>
 
 	<body>
-		<Header currentPage={currentPage} />
+		<Header currentPage={currentPage} hideBrand />
 		<main class="layout intro-page">
 			<aside id="grid-left" class="grid-sidebar" title="Site Navigation">
 				<LeftSidebar currentPage={currentPage} />
@@ -330,7 +343,20 @@ const githubEditUrl = `${CONFIG.GITHUB_EDIT_URL}/${currentFile}`;
 			<div id="grid-main">
 				<section class="hero">
 					<h1 class="hero-title">
-						<span class="electro">Electro</span><span>DB</span>
+						<img
+							class="hero-logo hero-logo-light"
+							src="/electrodb.png"
+							alt="ElectroDB"
+							width="3580"
+							height="769"
+						/>
+						<img
+							class="hero-logo hero-logo-dark"
+							src="/electrodb-drk-compressed.png"
+							alt="ElectroDB"
+							width="3580"
+							height="769"
+						/>
 					</h1>
 					<p class="hero-tagline">
 						Build complex DynamoDB queries with confidence. Type-safe single-table design,

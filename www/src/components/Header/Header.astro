@@ -6,9 +6,11 @@ import Search from './Search';
 
 type Props = {
 	currentPage: string;
+	/** Hide the wordmark in the nav (e.g. the intro page shows it in the hero). */
+	hideBrand?: boolean;
 };
 
-const { currentPage } = Astro.props as Props;
+const { currentPage, hideBrand = false } = Astro.props as Props;
 ---
 
 <header>
@@ -18,14 +20,24 @@ const { currentPage } = Astro.props as Props;
 			<div class="menu-toggle">
 				<SidebarToggle client:idle />
 			</div>
-			<a href="/en/core-concepts/introduction" class="brand" aria-label="ElectroDB home">
-				<svg class="brand-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path d="M13 2L4.5 13.5h6L11 22l8.5-11.5h-6L13 2Z" fill="currentColor" />
-				</svg>
-				<span class="brand-text">
-					<span class="brand-electro">Electro</span><span class="brand-db">DB</span>
-				</span>
-			</a>
+			{!hideBrand && (
+				<a href="/en/core-concepts/introduction" class="brand" aria-label="ElectroDB home">
+					<img
+						class="brand-logo brand-logo-light"
+						src="/electrodb.png"
+						alt="ElectroDB"
+						width="3580"
+						height="769"
+					/>
+					<img
+						class="brand-logo brand-logo-dark"
+						src="/electrodb-drk-compressed.png"
+						alt="ElectroDB"
+						width="3580"
+						height="769"
+					/>
+				</a>
+			)}
 		</div>
 
 		<div class="search-slot">
@@ -105,38 +117,47 @@ const { currentPage } = Astro.props as Props;
 	.brand {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.5rem;
 		text-decoration: none;
-		font-weight: 700;
-		font-size: 1rem;
-		color: var(--theme-text);
-		letter-spacing: -0.02em;
 		padding: 0.25rem;
 		margin: -0.25rem;
 		border-radius: var(--radius);
-		transition: color 120ms ease;
+		transition: opacity 120ms ease;
 	}
 
 	.brand:hover {
-		color: var(--theme-text-accent);
+		opacity: 0.8;
 		text-decoration: none;
 	}
 
-	.brand-icon {
-		width: 20px;
-		height: 20px;
-		color: var(--theme-accent);
+	.brand-logo {
+		height: 1.75rem;
+		width: auto;
+		display: block;
 		flex-shrink: 0;
 	}
 
-	.brand-electro {
-		font-style: italic;
-		font-weight: 800;
+	/* Show the dark-text wordmark in light mode, the light-text one in dark
+	   mode — same explicit-class / OS-preference logic as ThemeToggleButton. */
+	.brand-logo-dark {
+		display: none;
 	}
 
-	.brand-db {
-		font-weight: 800;
-		letter-spacing: -0.04em;
+	:root.theme-dark .brand-logo-light {
+		display: none;
+	}
+
+	:root.theme-dark .brand-logo-dark {
+		display: block;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		:root:not(.theme-light):not(.theme-dark) .brand-logo-light {
+			display: none;
+		}
+
+		:root:not(.theme-light):not(.theme-dark) .brand-logo-dark {
+			display: block;
+		}
 	}
 
 	.search-slot {
