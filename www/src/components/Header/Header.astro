@@ -1,8 +1,11 @@
 ---
+import { Image } from 'astro:assets';
 import SkipToContent from './SkipToContent.astro';
 import SidebarToggle from './SidebarToggle';
 import ThemeToggleButton from '../RightSidebar/ThemeToggleButton';
 import Search from './Search';
+import logoLight from '../../assets/electrodb.png';
+import logoDark from '../../assets/electrodb-drk-compressed.png';
 
 type Props = {
 	currentPage: string;
@@ -22,19 +25,21 @@ const { currentPage, hideBrand = false } = Astro.props as Props;
 			</div>
 			{!hideBrand && (
 				<a href="/en/core-concepts/introduction" class="brand" aria-label="ElectroDB home">
-					<img
+					<Image
 						class="brand-logo brand-logo-light"
-						src="/electrodb.png"
+						src={logoLight}
 						alt="ElectroDB"
-						width="3580"
-						height="769"
+						height={28}
+						densities={[2, 3]}
+						loading="eager"
 					/>
-					<img
+					<Image
 						class="brand-logo brand-logo-dark"
-						src="/electrodb-drk-compressed.png"
+						src={logoDark}
 						alt="ElectroDB"
-						width="3580"
-						height="769"
+						height={28}
+						densities={[2, 3]}
+						loading="eager"
 					/>
 				</a>
 			)}

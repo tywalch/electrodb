@@ -1,7 +1,10 @@
 ---
+import { Image } from 'astro:assets';
 import HeadCommon from '../components/HeadCommon.astro';
 import HeadSEO from '../components/HeadSEO.astro';
 import Header from '../components/Header/Header.astro';
+import logoLight from '../assets/electrodb.png';
+import logoDark from '../assets/electrodb-drk-compressed.png';
 import PageContent from '../components/PageContent/PageContent.astro';
 import LeftSidebar from '../components/LeftSidebar/LeftSidebar.astro';
 import * as CONFIG from '../config';
@@ -343,19 +346,21 @@ const githubEditUrl = `${CONFIG.GITHUB_EDIT_URL}/${currentFile}`;
 			<div id="grid-main">
 				<section class="hero">
 					<h1 class="hero-title">
-						<img
+						<Image
 							class="hero-logo hero-logo-light"
-							src="/electrodb.png"
+							src={logoLight}
 							alt="ElectroDB"
-							width="3580"
-							height="769"
+							width={512}
+							densities={[2]}
+							loading="eager"
 						/>
-						<img
+						<Image
 							class="hero-logo hero-logo-dark"
-							src="/electrodb-drk-compressed.png"
+							src={logoDark}
 							alt="ElectroDB"
-							width="3580"
-							height="769"
+							width={512}
+							densities={[2]}
+							loading="eager"
 						/>
 					</h1>
 					<p class="hero-tagline">
