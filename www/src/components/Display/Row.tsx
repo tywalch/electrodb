@@ -1,7 +1,6 @@
-import react from "react";
-import type { FunctionComponent } from "react";
+import type { PropsWithChildren } from "react";
 import "./Row.css";
 
-export const CenteredRow: FunctionComponent = ({ children }) => {
+export const CenteredRow = ({ children }: PropsWithChildren) => {
   return <div className="row-centered">{children}</div>;
 };

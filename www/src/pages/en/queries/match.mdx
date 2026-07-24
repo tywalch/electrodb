@@ -12,24 +12,17 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
+import LiveExample from "../../../components/LiveExample/LiveExample.astro";
+
 Match is a convenience method based off of ElectroDB's [find](/en/queries/find) method. Similar to Find, Match does not require you to provide keys, but under the covers it will leverage the attributes provided to choose the best index to query on.
 
 > The Match method is useful when the index chosen does not matter or is not known. If your secondary indexes do not contain all attributes then this method might not be right for you. The mechanism that picks the best index for a given payload is subject to improvement and change without triggering a breaking change release version.
 
 Match differs from [Find](/en/queries/find) in that it will also include all supplied values into a query filter.
 
-import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
+> The **Entity** and **Table Definition** tabs show the setup this example runs against, and the generated parameters below are produced live by executing the example.
 
-<ExampleSetup />
-
-```typescript
-await StoreLocations.match({
-  mallId: "EastPointe",
-  buildingId: "BuildingA1",
-  leaseEndDate: "2020-03-22",
-  rent: "1500.00",
-}).go();
-```
+<LiveExample name="match-store-location" />
 
 ## Response Format
 
@@ -37,33 +30,6 @@ await StoreLocations.match({
 {
   data: Array<YOUR_SCHEMA>,
   cursor: string | undefined
-}
-```
-
-## Equivalent parameters
-
-```json
-{
-  "KeyConditionExpression": "#pk = :pk and begins_with(#sk1, :sk1)",
-  "TableName": "StoreDirectory",
-  "ExpressionAttributeNames": {
-    "#mallId": "mallId",
-    "#buildingId": "buildingId",
-    "#leaseEndDate": "leaseEndDate",
-    "#rent": "rent",
-    "#pk": "gsi1pk",
-    "#sk1": "gsi1sk"
-  },
-  "ExpressionAttributeValues": {
-    ":mallId1": "EastPointe",
-    ":buildingId1": "BuildingA1",
-    ":leaseEndDate1": "2020-03-22",
-    ":rent1": "1500.00",
-    ":pk": "$mallstoredirectory#mallid_eastpointe",
-    ":sk1": "$mallstore_1#buildingid_buildinga1#unitid_"
-  },
-  "IndexName": "gsi1pk-gsi1sk-index",
-  "FilterExpression": "#mallId = :mallId1 AND#buildingId = :buildingId1 AND#leaseEndDate = :leaseEndDate1 AND#rent = :rent1"
 }
 ```
 

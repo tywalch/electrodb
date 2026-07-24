@@ -3,7 +3,6 @@ const ElectroDB = require("../index");
 
 window.Prism = window.Prism || {};
 window.electroParams = window.electroParams || [];
-const appDiv = document.getElementById("param-container");
 
 window.notifyRedirect = function notifyRedirect(e) {
   if (top.location !== self.location) {
@@ -90,26 +89,6 @@ function formatParamLabel(state, entity) {
   }
 }
 
-function printToScreen({ params, state, entity, cache } = {}) {
-  const innerHtml = appDiv.innerHTML;
-  const label = formatParamLabel(state, entity);
-  if (cache) {
-    window.electroParams.push({ title: label, json: params });
-  }
-  let code = `<pre class="language-json"><code class="language-json">${JSON.stringify(
-    params,
-    null,
-    4,
-  )}</code></pre>`;
-  if (label) {
-    code = `<hr>${label}${code}`;
-  } else {
-    code = `<hr>${code}`;
-  }
-  appDiv.innerHTML = innerHtml + code;
-  window.Prism.highlightAll();
-}
-
 function formatError(message) {
   const electroErrorPattern = "- For more detail on this error reference:";
   const isElectroError = message.match(electroErrorPattern);
@@ -117,26 +96,112 @@ function formatError(message) {
     return `<h3>${message}</h3>`;
   }
   const [description, link] = message.split(electroErrorPattern);
-  return `<h3>${description}</h3><br><h3>For more detail on this error reference <a href="${link}" onclick="notifyRedirect(event)">${link}</a></h3>`;
+  return `<h3>${description}</h3><br><h3>For more detail on this error reference <a href="${link}" target="_blank" rel="noopener noreferrer" onclick="notifyRedirect(event)">${link}</a></h3>`;
+}
+
+// The default listener preserves the original playground behavior: append
+// rendered output directly to the #param-container element when one exists.
+const domListener = {
+  getContainer() {
+    return document.getElementById("param-container");
+  },
+  onParams({ label, params }) {
+    const appDiv = this.getContainer();
+    if (!appDiv) {
+      return;
+    }
+    let code = `<pre class="language-json"><code class="language-json">${JSON.stringify(
+      params,
+      null,
+      4,
+    )}</code></pre>`;
+    if (label) {
+      code = `<hr>${label}${code}`;
+    } else {
+      code = `<hr>${code}`;
+    }
+    appDiv.innerHTML = appDiv.innerHTML + code;
+    if (typeof window.Prism.highlightAll === "function") {
+      window.Prism.highlightAll();
+    }
+  },
+  onMessage({ type, html }) {
+    const appDiv = this.getContainer();
+    if (!appDiv) {
+      return;
+    }
+    const label = type === "info" ? "" : "<h2>Query Error</h2>";
+    const code = `<hr>${label}<div class="${type} message">${html}</div>`;
+    appDiv.innerHTML = appDiv.innerHTML + code;
+  },
+  onClear() {
+    const appDiv = this.getContainer();
+    if (appDiv) {
+      appDiv.innerHTML = "";
+    }
+  },
+};
+
+let listener = domListener;
+
+// Allows consumers (the React playground, documentation embeds, etc.) to
+// receive playground output as structured events instead of DOM mutations.
+// Returns a function that restores the previous listener.
+function configure(custom = {}) {
+  const previous = listener;
+  listener = {
+    onParams: custom.onParams || (() => {}),
+    onMessage: custom.onMessage || (() => {}),
+    onClear: custom.onClear || (() => {}),
+  };
+  return function restore() {
+    listener = previous;
+  };
+}
+
+function printToScreen({ params, state, entity, cache, stack } = {}) {
+  const label = formatParamLabel(state, entity);
+  if (cache) {
+    window.electroParams.push({ title: label, json: params });
+  }
+  // `stack` is the call stack captured where the operation was invoked;
+  // listeners can use it to associate output with the source that created it.
+  listener.onParams({ label, params, cache, stack });
 }
 
 function printMessage(type, message) {
-  const error = formatError(message);
-  const innerHtml = appDiv.innerHTML;
-  const label = type === "info" ? "" : "<h2>Query Error</h2>";
-  const code = `<hr>${label}<div class="${type} message">${error}</div>`;
-  appDiv.innerHTML = innerHtml + code;
+  const html = formatError(message);
+  listener.onMessage({ type, html, text: message });
 }
 
 function clearScreen() {
-  appDiv.innerHTML = "";
   window.electroParams = [];
+  listener.onClear();
 }
 
 function promiseCallback(results) {
   return {
     promise: async () => results,
   };
+}
+
+// Some operations (collections, create) sit many frames deep in electrodb
+// internals; the default stack limit (10 in V8) can truncate the stack
+// before it reaches the calling user code.
+function captureStack() {
+  const limit = Error.stackTraceLimit;
+  try {
+    Error.stackTraceLimit = 64;
+  } catch (err) {
+    // not configurable in this engine
+  }
+  const stack = new Error().stack;
+  try {
+    Error.stackTraceLimit = limit;
+  } catch (err) {
+    // ignore
+  }
+  return stack;
 }
 
 class Entity extends ElectroDB.Entity {
@@ -152,7 +217,7 @@ class Entity extends ElectroDB.Entity {
         scan: () => promiseCallback({ Items: [] }),
         batchWrite: () =>
           promiseCallback({
-            UnprocessedKeys: { [options.table]: { Keys: [] } },
+            UnprocessedItems: { [options.table]: [] },
           }),
         batchGet: () =>
           promiseCallback({
@@ -160,6 +225,7 @@ class Entity extends ElectroDB.Entity {
             UnprocessedKeys: { [options.table]: { Keys: [] } },
           }),
         transactWrite: (params) => {
+          const stack = captureStack();
           return {
             promise: async () => {
               printToScreen({
@@ -167,6 +233,7 @@ class Entity extends ElectroDB.Entity {
                 entity: this,
                 cache: true,
                 state: "Performs a TransactWrite operation",
+                stack,
               });
               return {};
             },
@@ -174,6 +241,7 @@ class Entity extends ElectroDB.Entity {
           };
         },
         transactGet: (params) => {
+          const stack = captureStack();
           return {
             promise: async () => {
               printToScreen({
@@ -181,6 +249,7 @@ class Entity extends ElectroDB.Entity {
                 entity: this,
                 cache: true,
                 state: "Performs a TransactGet operation",
+                stack,
               });
               return { Responses: [] };
             },
@@ -193,6 +262,9 @@ class Entity extends ElectroDB.Entity {
   }
 
   _demoParams(method, state, config) {
+    // Param creation happens synchronously inside the user's `.go()`/
+    // `.params()` call, so the stack still contains their call site.
+    const stack = captureStack();
     try {
       const params = super[method](state, config);
       if (params && typeof params.catch === "function") {
@@ -202,7 +274,7 @@ class Entity extends ElectroDB.Entity {
         });
       }
       if (state.self !== "commit") {
-        printToScreen({ params, state, entity: this, cache: true });
+        printToScreen({ params, state, entity: this, cache: true, stack });
       }
       return params;
     } catch (err) {
@@ -267,6 +339,7 @@ const CustomAttributeType = ElectroDB.CustomAttributeType;
 window.ElectroDB = {
   Entity,
   Service,
+  configure,
   clearScreen,
   printMessage,
   printToScreen,

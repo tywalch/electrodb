@@ -1,7 +1,10 @@
 ---
+import { Image } from 'astro:assets';
 import HeadCommon from '../components/HeadCommon.astro';
 import HeadSEO from '../components/HeadSEO.astro';
 import Header from '../components/Header/Header.astro';
+import logoLight from '../assets/electrodb.png';
+import logoDark from '../assets/electrodb-drk-compressed.png';
 import PageContent from '../components/PageContent/PageContent.astro';
 import LeftSidebar from '../components/LeftSidebar/LeftSidebar.astro';
 import * as CONFIG from '../config';
@@ -49,7 +52,12 @@ const githubEditUrl = `${CONFIG.GITHUB_EDIT_URL}/${currentFile}`;
 				top: var(--theme-navbar-height);
 				left: 0;
 				right: 0;
-				bottom: 0;
+				/* An explicit height instead of bottom: 0 — iOS Safari's layout
+				   viewport extends behind its bottom toolbar, so a bottom-anchored
+				   panel gets its tail hidden under the browser UI. dvh tracks the
+				   toolbar as it collapses/expands; vh is the fallback. */
+				height: calc(100vh - var(--theme-navbar-height));
+				height: calc(100dvh - var(--theme-navbar-height));
 				background-color: var(--theme-bg);
 				z-index: 9;
 				display: none;
@@ -84,27 +92,40 @@ const githubEditUrl = `${CONFIG.GITHUB_EDIT_URL}/${currentFile}`;
 			}
 
 			.hero-title {
-				font-size: clamp(2.75rem, 11vw, 6.5rem);
-				font-weight: 800;
-				letter-spacing: -0.045em;
 				line-height: 1;
 				margin: 0 auto 1.25rem;
-				color: var(--theme-text);
 			}
 
-			.hero-title .electro {
-				font-style: italic;
-				background: linear-gradient(135deg, var(--brand-blue), var(--brand-blue-deep));
-				-webkit-background-clip: text;
-				background-clip: text;
-				color: transparent;
+			.hero-logo {
+				display: block;
+				width: clamp(16rem, 60vw, 32rem);
+				max-width: 100%;
+				height: auto;
+				margin: 0 auto;
 			}
 
-			:root.theme-dark .hero-title .electro {
-				background: linear-gradient(135deg, var(--brand-blue-soft), var(--brand-blue));
-				-webkit-background-clip: text;
-				background-clip: text;
-				color: transparent;
+			/* Dark-text wordmark in light mode, light-text one in dark mode —
+			   same explicit-class / OS-preference logic as the header. */
+			.hero-logo-dark {
+				display: none;
+			}
+
+			:root.theme-dark .hero-logo-light {
+				display: none;
+			}
+
+			:root.theme-dark .hero-logo-dark {
+				display: block;
+			}
+
+			@media (prefers-color-scheme: dark) {
+				:root:not(.theme-light):not(.theme-dark) .hero-logo-light {
+					display: none;
+				}
+
+				:root:not(.theme-light):not(.theme-dark) .hero-logo-dark {
+					display: block;
+				}
 			}
 
 			.hero-tagline {
@@ -170,7 +191,10 @@ const githubEditUrl = `${CONFIG.GITHUB_EDIT_URL}/${currentFile}`;
 				--content-max-width: 64rem;
 			}
 
-			.mobile-sidebar-toggle #grid-left {
+			/* `body` prefix lifts specificity to (1,1,1) so this open-state rule
+			   beats the scoped `#grid-left[data-astro-cid]` display:none (1,1,0)
+			   regardless of bundle order. */
+			body.mobile-sidebar-toggle #grid-left {
 				display: block;
 			}
 
@@ -330,7 +354,22 @@ const githubEditUrl = `${CONFIG.GITHUB_EDIT_URL}/${currentFile}`;
 			<div id="grid-main">
 				<section class="hero">
 					<h1 class="hero-title">
-						<span class="electro">Electro</span><span>DB</span>
+						<Image
+							class="hero-logo hero-logo-light"
+							src={logoLight}
+							alt="ElectroDB"
+							width={512}
+							densities={[2]}
+							loading="eager"
+						/>
+						<Image
+							class="hero-logo hero-logo-dark"
+							src={logoDark}
+							alt="ElectroDB"
+							width={512}
+							densities={[2]}
+							loading="eager"
+						/>
 					</h1>
 					<p class="hero-tagline">
 						Build complex DynamoDB queries with confidence. Type-safe single-table design,
@@ -339,7 +378,7 @@ const githubEditUrl = `${CONFIG.GITHUB_EDIT_URL}/${currentFile}`;
 					</p>
 					<div class="hero-actions">
 						<a class="btn-primary" href="/en/core-concepts/quick-start">
-							Quick Start
+							Get Started
 							<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 								<path d="M5 12h14" />
 								<path d="m12 5 7 7-7 7" />

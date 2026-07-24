@@ -14,6 +14,8 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
+import LiveExample from "../../../components/LiveExample/LiveExample.astro";
+
 Provide all Table Index composite attributes in an array of objects to the `get` method to perform a BatchGet query.
 
 > When performing a BatchGet the `.params()` method will return an _array_ of parameters, rather than just the parameters for one docClient query. This is because ElectroDB BatchGet allows queries larger than the docClient's limit of 100 records
@@ -30,26 +32,9 @@ It is important to consider your Table's throughput considerations when setting 
 
 ## Example
 
-import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
+> The **Entity** and **Table Definition** tabs show the setup this example runs against, and the generated parameters below are produced live by executing the example.
 
-<ExampleSetup />
-
-```javascript
-const { data, unprocessed } = await StoreLocations.get([
-  {
-    storeId: "LatteLarrys",
-    mallId: "EastPointe",
-    buildingId: "F34",
-    cityId: "Atlanta1",
-  },
-  {
-    storeId: "MochaJoes",
-    mallId: "WestEnd",
-    buildingId: "A21",
-    cityId: "Madison2",
-  },
-]).go({ concurrent: 1 }); // `concurrent` value is optional and default's to `1`
-```
+<LiveExample name="batch-get-store-locations" />
 
 ## Response Format
 
@@ -57,27 +42,6 @@ const { data, unprocessed } = await StoreLocations.get([
 {
   data: Array<YOUR_SCHEMA>,
   unprocessed: Array<YOUR_COMPOSITE_ATTRIBUTES>
-}
-```
-
-## Equivalent Parameters
-
-```json
-{
-  "RequestItems": {
-    ["YOUR_TABLE_NAME"]: {
-      "Keys": [
-        {
-          "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
-          "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
-        },
-        {
-          "pk": "$mallstoredirectory#cityid_madison2#mallid_westend",
-          "sk": "$mallstore_1#buildingid_a21#storeid_mochajoes"
-        }
-      ]
-    }
-  }
 }
 ```
 
@@ -116,17 +80,17 @@ By default, **ElectroDB** enables you to work with records as the names and prop
 | Option             |       Default        | Description                                                                                                                                                                                                                                                                                                                                                                                   |
 | ------------------ | :------------------: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | client             | _(from constructor)_ | Provide a DynamoDB client dynamically at query execution time. This allows per-request client selection without modifying the Entity or Service instance. The client provided here takes precedence over any client set at instantiation time. Both v2 and v3 AWS SDK clients are supported and will be auto-detected.                                                                       |
-| params             |         `{}`         | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.                                                                                                                                                                                                                            |
+| params             |         \{}         | Properties added to this object will be merged onto the params sent to the document client. Any conflicts with **ElectroDB** will favor the params specified here.                                                                                                                                                                                                                            |
 | table              | _(from constructor)_ | Use a different table than the one defined in the [Service Options](/en/modeling/service#options)                                                                                                                                                                                                                                                                                             |
 | attributes         |  _(all attributes)_  | The `attributes` query option allows you to specify ProjectionExpression Attributes for your `get` or `query` operation. As of `1.11.0` only root attributes are allowed to be specified.                                                                                                                                                                                                     |
-| data               |    `"attributes"`    | Accepts the values `'raw'`, `'includeKeys'`, `'attributes'` or `undefined`. Use `'raw'` to return query results as they were returned by the docClient. Use `'includeKeys'` to include item partition and sort key values in your return object. By default, **ElectroDB** does not return partition, sort, or global keys in its response.                                                   |
-| originalErr        |       `false`        | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.                                                                                                                                                     |
-| concurrent         |         `1`          | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations.                                                                                                                                                                                                    |
-| unprocessed        |       `"item"`       | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](/en/queries/batch-get), [BatchDelete](/en/mutations/batch-delete), and [BatchPut](/en/mutations/batch-put).                                                                             |
-| response           |     `"default"`      | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.                                                           |
-| ignoreOwnership    |       `false`        | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.                                        |
-| listeners          |         `[]`         | An array of callbacks that are invoked when [internal ElectroDB events](/en/reference/events-logging) occur.                                                                                                                                                                                                                                                                                  |
+| data               |    "attributes"    | Accepts the values `'raw'`, `'includeKeys'`, `'attributes'` or `undefined`. Use `'raw'` to return query results as they were returned by the docClient. Use `'includeKeys'` to include item partition and sort key values in your return object. By default, **ElectroDB** does not return partition, sort, or global keys in its response.                                                   |
+| originalErr        |       false        | By default, **ElectroDB** alters the stacktrace of any exceptions thrown by the DynamoDB client to give better visibility to the developer. Set this value equal to `true` to turn off this functionality and return the error unchanged.                                                                                                                                                     |
+| concurrent         |         1          | When performing batch operations, how many requests (1 batch operation == 1 request) to DynamoDB should ElectroDB make at one time. Be mindful of your DynamoDB throughput configurations.                                                                                                                                                                                                    |
+| unprocessed        |       "item"       | Used in batch processing to override ElectroDBs default behaviour to break apart DynamoDBs `Unprocessed` records into composite attributes. See more detail about this in the sections for [BatchGet](/en/queries/batch-get), [BatchDelete](/en/mutations/batch-delete), and [BatchPut](/en/mutations/batch-put).                                                                             |
+| response           |     "default"      | Used as a convenience for applying the DynamoDB parameter `ReturnValues`. The options here are the same as the parameter values for the DocumentClient except lowercase. The `"none"` option will cause the method to return null and will bypass ElectroDB's response formatting -- useful if formatting performance is a concern.                                                           |
+| ignoreOwnership    |       false        | By default, **ElectroDB** interrogates items returned from a query for the presence of matching entity "identifiers". This helps to ensure other entities, or other versions of an entity, are filtered from your results. If you are using ElectroDB with an existing table/dataset you can turn off this feature by setting this property to `true`.                                        |
+| listeners          |         []         | An array of callbacks that are invoked when [internal ElectroDB events](/en/reference/events-logging) occur.                                                                                                                                                                                                                                                                                  |
 | logger             |        _none_        | A convenience option for a single event listener that semantically can be used for logging.                                                                                                                                                                                                                                                                                                   |
-| preserveBatchOrder |       `false`        | When used with a [batchGet](/en/queries/batch-get) operation, ElectroDB will ensure the order returned by a batchGet will be the same as the order provided. When enabled, if a record is returned from DynamoDB as "unprocessed" ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html)), ElectroDB will return a null value at that index. |
+| preserveBatchOrder |       false        | When used with a [batchGet](/en/queries/batch-get) operation, ElectroDB will ensure the order returned by a batchGet will be the same as the order provided. When enabled, if a record is returned from DynamoDB as "unprocessed" ([read more here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html)), ElectroDB will return a null value at that index. |
 | consistent         |        _none_        | When set to `true`, DynamoDB will return the most up-to-date data reflecting updates from all prior write operations using DynamoDB's [`ConsistentRead`](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html#HowItWorks.ReadConsistency.Strongly) parameter. Strongly consistent reads are only supported on tables and local secondary indexes. |
 | abortSignal        |        _none_        | An [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) that can be used to cancel the operation. This is useful for implementing request timeouts or cancelling long-running operations. When the signal is aborted, ElectroDB will throw an [`OperationAborted`](/en/reference/errors#operation-aborted) error.                                                      |

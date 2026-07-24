@@ -14,9 +14,7 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
-
-<ExampleSetup />
+import LiveExample from "../../../components/LiveExample/LiveExample.astro";
 
 Provide all table index composite attributes in an array of objects to the `delete` method to batch delete records.
 
@@ -33,55 +31,15 @@ If you set the [Execution Option](#execution-options) `concurrent` to `2`, Elect
 
 It is important to consider your Table's throughput considerations when setting this value.
 
-```typescript
-let unprocessed = await StoreLocations.delete([
-  {
-    storeId: "LatteLarrys",
-    mallId: "EastPointe",
-    buildingId: "F34",
-    cityId: "LosAngeles1",
-  },
-  {
-    storeId: "MochaJoes",
-    mallId: "EastPointe",
-    buildingId: "F35",
-    cityId: "LosAngeles1",
-  },
-]).go({ concurrent: 1 }); // `concurrent` value is optional and default's to `1`
-```
+> The **Entity** and **Table Definition** tabs show the setup this example runs against, and the generated parameters below are produced live by executing the example.
+
+<LiveExample name="batch-delete-store-locations" />
 
 ## Response Format
 
 ```typescript
 {
   unprocessed: Array<YOUR_COMPOSITE_ATTRIBUTES>;
-}
-```
-
-## Equivalent Parameters
-
-```json
-{
-  "RequestItems": {
-    "StoreDirectory": [
-      {
-        "DeleteRequest": {
-          "Key": {
-            "pk": "$mallstoredirectory#cityid_losangeles1#mallid_eastpointe",
-            "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
-          }
-        }
-      },
-      {
-        "DeleteRequest": {
-          "Key": {
-            "pk": "$mallstoredirectory#cityid_losangeles1#mallid_eastpointe",
-            "sk": "$mallstore_1#buildingid_f35#storeid_mochajoes"
-          }
-        }
-      }
-    ]
-  }
 }
 ```
 

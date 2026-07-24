@@ -1,0 +1,60 @@
+import { Entity } from "electrodb";
+import { tableName } from "./table";
+
+export const Organization = new Entity(
+  {
+    model: {
+      entity: "organization",
+      service: "app",
+      version: "1",
+    },
+    attributes: {
+      id: {
+        type: "string",
+      },
+      name: {
+        type: "string",
+        required: true,
+      },
+      description: {
+        type: "string",
+      },
+      deleted: {
+        type: "boolean",
+        required: true,
+        default: false,
+      },
+      createdAt: {
+        type: "string",
+        readOnly: true,
+        required: true,
+        set: () => new Date().toISOString(),
+        default: () => new Date().toISOString(),
+      },
+    },
+    indexes: {
+      record: {
+        pk: {
+          field: "pk",
+          composite: ["id"],
+        },
+        sk: {
+          field: "sk",
+          composite: [],
+        },
+      },
+      all: {
+        index: "gsi1pk-gsi1sk-index",
+        pk: {
+          field: "gsi1pk",
+          composite: [],
+        },
+        sk: {
+          field: "gsi1sk",
+          composite: ["deleted", "createdAt"], // SK has both readonly and mutable attributes
+        },
+      },
+    },
+  },
+  { table: tableName },
+);
