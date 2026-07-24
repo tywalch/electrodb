@@ -22,7 +22,7 @@ Schemas define entity's name and version, the attributes your entity's items wil
 ## Entity Definition (Schema)
 
 | Property      | Description                                                                                                 |
-| ------------- | ----------------------------------------------------------------------------------------------------------- |
+|---------------|-------------------------------------------------------------------------------------------------------------|
 | model.service | Name of the application using the entity, used to namespace all entities                                    |
 | model.entity  | Name of the entity that the schema represents                                                               |
 | model.version | The version number of the schema, used to namespace keys                                                    |
@@ -72,26 +72,21 @@ Below is an example schema for a "Book" entity
   indexes: {
     byLocation: {
       pk: {
-        // highlight-next-line
         field: 'pk',
         composite: ['storeId']
       },
       sk: {
-        // highlight-next-line
         field: 'sk',
         composite: ['bookId']
       }
     },
     byAuthor: {
-      // highlight-next-line
       index: 'gsi1pk-gsi1sk-index',
       pk: {
-        // highlight-next-line
         field: 'gsi1pk',
         composite: ['author']
       },
       sk: {
-        // highlight-next-line
         field: 'gsi1sk',
         composite: ['title']
       }
@@ -165,54 +160,44 @@ The following DynamoDB table definition creates a generic Pay-Per-Request table 
 
 ```json
 {
-  // highlight-next-line
   "TableName": "electro",
   "KeySchema": [
     {
-      // highlight-next-line
       "AttributeName": "pk",
       "KeyType": "HASH"
     },
     {
-      // highlight-next-line
       "AttributeName": "sk",
       "KeyType": "RANGE"
     }
   ],
   "AttributeDefinitions": [
     {
-      // highlight-next-line
       "AttributeName": "pk",
       "AttributeType": "S"
     },
     {
-      // highlight-next-line
       "AttributeName": "sk",
       "AttributeType": "S"
     },
     {
-      // highlight-next-line
       "AttributeName": "gsi1pk",
       "AttributeType": "S"
     },
     {
-      // highlight-next-line
       "AttributeName": "gsi1sk",
       "AttributeType": "S"
     }
   ],
   "GlobalSecondaryIndexes": [
     {
-      // highlight-next-line
       "IndexName": "gsi1pk-gsi1sk-index",
       "KeySchema": [
         {
-          // highlight-next-line
           "AttributeName": "gsi1pk",
           "KeyType": "HASH"
         },
         {
-          // highlight-next-line
           "AttributeName": "gsi1sk",
           "KeyType": "RANGE"
         }
@@ -236,7 +221,6 @@ indexes: {
              * 'pk' is a defined "AttributeName" in the above definition and the defined "HASH" attribute (partition key)
              * for in the table's "KeySchema"
              */
-            // highlight-next-line
             field: 'pk',
             composite: ['storeId']
         },
@@ -245,7 +229,6 @@ indexes: {
              * 'sk' is a defined "AttributeName" in the above definition and the defined "RANGE" attribute (sort key)
              * for in the table's "KeySchema"
              */
-            // highlight-next-line
             field: 'sk',
             composite: ['bookId']
         }
@@ -254,14 +237,12 @@ indexes: {
         /**
          * 'gsi1pk-gsi1sk-index' is the "IndexName" for the table's "GlobalSecondaryIndexes" defined above
          */
-        // highlight-next-line
         index: 'gsi1pk-gsi1sk-index',
         pk: {
             /**
              * 'gsi1pk' is a defined "AttributeName" in the above definition and the defined "HASH" attribute (partition key)
              * for in the table's first "GlobalSecondaryIndexes"
              */
-            // highlight-next-line
             field: 'gsi1pk',
             composite: ['author']
         },
@@ -270,7 +251,6 @@ indexes: {
              * 'gsi1sk' is a defined "AttributeName" in the above definition and the defined "RANGE" attribute (sort key)
              * for in the table's first "GlobalSecondaryIndexes"
              */
-            // highlight-next-line
             field: 'gsi1sk',
             composite: ['title']
         }

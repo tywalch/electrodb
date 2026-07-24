@@ -37,10 +37,10 @@ Additionally, ElectroDB offers a few additional methods built on top of DynamoDB
 
 | ElectroDB Method                  | DynamoDB Method   | Purpose                                                                                                                                                                                                                                            |
 | --------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [get](/en/queries/get)            | `get`             | Returns a single item, specified by its primary key.                                                                                                                                                                                               |
-| [batchGet](/en/queries/batch-get) | `batchGet`        | Returns a set of attributes for multiple items from one or more tables.                                                                                                                                                                            |
-| [query](/en/queries/query)        | `query`           | Queries a table or index for items that match the specified primary key value.                                                                                                                                                                     |
-| [scan](/en/queries/scan)          | `scan`            | Scans the table and returns all matching items.                                                                                                                                                                                                    |
+| [get](/en/queries/get)            | get             | Returns a single item, specified by its primary key.                                                                                                                                                                                               |
+| [batchGet](/en/queries/batch-get) | batchGet        | Returns a set of attributes for multiple items from one or more tables.                                                                                                                                                                            |
+| [query](/en/queries/query)        | query           | Queries a table or index for items that match the specified primary key value.                                                                                                                                                                     |
+| [scan](/en/queries/scan)          | scan            | Scans the table and returns all matching items.                                                                                                                                                                                                    |
 | [match](/en/queries/match)        | `query` or `scan` | The `match` method performs the same index-seeking behavior as `find` and additionally applies every provided value as a query filter. ElectroDB identifies which index can be "most" fulfilled with the attributes provided, and will fallback to a `scan` if no index can be built. |
 | [find](/en/queries/find)          | `query` or `scan` | the `find` method builds the most performant index keys it can from the attributes provided, falling back to a `scan` if no index can be built. Unlike `match`, values that do not contribute to a composite key are not applied as query filters.                                                                       |
 
@@ -52,14 +52,14 @@ Additionally, ElectroDB offers a few mutation methods beyond `put`, `update`, an
 
 | ElectroDB Method                    | DynamoDB Method        | Purpose                                                                                                                                                                               |
 | ----------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [put](/en/mutations/put)            | `put`, `batchWrite`    | Creates or overwrites an existing item with the values provided                                                                                                                       |
-| [batchPut](/en/mutations/batch-put) | `batchWrite`           | Creates or overwrites multiple items with the values provided                                                                                                                         |
-| [create](/en/mutations/create)      | `put`                  | Creates an item if the item does not currently exist, or throws if the item exists                                                                                                    |
-| [upsert](/en/mutations/upsert)      | `update`               | Upsert is similar to `put` in that it will create a record if one does not exist, except `upsert` perform an update if that record already exists.                                    |
-| [update](/en/mutations/update)      | `update`               | Performs update on an existing record or creates a new record per the DynamoDB spec ([read more](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html)) |
-| [patch](/en/mutations/patch)        | `update`               | Performs an update on existing item or throws if that item does not already exist.                                                                                                    |
-| [delete](/en/mutations/delete)      | `delete`, `batchWrite` | Deletes an item regardless of whether or not the specified item exists                                                                                                                |
-| [remove](/en/mutations/remove)      | `delete`               | Deletes an item or throws if the item does not currently exist                                                                                                                        |
+| [put](/en/mutations/put)            | put, batchWrite    | Creates or overwrites an existing item with the values provided                                                                                                                       |
+| [batchPut](/en/mutations/batch-put) | batchWrite           | Creates or overwrites multiple items with the values provided                                                                                                                         |
+| [create](/en/mutations/create)      | put                  | Creates an item if the item does not currently exist, or throws if the item exists                                                                                                    |
+| [upsert](/en/mutations/upsert)      | update               | Upsert is similar to `put` in that it will create a record if one does not exist, except `upsert` perform an update if that record already exists.                                    |
+| [update](/en/mutations/update)      | update               | Performs update on an existing record or creates a new record per the DynamoDB spec ([read more](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html)) |
+| [patch](/en/mutations/patch)        | update               | Performs an update on existing item or throws if that item does not already exist.                                                                                                    |
+| [delete](/en/mutations/delete)      | delete, batchWrite | Deletes an item regardless of whether or not the specified item exists                                                                                                                |
+| [remove](/en/mutations/remove)      | delete               | Deletes an item or throws if the item does not currently exist                                                                                                                        |
 
 ## Execution Methods
 
@@ -91,8 +91,8 @@ The `go` method _ends_ a query chain, and asynchronously queries DynamoDB with t
 
 ```typescript
 {
-  data: Array<YOUR_SCHEMA>,
-  cursor: string | undefined
+  data: Array<T>,
+  cursor: string | null
 }
 ```
 

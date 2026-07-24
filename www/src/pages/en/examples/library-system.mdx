@@ -14,6 +14,8 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
+import LiveExample from "../../../components/LiveExample/LiveExample.astro";
+
 This example demonstrates how you might model a Library with Single-Table Design principals and ElectroDB.
 
 ## Table Definition
@@ -268,7 +270,7 @@ const genre = new Entity(
           composite: ["bookTitle"],
         },
         sk: {
-          field: "gsi13sk",
+          field: "gsi3sk",
           composite: ["genre", "subgenre"],
         },
       },
@@ -374,28 +376,17 @@ const library = new Service({
 
 this same query can be used to get unique books (instead of individual copies) because this entity is denormalized.
 
-```typescript
-const { data, cursor } = await author.query
-  .writer({ authorLastName: "king" })
-  .go();
-```
+> The **Entities**, **Service**, and **Table Definition** tabs show the setup this example runs against, and the generated parameters below are produced live by executing the example.
+
+<LiveExample name="library-system-books-by-author" />
 
 ### Get all authors by last name and a partial first name.
 
-```typescript
-await author.query
-  .writer({ authorLastName: "king" })
-  .begins({ authorFirstName: "s" })
-  .go();
-```
+<LiveExample name="library-system-author-partial-name" />
 
 ### Get all authors by the full name of the writer
 
-```typescript
-await author.query
-  .writer({ authorLastName: "smith", authorFirstName: "john" })
-  .go();
-```
+<LiveExample name="library-system-author-full-name" />
 
 ### Get author details, books, and genres
 
@@ -403,199 +394,84 @@ Retrieves author details, books (or available copies), and genres by author full
 
 You can then create your own structure using all the returned records
 
-```typescript
-await library.collections
-  .works({ authorLastName: "king", authorFirstName: "stephen" })
-  .go()
-  .then((works) => {
-    const [writer] = works.data.author;
-    const books = works.data.book;
-    const genres = works.data.genre;
-    return {
-      writer,
-      books,
-      genres,
-    };
-  });
-```
+<LiveExample name="library-system-works-collection" />
 
 ### Get all copies of a book by isbn
 
-```typescript
-const { data, cursor } = await book.query
-  .copies({ isbn: "9783453435773" })
-  .go();
-```
+<LiveExample name="library-system-copies-by-isbn" />
 
 ### Get all the books on loan to a specific member
 
-```typescript
-const { data, cursor } = await book.query.loans({ memberId: "0000001" }).go();
-```
+<LiveExample name="library-system-member-loans" />
 
 ### Get all overdue books by memberId
 
-```typescript
-const today = "2022-07-30";
-
-const { data, cursor } = await book.query
-  .loans({ memberId: "0000001" })
-  .gt({ loanEndDate: today })
-  .go();
-```
+<LiveExample name="library-system-overdue-books" />
 
 ### Get number of books checked out by user
 
-```typescript
-const count = await book.query
-  .loans({ memberId: "0000001" })
-  .go()
-  .then((loans) => loans.data.length);
-```
+<LiveExample name="library-system-loan-count" />
 
 ### Get member information and their checked out books
 
-```typescript
-const results = await library.collections
-  .account({ memberId: "0000001" })
-  .go()
-  .then((result) => {
-    const [member] = result.data.member;
-    const books = result.data.book;
-    return {
-      member,
-      books,
-    };
-  });
-```
+<LiveExample name="library-system-account-collection" />
 
 ### Get all books/copies by an author's full name.
 
 This is a duplicate access pattern for this entity, but it allows for additional access patterns, including a cross-entity collection
 
-```typescript
-const { data, cursor } = await book.query
-  .author({ authorLastName: "king", authorFirstName: "stephen" })
-  .go();
-```
+<LiveExample name="library-system-copies-by-author" />
 
 ### Get all copies available to be checked out.
 
 Our loanEndDate property either holds the date the book is due or the text 'AVAILABLE'
 
-```typescript
-const BOOK_IS_AVAILABLE = "AVAILABLE";
-
-const { data, cursor } = await book.query
-  .author({
-    authorLastName: "king",
-    authorFirstName: "stephen",
-    loanEndDate: BOOK_IS_AVAILABLE,
-  })
-  .go();
-```
+<LiveExample name="library-system-available-copies" />
 
 ### Get all copies NOT available to be checked out.
 
 If a copy is checked out the loanEndDate value will be a date value. Date values have a format: YYYY-MM-DD which will sort _before_ 'AVAILABLE', so any copy with a loanEndDate < 'AVAILABLE' will be checked out
 
-```typescript
-const BOOK_IS_AVAILABLE = "AVAILABLE";
-
-const { data, cursor } = await book.query
-  .author({
-    authorLastName: "king",
-    authorFirstName: "stephen",
-  })
-  .lt({ loanEndDate: BOOK_IS_AVAILABLE })
-  .go();
-```
+<LiveExample name="library-system-unavailable-copies" />
 
 ### Get books/copies by title
 
-```typescript
-const { data, cursor } = await book.query.releases({ bookTitle: "it" }).go();
-```
+<LiveExample name="library-system-books-by-title" />
 
 ### Get books/copies by title and partial release date
 
 Queries can be provided partially like just the year, the year and month, etc.
 
-```typescript
-book.query.releases({ bookTitle: "it" }).gte({ releaseDate: "1990-00-00" }).go();
-
-book.query
-  .releases({ bookTitle: "it" })
-  .between({ releaseDate: "1990-00-00" }, { releaseDate: "2019-99-99" })
-  .go();
-```
+<LiveExample name="library-system-books-by-release-date" />
 
 ### Get the genres and subgenres associated with a book
 
-```typescript
-await genre.query.book({ isbn: "9783453435773" }).go();
-await genre.query.title({ bookTitle: "it" }).go();
-```
+<LiveExample name="library-system-book-genres" />
 
 ### Get the sub-genres associated with a book and one of its main genres
 
-```typescript
-await genre.query.book({ isbn: "9783453435773", genre: "horror" }).go();
-await genre.query.title({ bookTitle: "it", genre: "horror" }).go();
-```
+<LiveExample name="library-system-book-subgenres" />
 
 ### Get a book and its genres by isbn or book title
 
-```typescript
-await library.collections.detail({ isbn: "9783453435773" }).go();
-await library.collections.titles({ bookTitle: "it" }).go();
-```
+<LiveExample name="library-system-detail-collection" />
 
 ### Get books within a genre
 
-```typescript
-const { data, cursor } = await genre.query.categories({ genre: "horror" }).go();
-```
+<LiveExample name="library-system-books-in-genre" />
 
 ### Get books within a genre and subgenre
 
-```typescript
-const { data, cursor } = await genre.query
-  .categories({ genre: "horror", subgenre: "killer clowns" })
-  .go();
-```
+<LiveExample name="library-system-genre-subgenre" />
 
 ### Get genres by a given author full name
 
-```typescript
-await genre.query
-  .author({ authorFirstName: "stephen", authorLastName: "king" })
-  .go()
-  .then((results) => {
-    const uniqueGenres = new Set<string>();
-    for (const { genre } of results.data) {
-      uniqueGenres.add(genre);
-    }
-    return Array.from(uniqueGenres);
-  });
-```
+<LiveExample name="library-system-genres-by-author" />
 
 ### Get subgenres within a given author and genre
 
-```typescript
-const { data, cursor } = await genre.query
-  .author({
-    authorFirstName: "stephen",
-    authorLastName: "king",
-    genre: "horror",
-  })
-  .go();
-```
+<LiveExample name="library-system-subgenres-by-author" />
 
 ### Get member information by memberId
 
-```typescript
-const { data, cursor } = await member.query
-  .member({ memberId: "0000001" })
-  .go();
-```
+<LiveExample name="library-system-member-info" />

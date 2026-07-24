@@ -296,7 +296,6 @@ const employees = new Entity({
       },
     },
     employee: {
-      // highlight next line
       collection: "contributions",
       index: "gsi2",
       pk: {
@@ -340,7 +339,6 @@ const tasks = new Entity({
   },
   indexes: {
     project: {
-      // highlight next line
       collection: "overview",
       pk: {
         field: "pk",
@@ -352,7 +350,6 @@ const tasks = new Entity({
       },
     },
     assigned: {
-      // highlight next line
       collection: ["contributions", "assignments"] as const,
       index: "gsi2",
       pk: {
@@ -390,7 +387,6 @@ const projectMembers = new Entity({
   },
   indexes: {
     members: {
-      // highlight next line
       collection: "overview",
       pk: {
         field: "pk",
@@ -402,7 +398,6 @@ const projectMembers = new Entity({
       },
     },
     projects: {
-      // highlight next line
       collection: ["contributions", "assignments"] as const,
       index: "gsi2",
       pk: {

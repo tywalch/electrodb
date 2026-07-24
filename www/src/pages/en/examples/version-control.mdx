@@ -19,6 +19,9 @@ In this example we will be modeling a version control system similar to GitHub
 ## Table Definition
 
 import TableDefinition from "../../../partials/table-definition.mdx";
+import LiveExample from "../../../components/LiveExample/LiveExample.astro";
+
+<TableDefinition />
 
 ## Setup
 
@@ -29,9 +32,6 @@ This file is referenced by multiple entities below
 <p>
 
 ```typescript
-/* istanbul ignore file */
-import { IssueCommentIds, PullRequestCommentIds } from "./index";
-
 export const StatusTypes = ["Open", "Closed"] as const;
 
 export type Status = (typeof StatusTypes)[number];
@@ -65,6 +65,28 @@ export const NotYetViewed = "#";
 
 export type SubscriptionTypes = (typeof TicketTypes)[number];
 
+export type IssueIds = {
+  repoOwner: string;
+  repoName: string;
+  issueNumber: string;
+};
+
+export type PullRequestIds = {
+  repoOwner: string;
+  repoName: string;
+  pullRequestNumber: string;
+};
+
+export type IssueCommentIds = IssueIds & {
+  commentId: string;
+  username: string;
+};
+
+export type PullRequestCommentIds = PullRequestIds & {
+  commentId: string;
+  username: string;
+};
+
 export function isIssueCommentIds(comment: any): comment is IssueCommentIds {
   return comment.issueNumber !== undefined && comment.username !== undefined;
 }
@@ -89,7 +111,6 @@ export function isPullRequestCommentIds(
 
 ```typescript
 import { Entity } from "electrodb";
-import moment from "moment";
 import {
   TicketTypes,
   IssueTicket,
@@ -142,13 +163,13 @@ export const issues = new Entity({
     },
     createdAt: {
       type: "string",
-      set: () => moment.utc().format(),
+      set: () => new Date().toISOString(),
       readOnly: true,
     },
     updatedAt: {
       type: "string",
       watch: "*",
-      set: () => moment.utc().format(),
+      set: () => new Date().toISOString(),
       readOnly: true,
     },
   },
@@ -213,14 +234,7 @@ export const issues = new Entity({
 
 ```typescript
 import { Entity } from "electrodb";
-import moment from "moment";
-import {
-  TicketTypes,
-  IssueTicket,
-  StatusTypes,
-  toStatusString,
-  toStatusCode,
-} from "./types";
+import { NotYetViewed } from "./types";
 
 export const issueComments = new Entity({
   model: {
@@ -267,13 +281,13 @@ export const issueComments = new Entity({
     },
     createdAt: {
       type: "string",
-      set: () => moment.utc().format(),
+      set: () => new Date().toISOString(),
       readOnly: true,
     },
     updatedAt: {
       type: "string",
       watch: "*",
-      set: () => moment.utc().format(),
+      set: () => new Date().toISOString(),
       readOnly: true,
     },
   },
@@ -309,7 +323,7 @@ export const issueComments = new Entity({
         field: "gsi2pk",
       },
       sk: {
-        composite: ["createdAt", "replyViewed"],
+        composite: ["updatedAt", "replyViewed"],
         field: "gsi2sk",
       },
     },
@@ -326,9 +340,7 @@ export const issueComments = new Entity({
 
 ```typescript
 import { Entity } from "electrodb";
-import moment from "moment";
 import {
-  NotYetViewed,
   TicketTypes,
   PullRequestTicket,
   StatusTypes,
@@ -369,7 +381,7 @@ export const pullRequests = new Entity({
       type: "string",
       readOnly: true,
       watch: ["pullRequestNumber"],
-      set: (_, { issueNumber }) => issueNumber,
+      set: (_, { pullRequestNumber }) => pullRequestNumber,
     },
     status: {
       type: StatusTypes,
@@ -392,7 +404,7 @@ export const pullRequests = new Entity({
           },
           createdAt: {
             type: "string",
-            default: () => moment.utc().format(),
+            default: () => new Date().toISOString(),
             readOnly: true,
           },
         },
@@ -400,13 +412,13 @@ export const pullRequests = new Entity({
     },
     createdAt: {
       type: "string",
-      set: () => moment.utc().format(),
+      set: () => new Date().toISOString(),
       readOnly: true,
     },
     updatedAt: {
       type: "string",
       watch: "*",
-      set: () => moment.utc().format(),
+      set: () => new Date().toISOString(),
       readOnly: true,
     },
   },
@@ -471,15 +483,7 @@ export const pullRequests = new Entity({
 
 ```typescript
 import { Entity } from "electrodb";
-import moment from "moment";
-import {
-  NotYetViewed,
-  TicketTypes,
-  PullRequestTicket,
-  StatusTypes,
-  toStatusString,
-  toStatusCode,
-} from "./types";
+import { NotYetViewed } from "./types";
 
 export const pullRequestComments = new Entity({
   model: {
@@ -523,13 +527,13 @@ export const pullRequestComments = new Entity({
     },
     createdAt: {
       type: "string",
-      set: () => moment.utc().format(),
+      set: () => new Date().toISOString(),
       readOnly: true,
     },
     updatedAt: {
       type: "string",
       watch: "*",
-      set: () => moment.utc().format(),
+      set: () => new Date().toISOString(),
       readOnly: true,
     },
   },
@@ -565,7 +569,7 @@ export const pullRequestComments = new Entity({
         field: "gsi2pk",
       },
       sk: {
-        composite: ["createdAt", "replyViewed"],
+        composite: ["updatedAt", "replyViewed"],
         field: "gsi2sk",
       },
     },
@@ -582,7 +586,6 @@ export const pullRequestComments = new Entity({
 
 ```typescript
 import { Entity } from "electrodb";
-import moment from "moment";
 
 export const licenses = [
   "afl-3.0",
@@ -670,13 +673,13 @@ export const repositories = new Entity({
     },
     createdAt: {
       type: "string",
-      set: () => moment.utc().format(),
+      set: () => new Date().toISOString(),
       readOnly: true,
     },
     updatedAt: {
       type: "string",
       watch: "*",
-      set: () => moment.utc().format(),
+      set: () => new Date().toISOString(),
       readOnly: true,
     },
   },
@@ -717,7 +720,6 @@ export const repositories = new Entity({
 
 ```typescript
 import { Entity } from "electrodb";
-import moment from "moment";
 import { TicketTypes, IsNotTicket } from "./types";
 
 const RepositorySubscription = "#";
@@ -779,13 +781,13 @@ export const subscriptions = new Entity({
     },
     createdAt: {
       type: "string",
-      set: () => moment.utc().format(),
+      set: () => new Date().toISOString(),
       readOnly: true,
     },
     updatedAt: {
       type: "string",
       watch: "*",
-      set: () => moment.utc().format(),
+      set: () => new Date().toISOString(),
       readOnly: true,
     },
   },
@@ -837,7 +839,6 @@ export const subscriptions = new Entity({
 
 ```typescript
 import { Entity } from "electrodb";
-import moment from "moment";
 
 export const users = new Entity({
   model: {
@@ -874,13 +875,13 @@ export const users = new Entity({
     },
     createdAt: {
       type: "string",
-      set: () => moment.utc().format(),
+      set: () => new Date().toISOString(),
       readOnly: true,
     },
     updatedAt: {
       type: "string",
       watch: "*",
-      set: () => moment.utc().format(),
+      set: () => new Date().toISOString(),
       readOnly: true,
     },
   },
@@ -951,244 +952,54 @@ export const store = new Service(
 
 ### Get public repositories by username
 
-```typescript
-export async function getPublicRepository(username: string) {
-  return store.entities.repositories.query.created({
-    username,
-    isPrivate: false,
-  });
-}
-```
+> The **entities.ts**, **service.ts**, **types.ts**, and **Table Definition** tabs show the setup this example runs against, and the generated parameters below are produced live by executing the example.
+
+<LiveExample name="version-control-public-repositories" />
 
 ### Get pull request and associated comments
 
 Note that newest comments will be returned first
 
-```typescript
-export async function reviewPullRequest(options: {
-  pr: PullRequestIds;
-  cursor?: string;
-}) {
-  const { pr, cursor } = options;
-  return store.collections.PRReview(pr).go({ cursor, order: "desc" });
-}
-```
+<LiveExample name="version-control-pr-review" />
 
 ### Get issue and associated comments
 
 Note that newest comments will be returned first
 
-```typescript
-export async function reviewIssue(options: {
-  issue: IssueIds;
-  cursor?: string;
-}) {
-  const { issue, cursor } = options;
-  return store.collections.issueReview(issue).go({ cursor, order: "desc" });
-}
-```
+<LiveExample name="version-control-issue-review" />
 
 ### Get pull requests created by user
 
-```typescript
-export async function getUserPullRequests(options: {
-  username: string;
-  status?: Status;
-  cursor?: string;
-}) {
-  const { username, status, cursor } = options;
-  return store.entities.pullRequests.query
-    .created({ username, status })
-    .go({ cursor, order: "desc" });
-}
-```
+<LiveExample name="version-control-user-pull-requests" />
 
 ### Close pull request
 
 Note that this can only be performed by user who opened PR or the repo owner
 
-```typescript
-export async function closePullRequest(user: string, pr: PullRequestIds) {
-  return store.entities.pullRequests
-    .update(pr)
-    .set({ status: "Closed" })
-    .where(
-      ({ username, repoOwner }, { eq }) => `
-            ${eq(username, user)} OR ${eq(repoOwner, user)}
-        `,
-    )
-    .go();
-}
-```
+<LiveExample name="version-control-close-pull-request" />
 
 ### Get all user info, repos, pull requests, and issues in one query
 
-```typescript
-export async function getFirstPageLoad(username: string) {
-  const results: OwnedItems = {
-    issues: [],
-    pullRequests: [],
-    repositories: [],
-    users: [],
-  };
-
-  let next = null;
-
-  do {
-    const { cursor, data } = await store.collections.owned({ username }).go();
-    results.issues = results.issues.concat(data.issues);
-    results.pullRequests = results.pullRequests.concat(data.pullRequests);
-    results.repositories = results.repositories.concat(data.repositories);
-    results.users = results.users.concat(data.users);
-    next = cursor;
-  } while (next !== null);
-
-  return results;
-}
-```
+<LiveExample name="version-control-first-page-load" />
 
 ### Get subscriptions for a given repository, pull request, or issue.
 
-```typescript
-export async function getSubscribed(
-  repoOwner: string,
-  repoName: string,
-  ticketNumber: string = IsNotTicket,
-) {
-  return store.collections
-    .subscribers({ repoOwner, repoName, ticketNumber })
-    .go();
-}
-```
+<LiveExample name="version-control-subscribers" />
 
 ### Get unread comment replies
 
-```typescript
-const MinDate = "0000-00-00";
-const MaxDate = "9999-99-99";
-
-export async function getUnreadComments(user: string) {
-  const start = {
-    createdAt: MinDate,
-    replyViewed: NotYetViewed,
-  };
-  const end = {
-    createdAt: MaxDate,
-    replyViewed: NotYetViewed,
-  };
-  let [issues, pullRequests] = await Promise.all([
-    store.entities.issueComments.query
-      .replies({ replyTo: user })
-      .between(start, end)
-      .go(),
-
-    store.entities.pullRequestComments.query
-      .replies({ replyTo: user })
-      .between(start, end)
-      .go(),
-  ]);
-
-  return {
-    issues,
-    pullRequests,
-  };
-}
-```
+<LiveExample name="version-control-unread-comments" />
 
 ### Mark comment reply as read
 
 Note that this can only be done by the user who was being replied to
 
-```typescript
-export async function readReply(
-  user: string,
-  comment: IssueCommentIds,
-): Promise<boolean>;
-export async function readReply(
-  user: string,
-  comment: PullRequestCommentIds,
-): Promise<boolean>;
-export async function readReply(user: string, comment: any): Promise<boolean> {
-  const replyViewed = moment.utc().format();
-  if (isIssueCommentIds(comment)) {
-    return await store.entities.issueComments
-      .patch(comment)
-      .set({ replyViewed })
-      .where(({ replyTo }, { eq }) => eq(replyTo, user))
-      .go()
-      .then(() => true)
-      .catch(() => false);
-  } else if (isPullRequestCommentIds(comment)) {
-    return await store.entities.pullRequestComments
-      .patch(comment)
-      .set({ replyViewed })
-      .where(({ replyTo }, { eq }) => eq(replyTo, user))
-      .go()
-      .then(() => true)
-      .catch(() => false);
-  } else {
-    return false;
-  }
-}
-```
+<LiveExample name="version-control-read-reply" />
 
 ### Approve pull request
 
-```typescript
-export async function approvePullRequest(
-  repoOwner: string,
-  repoName: string,
-  pullRequestNumber: string,
-  username: string,
-) {
-  const pullRequest = await store.entities.pullRequests
-    .get({ repoOwner, repoName, pullRequestNumber })
-    .go();
-
-  if (!pullRequest.data || !pullRequest.data.reviewers) {
-    return false;
-  }
-
-  let index: number = -1;
-
-  for (let i = 0; i < pullRequest.data.reviewers.length; i++) {
-    const reviewer = pullRequest.data.reviewers[i];
-    if (reviewer.username === username) {
-      index = i;
-    }
-  }
-
-  if (index === -1) {
-    return false;
-  }
-
-  return store.entities.pullRequests
-    .update({ repoOwner, repoName, pullRequestNumber })
-    .data(({ reviewers }, { set }) => {
-      set(reviewers[index].approved, true);
-    })
-    .where(
-      ({ reviewers }, { eq }) => `
-            ${eq(reviewers[index].username, username)};
-        `,
-    )
-    .go()
-    .then(() => true)
-    .catch(() => false);
-}
-```
+<LiveExample name="version-control-approve-pull-request" />
 
 ### Follow repository
 
-```typescript
-export async function followRepository(
-  repoOwner: string,
-  repoName: string,
-  follower: string,
-) {
-  await store.entities.repositories
-    .update({ repoOwner, repoName })
-    .add({ followers: [follower] })
-    .go();
-}
-```
+<LiveExample name="version-control-follow-repository" />

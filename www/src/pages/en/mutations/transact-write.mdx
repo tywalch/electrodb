@@ -47,14 +47,14 @@ The mutations available within a transaction are identical to the mutations avai
 
 | ElectroDB Name | DynamoDB Name    |
 | -------------- | ---------------- |
-| `check`        | `ConditionCheck` |
-| `delete`       | `Delete`         |
-| `remove`       | `Delete`         |
-| `put`          | `Put`            |
-| `create`       | `Put`            |
-| `upsert`       | `Update`         |
-| `update`       | `Update`         |
-| `patch`        | `Update`         |
+| check        | ConditionCheck |
+| delete       | Delete         |
+| remove       | Delete         |
+| put          | Put            |
+| create       | Put            |
+| upsert       | Update         |
+| update       | Update         |
+| patch        | Update         |
 
 ## Response Format
 
@@ -75,10 +75,10 @@ type TransactionItem<T> = {
 
 | Property |         Type          | Description                                                                                                                                                                                                                                                                           |
 | -------- | :-------------------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| item     | `EntityItem`, `null`  | When committing your mutation, if you use the execution option `{ response: 'all_old' }` DynamoDB will include the targeted record as it exists in your table if the transaction fails. In the documentation, this param is called `ReturnValuesOnConditionCheckFailure`.             |
-| code     | `TransactionItemCode` | The `code` property is construct of DynamoDB, you can [read the docs here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_Errors) to learn more. ElectroDB exports this type under the name `TransactionItemCode`. |
-| rejected |       `boolean`       | If your `write` was rejected, this value will be `true`. Because transactions are an all-or-nothing mutation, it only takes one rejection in a group to cancel the whole transaction.                                                                                                 |
-| message  | `string`, `undefined` | The `message` property is construct of DynamoDB, you can [read the docs here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_Errors) to learn more.                                                                |
+| item     | EntityItem, null  | When committing your mutation, if you use the execution option `{"{ response: 'all_old' }"}` DynamoDB will include the targeted record as it exists in your table if the transaction fails. In the documentation, this param is called `ReturnValuesOnConditionCheckFailure`.             |
+| code     | TransactionItemCode | The `code` property is construct of DynamoDB, you can [read the docs here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_Errors) to learn more. ElectroDB exports this type under the name `TransactionItemCode`. |
+| rejected |       boolean       | If your `write` was rejected, this value will be `true`. Because transactions are an all-or-nothing mutation, it only takes one rejection in a group to cancel the whole transaction.                                                                                                 |
+| message  | string, undefined | The `message` property is construct of DynamoDB, you can [read the docs here](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html#API_TransactWriteItems_Errors) to learn more.                                                                |
 
 ### Returned
 

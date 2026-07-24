@@ -47,14 +47,14 @@ Update Methods are available **_after_** the `update()` or `patch()` method is c
 
 | Update/Patch Method                 | Attribute Types                                             | Parameter  |
 | ----------------------------------- | ----------------------------------------------------------- | ---------- |
-| [set](#update-method-set)           | `number` `string` `boolean` `enum` `map` `list` `set` `any` | `object`   |
-| [remove](#update-method-remove)     | `number` `string` `boolean` `enum` `map` `list` `set` `any` | `array`    |
-| [add](#update-method-add)           | `number` `any` `set`                                        | `object`   |
-| [subtract](#update-method-subtract) | `number`                                                    | `object`   |
-| [append](#update-method-append)     | `any` `list`                                                | `object`   |
-| [delete](#update-method-delete)     | `any` `set`                                                 | `object`   |
-| [data](#update-method-data)         | `*`                                                         | `callback` |
-| [composite](#composite)             | `number` `string` `boolean` `enum` `map` `list` `set` `any` | `object`                                                         | `object` |
+| [set](#update-method-set)           | `number` `string` `boolean` `enum` `map` `list` `set` `any` | object   |
+| [remove](#update-method-remove)     | `number` `string` `boolean` `enum` `map` `list` `set` `any` | array    |
+| [add](#update-method-add)           | `number` `any` `set`                                        | object   |
+| [subtract](#update-method-subtract) | number                                                    | object   |
+| [append](#update-method-append)     | `any` `list`                                                | object   |
+| [delete](#update-method-delete)     | `any` `set`                                                 | object   |
+| [data](#update-method-data)         | \*                                                         | callback |
+| [composite](#composite)             | `number` `string` `boolean` `enum` `map` `list` `set` `any` | object                                                         | object |
 
 The methods above can be used (and reused) in a chain to form update parameters, when finished with `.params()` or `.go()` terminal. If your application requires the update method to return values related to the update (e.g. via the `ReturnValues` DocumentClient parameters), you can use the [Execution Option](#execution-options) `{response: "none" | "all_old" | "updated_old" | "all_new" | "updated_new"}` with the value that matches your need. By default, the Update operation returns an empty object when using `.go()`.
 
@@ -182,17 +182,17 @@ As mentioned above, this method is functionally similar to the `where` clause wi
 
 | operation     | example                              | result                                                                | description                                                                                                                                           |
 | ------------- | ------------------------------------ | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `set`         | `set(category, value)`               | `#category = :category0`                                              | Add or overwrite existing value                                                                                                                       |
-| `add`         | `add(tenant, name)`                  | `#tenant :tenant1`                                                    | Add value to existing `set` attribute (used when provided attribute is of type `any` or `set`)                                                        |
-| `add`         | `add(rent, amount)`                  | `#rent = #rent + :rent0`                                              | Mathematically add given number to existing number on record                                                                                          |
-| `subtract`    | `subtract(deposit, amount)`          | `#deposit = #deposit - :deposit0`                                     | Mathematically subtract given number from existing number on record                                                                                   |
-| `remove`      | `remove(petFee)`                     | `#petFee`                                                             | Remove attribute/property from item                                                                                                                   |
-| `append`      | `append(rentalAgreement, amendment)` | `#rentalAgreement = list_append(#rentalAgreement, :rentalAgreement0)` | Add element to existing `list` attribute                                                                                                              |
-| `delete`      | `delete(tenant, name)`               | `#tenant :tenant1`                                                    | Remove item from existing `set` attribute                                                                                                             |
-| `del`         | `del(tenant, name)`                  | `#tenant :tenant1`                                                    | Alias for `delete` operation                                                                                                                          |
-| `name`        | `name(rent)`                         | `#rent`                                                               | Reference another attribute's name, can be passed to other operation that allows leveraging existing attribute values in calculating new values       |
-| `value`       | `value(rent, amount)`                | `:rent1`                                                              | Create a reference to a particular value, can be passed to other operation that allows leveraging existing attribute values in calculating new values |
-| `ifNotExists` | `ifNotExists(rent, amount)`          | `#rent = if_not_exists(#rent, :rent0)`                                | Update a property's value only if that property doesn't yet exist on the record                                                                       |
+| set         | set(category, value)               | #category = :category0                                              | Add or overwrite existing value                                                                                                                       |
+| add         | add(tenant, name)                  | #tenant :tenant1                                                    | Add value to existing `set` attribute (used when provided attribute is of type `any` or `set`)                                                        |
+| add         | add(rent, amount)                  | #rent = #rent + :rent0                                              | Mathematically add given number to existing number on record                                                                                          |
+| subtract    | subtract(deposit, amount)          | #deposit = #deposit - :deposit0                                     | Mathematically subtract given number from existing number on record                                                                                   |
+| remove      | remove(petFee)                     | #petFee                                                             | Remove attribute/property from item                                                                                                                   |
+| append      | append(rentalAgreement, amendment) | #rentalAgreement = list_append(#rentalAgreement, :rentalAgreement0) | Add element to existing `list` attribute                                                                                                              |
+| delete      | delete(tenant, name)               | #tenant :tenant1                                                    | Remove item from existing `set` attribute                                                                                                             |
+| del         | del(tenant, name)                  | #tenant :tenant1                                                    | Alias for `delete` operation                                                                                                                          |
+| name        | name(rent)                         | #rent                                                               | Reference another attribute's name, can be passed to other operation that allows leveraging existing attribute values in calculating new values       |
+| value       | value(rent, amount)                | :rent1                                                              | Create a reference to a particular value, can be passed to other operation that allows leveraging existing attribute values in calculating new values |
+| ifNotExists | ifNotExists(rent, amount)          | #rent = if_not_exists(#rent, :rent0)                                | Update a property's value only if that property doesn't yet exist on the record                                                                       |
 
 > Usage of `name` and `value` operations allow for some escape hatching in the case that a custom operation needs to be expressed. When used however, ElectroDB loses the context necessary to validate the expression created by the user. In practical terms, this means the `validation` function/regex on the impacted attribute will not be called.
 

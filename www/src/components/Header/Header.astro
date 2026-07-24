@@ -9,11 +9,9 @@ import logoDark from '../../assets/electrodb-drk-compressed.png';
 
 type Props = {
 	currentPage: string;
-	/** Hide the wordmark in the nav (e.g. the intro page shows it in the hero). */
-	hideBrand?: boolean;
 };
 
-const { currentPage, hideBrand = false } = Astro.props as Props;
+const { currentPage } = Astro.props as Props;
 ---
 
 <header>
@@ -23,26 +21,24 @@ const { currentPage, hideBrand = false } = Astro.props as Props;
 			<div class="menu-toggle">
 				<SidebarToggle client:idle />
 			</div>
-			{!hideBrand && (
-				<a href="/en/core-concepts/introduction" class="brand" aria-label="ElectroDB home">
-					<Image
-						class="brand-logo brand-logo-light"
-						src={logoLight}
-						alt="ElectroDB"
-						height={28}
-						densities={[2, 3]}
-						loading="eager"
-					/>
-					<Image
-						class="brand-logo brand-logo-dark"
-						src={logoDark}
-						alt="ElectroDB"
-						height={28}
-						densities={[2, 3]}
-						loading="eager"
-					/>
-				</a>
-			)}
+			<a href="/en/core-concepts/introduction" class="brand" aria-label="ElectroDB home">
+				<Image
+					class="brand-logo brand-logo-light"
+					src={logoLight}
+					alt="ElectroDB"
+					height={28}
+					densities={[2, 3]}
+					loading="eager"
+				/>
+				<Image
+					class="brand-logo brand-logo-dark"
+					src={logoDark}
+					alt="ElectroDB"
+					height={28}
+					densities={[2, 3]}
+					loading="eager"
+				/>
+			</a>
 		</div>
 
 		<div class="search-slot">
