@@ -186,7 +186,10 @@ const githubEditUrl = `${CONFIG.GITHUB_EDIT_URL}/${currentFile}`;
 				--content-max-width: 64rem;
 			}
 
-			.mobile-sidebar-toggle #grid-left {
+			/* `body` prefix lifts specificity to (1,1,1) so this open-state rule
+			   beats the scoped `#grid-left[data-astro-cid]` display:none (1,1,0)
+			   regardless of bundle order. */
+			body.mobile-sidebar-toggle #grid-left {
 				display: block;
 			}
 

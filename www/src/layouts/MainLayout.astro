@@ -128,7 +128,11 @@ const githubEditUrl = `${CONFIG.GITHUB_EDIT_URL}/${currentFile}`;
 				width: 100%;
 			}
 
-			.mobile-sidebar-toggle #grid-left {
+			/* `body` prefix lifts specificity to (1,1,1) so this open-state rule
+			   beats the scoped `#grid-left[data-astro-cid] { display: none }`
+			   (1,1,0) regardless of bundle order — the two tie without it, and
+			   cascade order varies per page and after soft-nav style merging. */
+			body.mobile-sidebar-toggle #grid-left {
 				display: block;
 			}
 		</style>
