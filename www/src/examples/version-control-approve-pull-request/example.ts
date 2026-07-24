@@ -6,38 +6,19 @@ export async function approvePullRequest(
   pullRequestNumber: string,
   username: string,
 ) {
-  const pullRequest = await store.entities.pullRequests
-    .get({ repoOwner, repoName, pullRequestNumber })
-    .go();
-
-  if (!pullRequest.data || !pullRequest.data.reviewers) {
-    return false;
-  }
-
-  let index: number = -1;
-
-  for (let i = 0; i < pullRequest.data.reviewers.length; i++) {
-    const reviewer = pullRequest.data.reviewers[i];
-    if (reviewer.username === username) {
-      index = i;
-    }
-  }
-
-  if (index === -1) {
-    return false;
-  }
-
   return store.entities.pullRequests
-    .update({ repoOwner, repoName, pullRequestNumber })
+    .patch({ repoOwner, repoName, pullRequestNumber })
     .data(({ reviewers }, { set }) =>
-      set(reviewers[index].approved, true)
+      set(reviewers[username], {
+        approved: true,
+        updatedAt: new Date().toISOString(),
+      })
     )
-    .where(({ reviewers }, { eq }) =>
-      eq(reviewers[index].username, username)
+    .where(({ reviewers }, { exists }) =>
+      exists(reviewers[username])
     )
-    .go()
-    .then(() => true)
-    .catch(() => false);
+    .go({ returnOnConditionCheckFailure: true })
+    .then(({ rejected }) => !rejected);
 }
 
 await approvePullRequest("tywalch", "electrodb", "414", "sparky");

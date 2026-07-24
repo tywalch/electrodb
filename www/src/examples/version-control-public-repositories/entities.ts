@@ -1,4 +1,4 @@
-import { Entity } from "electrodb";
+import { Entity, CustomAttributeType } from "electrodb";
 import {
   TicketTypes,
   IssueTicket,
@@ -209,6 +209,13 @@ export const issueComments = new Entity({
   },
 });
 
+export type PullRequestReviewer = {
+  approved: boolean;
+  updatedAt: string;
+}
+
+export type PullRequestReviews = Record<string, PullRequestReviewer>;
+
 export const pullRequests = new Entity({
   model: {
     entity: "pullRequest",
@@ -251,25 +258,7 @@ export const pullRequests = new Entity({
       get: (val) => toStatusString(val),
     },
     reviewers: {
-      type: "list",
-      items: {
-        type: "map",
-        properties: {
-          username: {
-            type: "string",
-            required: true,
-          },
-          approved: {
-            type: "boolean",
-            required: true,
-          },
-          createdAt: {
-            type: "string",
-            default: () => new Date().toISOString(),
-            readOnly: true,
-          },
-        },
-      },
+      type: CustomAttributeType<PullRequestReviews>('any'),
     },
     createdAt: {
       type: "string",

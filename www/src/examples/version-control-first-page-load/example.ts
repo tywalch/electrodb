@@ -9,7 +9,7 @@ type OwnedItems = {
   users: EntityItem<typeof users>[];
 };
 
-export async function getFirstPageLoad(username: string) {
+export async function getOwnedItems(username: string) {
   const results: OwnedItems = {
     issues: [],
     pullRequests: [],
@@ -31,4 +31,4 @@ export async function getFirstPageLoad(username: string) {
   return results;
 }
 
-await getFirstPageLoad("tywalch");
+await getOwnedItems("tywalch");

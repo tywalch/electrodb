@@ -73,7 +73,7 @@ export async function closePullRequest(user: string, pr: PullRequestIds) {
 }
 
 // Get all user info, repos, pull requests, and issues in one query
-export async function getFirstPageLoad(username: string) {
+export async function getOwnedItems(username: string) {
   const results: OwnedItems = {
     issue: [],
     pullRequest: [],
@@ -177,40 +177,17 @@ export async function approvePullRequest(
   pullRequestNumber: string,
   username: string,
 ) {
-  const pullRequest = await VersionControl.entities.pullRequest
-    .get({ repoOwner, repoName, pullRequestNumber })
-    .go();
-
-  if (!pullRequest.data || !pullRequest.data.reviewers) {
-    return false;
-  }
-
-  let index: number = -1;
-
-  for (let i = 0; i < pullRequest.data.reviewers.length; i++) {
-    const reviewer = pullRequest.data.reviewers[i];
-    if (reviewer.username === username) {
-      index = i;
-    }
-  }
-
-  if (index === -1) {
-    return false;
-  }
-
   return VersionControl.entities.pullRequest
-    .update({ repoOwner, repoName, pullRequestNumber })
-    .data(({ reviewers }, { set }) => {
-      set(reviewers[index].approved, true);
-    })
-    .where(
-      ({ reviewers }, { eq }) => `
-            ${eq(reviewers[index].username, username)};
-        `,
+    .patch({ repoOwner, repoName, pullRequestNumber })
+    .data(({ reviewers }, { set }) =>
+      set(reviewers[username], {
+        approved: true,
+        updatedAt: moment.utc().format(),
+      }),
     )
-    .go()
-    .then(() => true)
-    .catch(() => false);
+    .where(({ reviewers }, { exists }) => exists(reviewers[username]))
+    .go({ returnOnConditionCheckFailure: true })
+    .then(({ rejected }) => !rejected);
 }
 
 export async function followRepository(

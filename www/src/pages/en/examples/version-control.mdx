@@ -339,7 +339,7 @@ export const issueComments = new Entity({
 <p>
 
 ```typescript
-import { Entity } from "electrodb";
+import { Entity, CustomAttributeType } from "electrodb";
 import {
   TicketTypes,
   PullRequestTicket,
@@ -347,6 +347,13 @@ import {
   toStatusString,
   toStatusCode,
 } from "./types";
+
+export type PullRequestReviewer = {
+  approved: boolean;
+  updatedAt: string;
+}
+
+export type PullRequestReviews = Record<string, PullRequestReviewer>;
 
 export const pullRequests = new Entity({
   model: {
@@ -390,25 +397,7 @@ export const pullRequests = new Entity({
       get: (val) => toStatusString(val),
     },
     reviewers: {
-      type: "list",
-      items: {
-        type: "map",
-        properties: {
-          username: {
-            type: "string",
-            required: true,
-          },
-          approved: {
-            type: "boolean",
-            required: true,
-          },
-          createdAt: {
-            type: "string",
-            default: () => new Date().toISOString(),
-            readOnly: true,
-          },
-        },
-      },
+      type: CustomAttributeType<PullRequestReviews>('any'),
     },
     createdAt: {
       type: "string",
@@ -972,11 +961,11 @@ Note that newest comments will be returned first
 
 <LiveExample name="version-control-user-pull-requests" />
 
-### Close pull request
+### Approve pull request
 
-Note that this can only be performed by user who opened PR or the repo owner
+Note that this can only be performed by an existing reviewer on the pull request — the `where` condition asserts the reviewer exists, and `returnOnConditionCheckFailure` reports whether the approval was applied
 
-<LiveExample name="version-control-close-pull-request" />
+<LiveExample name="version-control-approve-pull-request" />
 
 ### Get all user info, repos, pull requests, and issues in one query
 
@@ -995,10 +984,6 @@ Note that this can only be performed by user who opened PR or the repo owner
 Note that this can only be done by the user who was being replied to
 
 <LiveExample name="version-control-read-reply" />
-
-### Approve pull request
-
-<LiveExample name="version-control-approve-pull-request" />
 
 ### Follow repository
 

@@ -2,7 +2,12 @@
 import moment from "moment";
 import { v4 as uuid } from "uuid";
 import { faker } from "@faker-js/faker";
-import { Entity, CreateEntityItem, EntityItem } from "../../../";
+import {
+  Entity,
+  CreateEntityItem,
+  CustomAttributeType,
+  EntityItem,
+} from "../../../";
 import {
   NotYetViewed,
   TicketTypes,
@@ -12,6 +17,13 @@ import {
   toStatusCode,
 } from "./types";
 import { table, client } from "../../common";
+
+export type PullRequestReviewer = {
+  approved: boolean;
+  updatedAt: string;
+};
+
+export type PullRequestReviews = Record<string, PullRequestReviewer>;
 
 export const PullRequest = new Entity(
   {
@@ -56,25 +68,7 @@ export const PullRequest = new Entity(
         get: (val) => toStatusString(val),
       },
       reviewers: {
-        type: "list",
-        items: {
-          type: "map",
-          properties: {
-            username: {
-              type: "string",
-              required: true,
-            },
-            approved: {
-              type: "boolean",
-              required: true,
-            },
-            createdAt: {
-              type: "string",
-              default: () => moment.utc().format(),
-              readOnly: true,
-            },
-          },
-        },
+        type: CustomAttributeType<PullRequestReviews>("any"),
       },
       createdAt: {
         type: "string",
@@ -257,13 +251,12 @@ export function createMockPullRequest(
     status: faker.helpers.arrayElement(["Open", "Closed"]),
     ticketType: faker.helpers.arrayElement(["Issue", "PullRequest"]),
     username: faker.internet.userName(),
-    reviewers: [
-      {
-        username: faker.internet.userName(),
-        createdAt: faker.date.recent().toDateString(),
+    reviewers: {
+      [faker.internet.userName()]: {
         approved: faker.helpers.arrayElement([true, false]),
+        updatedAt: faker.date.recent().toISOString(),
       },
-    ],
+    },
     ...overrides,
   };
 }
