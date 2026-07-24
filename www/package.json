@@ -11,7 +11,7 @@
     "dev:fast": "astro dev",
     "start": "astro dev",
     "check": "astro check && tsc",
-    "test:examples": "node scripts/test-examples.mjs",
+    "test:examples": "node scripts/test-examples.ts",
     "build": "astro build && pagefind --site dist && rm -rf public/pagefind && cp -R dist/pagefind public/pagefind",
     "preview": "astro preview",
     "astro": "astro"

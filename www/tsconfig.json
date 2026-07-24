@@ -12,5 +12,9 @@
       "electrodb": ["../index.d.ts"]
     }
   },
-  "exclude": ["dist", "public"]
+  // src/examples is type-checked by `npm run test:examples` (scripts/
+  // test-examples.ts) rather than the global pass: examples declaring
+  // "typeError" in their expect.json are asserted to FAIL type-checking,
+  // which a single all-inclusive tsc run can't express.
+  "exclude": ["dist", "public", "src/examples"]
 }

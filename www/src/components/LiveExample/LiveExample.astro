@@ -6,7 +6,13 @@ import type { ExampleFile } from "./runtime";
 import "./LiveExample.css";
 
 export interface Props {
-  /** Directory name under src/examples containing the example files */
+  /**
+   * Directory name under src/examples containing the example files.
+   *
+   * Examples that intentionally fail declare it in an optional
+   * `expect.json` in their directory (see scripts/test-examples.ts);
+   * only .ts files are read here, so that file is never displayed.
+   */
   name: string;
 }
 

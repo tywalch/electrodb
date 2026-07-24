@@ -1,1 +1,0 @@
-This example intentionally omits all partition key composite attributes; ElectroDB cannot build a key and throws. The docs render this error on purpose.
