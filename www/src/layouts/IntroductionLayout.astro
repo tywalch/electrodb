@@ -52,7 +52,12 @@ const githubEditUrl = `${CONFIG.GITHUB_EDIT_URL}/${currentFile}`;
 				top: var(--theme-navbar-height);
 				left: 0;
 				right: 0;
-				bottom: 0;
+				/* An explicit height instead of bottom: 0 — iOS Safari's layout
+				   viewport extends behind its bottom toolbar, so a bottom-anchored
+				   panel gets its tail hidden under the browser UI. dvh tracks the
+				   toolbar as it collapses/expands; vh is the fallback. */
+				height: calc(100vh - var(--theme-navbar-height));
+				height: calc(100dvh - var(--theme-navbar-height));
 				background-color: var(--theme-bg);
 				z-index: 9;
 				display: none;
