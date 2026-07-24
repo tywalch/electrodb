@@ -231,7 +231,7 @@ export const PullRequestComment = new Entity(
           field: "gsi2pk",
         },
         sk: {
-          composite: ["createdAt", "replyViewed"],
+          composite: ["updatedAt", "replyViewed"],
           field: "gsi2sk",
         },
       },

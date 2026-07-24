@@ -114,11 +114,11 @@ const MaxDate = "9999-99-99";
 // Get unread comment replies
 export async function getUnreadComments(user: string) {
   const start = {
-    createdAt: MinDate,
+    updatedAt: MinDate,
     replyViewed: NotYetViewed,
   };
   const end = {
-    createdAt: MaxDate,
+    updatedAt: MaxDate,
     replyViewed: NotYetViewed,
   };
   let [issues, pullRequests] = await Promise.all([
