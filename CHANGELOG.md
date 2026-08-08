@@ -676,3 +676,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 
 ### Changed
 - Corrected documentation that had drifted from actual behavior. Most notably, the descriptions of `find` and `match` were swapped: `match` is the method that applies your provided values as query filters, while `find` only uses them to seek an index. If you chose between these methods based on the documentation, double-check you are using the one you intended.
+
+## [3.9.2]
+### Fixed
+- [Issue #578](https://github.com/tywalch/electrodb/issues/578); Watchers no longer do unnecessary work for methods they don't define: a watcher only runs on `get` if it has a getter, and on `set` if it has a setter. This also fixes a setter-only `watch` attribute (e.g. an `updatedAt` timestamp) being returned as `undefined` on reads when absent from the item.
