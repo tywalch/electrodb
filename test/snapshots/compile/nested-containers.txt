@@ -1,0 +1,73 @@
+# compiled.source snapshot: nested-containers — regenerate with UPDATE_SNAPSHOTS=1 npx mocha test/offline.compile.spec.js, review the diff, commit
+"use strict";
+return function fromDocument(item, filter) {
+  var out = {};
+  var v0 = item["id"];
+  if (v0 !== undefined && (filter == null || filter.has("id"))) out["id"] = unformat[0](v0);
+  var v1 = item["s"];
+  if (v1 !== undefined && (filter == null || filter.has("s"))) out["s"] = v1;
+  var v2 = item["n"];
+  if (v2 !== undefined && (filter == null || filter.has("n"))) out["n"] = v2;
+  var v3 = item["m"];
+  if (v3 !== undefined && (filter == null || filter.has("m"))) {
+    var r4 = {};
+    var v5 = v3["a_f"];
+    if (v5 !== undefined) r4["alias"] = v5;
+    var v6 = v3["ls"];
+    if (v6 !== undefined) {
+      var r7 = [];
+      {
+        const values = v6;
+        for (const v8 of values) {
+          {
+            var r9 = {};
+            var v10 = v8["q_f"];
+            if (v10 !== undefined) r9["q"] = v10;
+            r7.push(r9);
+          }
+        }
+      }
+      r4["ls"] = r7;
+    }
+    var v11 = v3["innerAny"];
+    if (v11 !== undefined) r4["innerAny"] = v11;
+    var v12 = v3["st"];
+    if (v12 !== undefined) r4["st"] = fromSet(v12);
+    out["m"] = r4;
+  }
+  var v13 = item["l"];
+  if (v13 !== undefined && (filter == null || filter.has("l"))) out["l"] = v13;
+  var v14 = item["lm"];
+  if (v14 !== undefined && (filter == null || filter.has("lm"))) {
+    var r15 = [];
+    {
+      const values = v14;
+      for (const v16 of values) {
+        {
+          var r17 = {};
+          var v18 = v16["q"];
+          if (v18 !== undefined) r17["q"] = v18;
+          r15.push(r17);
+        }
+      }
+    }
+    out["lm"] = r15;
+  }
+  var v19 = item["lset"];
+  if (v19 !== undefined && (filter == null || filter.has("lset"))) {
+    var r20 = [];
+    {
+      const values = v19;
+      for (const v21 of values) {
+        r20.push(fromSet(v21));
+      }
+    }
+    out["lset"] = r20;
+  }
+  var v22 = item["topSet"];
+  if (v22 !== undefined && (filter == null || filter.has("topSet"))) out["topSet"] = fromSet(v22);
+  var v23 = item["anyv"];
+  if (v23 !== undefined && (filter == null || filter.has("anyv"))) out["anyv"] = v23;
+  return out;
+};
+//# sourceURL=electrodb-jit-format.js

@@ -169,6 +169,12 @@ const ErrorCodes = {
     name: "InvalidIndexDefinition",
     sym: ErrorCode,
   },
+  CompilationFailed: {
+    code: 1027,
+    section: "compilation-failed",
+    name: "CompilationFailed",
+    sym: ErrorCode,
+  },
   MissingAttribute: {
     code: 2001,
     section: "missing-attribute",

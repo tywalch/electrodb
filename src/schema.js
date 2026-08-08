@@ -21,6 +21,7 @@ const e = require("./errors");
 const u = require("./util");
 const v = require("./validations");
 const { DynamoDBSet } = require("./set");
+const { compileDocumentFormatter, sameFormatted } = require("./format");
 
 function getValueType(value) {
   if (value === undefined) {
@@ -145,6 +146,7 @@ class Attribute {
     this.traverser.setPath(this.fieldPath, this);
     this.traverser.asChild(this.name, this);
     this.parent = { parentType: this.type, parentPath: this.path };
+    this.hasUserGet = typeof definition.get === "function";
     this.get = this._makeGet(definition.get);
     this.set = this._makeSet(definition.set);
     this._hasMutationHandler = {
@@ -670,6 +672,7 @@ class MapAttribute extends Attribute {
     });
     this.properties = properties;
     this.isRoot = !!definition.isRoot;
+    this.hasUserGet = typeof definition.get === "function";
     this.get = this._makeGet(definition.get, properties);
     this.set = this._makeSet(definition.set, properties);
   }
@@ -883,6 +886,7 @@ class ListAttribute extends Attribute {
       traverser: this.traverser,
     });
     this.items = items;
+    this.hasUserGet = typeof definition.get === "function";
     this.get = this._makeGet(definition.get, items);
     this.set = this._makeSet(definition.set, items);
   }
@@ -1057,6 +1061,7 @@ class SetAttribute extends Attribute {
       traverser: this.traverser,
     });
     this.items = items;
+    this.hasUserGet = typeof definition.get === "function";
     this.get = this._makeGet(definition.get, items);
     this.set = this._makeSet(definition.set, items);
     this.validate = this._makeSetValidate(definition);
@@ -1222,6 +1227,11 @@ class SetAttribute extends Attribute {
   }
 }
 
+const ProhibitedAttributeNames = new Set([
+  "__proto__",
+  ...Object.getOwnPropertyNames(Object.prototype),
+]);
+
 class Schema {
   constructor(
     properties = {},
@@ -1249,6 +1259,18 @@ class Schema {
     );
     this.traverser = traverser;
     this.isRoot = !!isRoot;
+    Object.defineProperty(this, "compiled", {
+      value: null,
+      writable: true,
+      enumerable: false,
+      configurable: true,
+    });
+    Object.defineProperty(this, "compiledVerify", {
+      value: false,
+      writable: true,
+      enumerable: false,
+      configurable: true,
+    });
   }
 
   static normalizeAttributes(
@@ -1279,6 +1301,19 @@ class Schema {
         };
       }
       const field = attribute.field || name;
+      if (
+        ProhibitedAttributeNames.has(name) ||
+        ProhibitedAttributeNames.has(field)
+      ) {
+        throw new e.ElectroError(
+          e.ErrorCodes.InvalidAttributeDefinition,
+          `Invalid attribute definition: Attribute "${name}" ${
+            ProhibitedAttributeNames.has(name)
+              ? `has a name`
+              : `has a field "${field}"`
+          } that is reserved. Attribute and field names cannot be "__proto__", "constructor", or any other Object.prototype property name.`,
+        );
+      }
       let isKeyField = false;
       let prefix = "";
       let postfix = "";
@@ -1742,6 +1777,9 @@ class Schema {
     let data = {};
     let names = this.translationForRetrieval;
     for (let [attr, value] of Object.entries(item)) {
+      if (value === undefined) {
+        continue;
+      }
       let name = names[attr];
       if (name) {
         data[name] = value;
@@ -1844,9 +1882,69 @@ class Schema {
     return Array.from(this.requiredAttributes);
   }
 
+  compileRetrievalFormatters(options = {}) {
+    // clear stale state first so a strict compile failure leaves null/false
+    this.compiled = null;
+    this.compiledVerify = false;
+    this.compiled = compileDocumentFormatter(this, options);
+    this.compiledVerify = !!options.verify && this.compiled !== null;
+    return this.compiled;
+  }
+
   formatItemForRetrieval(item, config) {
-    let returnAttributes = new Set(config.attributes || []);
-    let hasUserSpecifiedReturnAttributes = returnAttributes.size > 0;
+    if (
+      this.compiled !== null &&
+      (config.data === undefined || config.data === DataOptions.attributes)
+    ) {
+      const filter = config._returnAttributesFilter;
+      if (this.compiledVerify) {
+        return this._verifyCompiledRetrieval(item, config, filter);
+      }
+      return this.compiled.fromDocument(item, filter);
+    }
+    return this._formatItemForRetrievalInterpreted(item, config);
+  }
+
+  // ELECTRODB_COMPILE=verify: run both paths, throw on any divergence
+  _verifyCompiledRetrieval(item, config, filter) {
+    let compiledResult;
+    let compiledError;
+    try {
+      compiledResult = this.compiled.fromDocument(item, filter);
+    } catch (err) {
+      compiledError = err;
+    }
+    let interpretedResult;
+    let interpretedError;
+    try {
+      interpretedResult = this._formatItemForRetrievalInterpreted(item, config);
+    } catch (err) {
+      interpretedError = err;
+    }
+    let diverged;
+    if (compiledError !== undefined || interpretedError !== undefined) {
+      diverged =
+        compiledError === undefined ||
+        interpretedError === undefined ||
+        compiledError.message !== interpretedError.message;
+    } else {
+      diverged = !sameFormatted(compiledResult, interpretedResult);
+    }
+    if (diverged) {
+      throw new e.ElectroError(
+        e.ErrorCodes.InvalidOptions,
+        "ELECTRODB_COMPILE=verify divergence: compiled formatter output did not match interpreted output",
+      );
+    }
+    if (compiledError !== undefined) {
+      throw compiledError;
+    }
+    return compiledResult;
+  }
+
+  _formatItemForRetrievalInterpreted(item, config) {
+    let returnAttributes = config._returnAttributesFilter;
+    let hasUserSpecifiedReturnAttributes = returnAttributes != null;
     let remapped = this.translateFromFields(item, config);
     let data = this._fulfillAttributeMutationMethod("get", remapped);
     if (this.hiddenAttributes.size > 0 || hasUserSpecifiedReturnAttributes) {

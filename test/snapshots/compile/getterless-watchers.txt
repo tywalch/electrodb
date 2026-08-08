@@ -1,0 +1,43 @@
+# compiled.source snapshot: getterless-watchers — regenerate with UPDATE_SNAPSHOTS=1 npx mocha test/offline.compile.spec.js, review the diff, commit
+"use strict";
+return function fromDocument(item, filter) {
+  var out = {};
+  var v0 = item["id"];
+  if (v0 !== undefined && (filter == null || filter.has("id"))) out["id"] = unformat[0](v0);
+  var v1 = item["a"];
+  if (v1 !== undefined && (filter == null || filter.has("a"))) out["a"] = v1;
+  var v2 = item["b"];
+  if (v2 !== undefined && (filter == null || filter.has("b"))) out["b"] = v2;
+  var v3 = item["wS"];
+  if (v3 !== undefined && (filter == null || filter.has("wS"))) out["wS"] = v3;
+  var v4 = item["wL"];
+  if (v4 !== undefined && (filter == null || filter.has("wL"))) out["wL"] = v4;
+  var v5 = item["wM"];
+  if (v5 !== undefined && (filter == null || filter.has("wM"))) {
+    var r6 = {};
+    var v7 = v5["x"];
+    if (v7 !== undefined) r6["x"] = v7;
+    out["wM"] = r6;
+  }
+  var v8 = item["wSet"];
+  if (v8 !== undefined && (filter == null || filter.has("wSet"))) out["wSet"] = fromSet(v8);
+  var v9 = item["wAny"];
+  if (v9 !== undefined && (filter == null || filter.has("wAny"))) out["wAny"] = v9;
+  var v10 = item["wMulti"];
+  if (v10 !== undefined && (filter == null || filter.has("wMulti"))) out["wMulti"] = v10;
+  var v11 = item["wStar"];
+  if (v11 !== undefined && (filter == null || filter.has("wStar"))) out["wStar"] = v11;
+  var v12 = item["wStarL"];
+  if (v12 !== undefined && (filter == null || filter.has("wStarL"))) out["wStarL"] = v12;
+  var v13 = item["wStarM"];
+  if (v13 !== undefined && (filter == null || filter.has("wStarM"))) {
+    var r14 = {};
+    var v15 = v13["x"];
+    if (v15 !== undefined) r14["x"] = v15;
+    out["wStarM"] = r14;
+  }
+  var v16 = item["wStarSet"];
+  if (v16 !== undefined && (filter == null || filter.has("wStarSet"))) out["wStarSet"] = fromSet(v16);
+  return out;
+};
+//# sourceURL=electrodb-jit-format.js
