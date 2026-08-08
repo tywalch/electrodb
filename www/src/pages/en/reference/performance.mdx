@@ -18,6 +18,15 @@ When enabled, ElectroDB JIT-compiles a formatter specialized to a single entity'
 
 This is **opt-in** and **off by default**.
 
+### How much it helps
+
+Formatting cost scales roughly with `items × attributes` per response, so the win grows with page size:
+
+- **Large pages** (thousands of items) — the biggest gains: roughly 15–20% less CPU per request, enough to nearly close the gap between ElectroDB and a raw DocumentClient.
+- **Small pages** (tens of items) — a smaller share of the win (~10% less CPU per request), since fixed per-request cost dominates over per-item formatting.
+
+Reads that return a single item or a handful see little difference. Actual numbers depend on your schema (attribute count, nesting, sets); the shape — bigger pages, bigger payoff — holds.
+
 ### Enable per entity
 
 ```typescript
