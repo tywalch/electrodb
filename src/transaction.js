@@ -31,11 +31,15 @@ function cleanseCanceledData(
         paramItem,
         identifiers,
       });
-      result.item = entities[entityAlias].formatResponse({ Item }, index, {
-        ...config,
-        pager: false,
-        parse: undefined,
-      }).data;
+      if (entityAlias) {
+        result.item = entities[entityAlias].formatResponse({ Item }, index, {
+          ...config,
+          pager: false,
+          parse: undefined,
+        }).data;
+      } else {
+        result.item = null;
+      }
     } else {
       result.item = null;
     }
@@ -69,6 +73,7 @@ function cleanseTransactionData(
     const paramItem = paramItems[i];
     const entityAlias = matchToEntityAlias({ paramItem, identifiers, record });
     if (!entityAlias) {
+      results.push(null);
       continue;
     }
 
@@ -130,14 +135,14 @@ function createTransaction(options) {
           data: [],
         };
       }
+      let listeners =
+        options && options.listeners ? [...options.listeners] : [];
       if (options && options.logger) {
-        if (!options.listeners) {
-          options.listeners = [];
-        }
-        options.listeners.push(options.logger);
+        listeners = [...listeners, options.logger];
       }
       const response = await driver.go(method, params, {
         ...options,
+        listeners,
         parse: (options, data) => {
           if (options.data === DataOptions.raw) {
             return data;
@@ -162,12 +167,15 @@ function createTransaction(options) {
               },
             );
           } else {
-            return new Array(paramItems ? paramItems.length : 0).fill({
-              item: null,
-              code: "None",
-              rejected: false,
-              message: undefined,
-            });
+            return Array.from(
+              { length: paramItems ? paramItems.length : 0 },
+              () => ({
+                item: null,
+                code: "None",
+                rejected: false,
+                message: undefined,
+              }),
+            );
           }
         },
       });
@@ -202,4 +210,6 @@ module.exports = {
   createTransaction,
   createWriteTransaction,
   createGetTransaction,
+  cleanseTransactionData,
+  cleanseCanceledData,
 };

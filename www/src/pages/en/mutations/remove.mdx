@@ -12,20 +12,13 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
-import ExampleSetup from "../../../partials/entity-query-example-setup.mdx";
-
-<ExampleSetup />
+import LiveExample from "../../../components/LiveExample/LiveExample.astro";
 
 A convenience method for `delete` with ConditionExpression that the item being deleted exists. If the item does not exist, ElectroDB will throw a failed condition error. Provide all Table Index composite attributes in an object to the `remove` method to remove the record.
 
-```typescript
-await StoreLocations.remove({
-  storeId: "LatteLarrys",
-  mallId: "EastPointe",
-  buildingId: "F34",
-  cityId: "Atlanta1",
-}).go();
-```
+> The **Entity** and **Table Definition** tabs show the setup this example runs against, and the generated parameters below are produced live by executing the example.
+
+<LiveExample name="remove-store-location" />
 
 ## Default Response Format
 
@@ -34,19 +27,6 @@ await StoreLocations.remove({
 ```typescript
 {
   data: EntityIdentifiers<typeof StoreLocations>;
-}
-```
-
-## Equivalent Parameters
-
-```json
-{
-  "Key": {
-    "pk": "$mallstoredirectory#cityid_atlanta1#mallid_eastpointe",
-    "sk": "$mallstore_1#buildingid_f34#storeid_lattelarrys"
-  },
-  "TableName": "YOUR_TABLE_TABLE",
-  "ConditionExpression": "attribute_exists(pk) AND attribute_exists(sk)"
 }
 ```
 

@@ -5,6 +5,7 @@ const memberTypeToSetType = {
   Binary: "Binary",
   string: "String",
   number: "Number",
+  enum: "String",
 };
 
 class DynamoDBSet {
@@ -12,7 +13,7 @@ class DynamoDBSet {
     this.wrapperName = "Set";
     this.type = memberTypeToSetType[type];
     if (this.type === undefined) {
-      new Error(`Invalid Set type: ${type}`);
+      throw new Error(`Invalid Set type: ${type}`);
     }
     this.values = Array.from(new Set([].concat(list)));
   }

@@ -14,6 +14,8 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
+import LiveExample from "../../../components/LiveExample/LiveExample.astro";
+
 In this example we will be modeling a task manager app. The app will associate employees to tasks, projects, and teams
 
 ## Table Definition
@@ -363,67 +365,28 @@ export const taskManager = new Service({
 
 Use Collections to query across entities.
 
-```typescript
-const workplace = await taskManager.collections
-  .workplaces({ office: "portland" })
-  .go();
-```
+<LiveExample name="task-manager-workplace" />
 
 ### Get employee details and all assigned
 
-```typescript
-const { data, cursor } = await taskManager.collections
-  .assignments({ employee: "tyler.walch" })
-  .go();
-```
+<LiveExample name="task-manager-assignments" />
 
 ### Find Junior Developers making more than 100,000
 
 Use Entity queries to drill into specific entities.
 
-```typescript
-const title = "Junior Software Engineer";
-const salary = "100000";
-
-const developers = await taskManager.entities.employee.query
-  .roles({ title })
-  .gt({ salary })
-  .go();
-```
+<LiveExample name="task-manager-junior-developers" />
 
 ### Find all open tasks for a given project less than or equal to 13 points
 
-```typescript
-const status = "open";
-const project = "135-53";
-
-const tasks = await taskManager.entities.task.query
-  .statuses({ status, project })
-  .where(({ points }, { lte }) => lte(points, 13))
-  .go();
-```
+<LiveExample name="task-manager-open-tasks" />
 
 ### Find marketing team members who were hired in between two and five years ago:
 
-```typescript
-const team = "marketing";
-const twoYearsAgo = moment.utc().subtract(2, "years").format("YYYY-MM-DD");
-const fiveYearsAgo = moment.utc().subtract(5, "years").format("YYYY-MM-DD");
-
-const recentHires = await taskManager.entities.employee.query
-  .teams({ team })
-  .between({ dateHired: fiveYearsAgo }, { dateHired: twoYearsAgo })
-  .go();
-```
+<LiveExample name="task-manager-recent-hires" />
 
 ### Create New Task
 
 The type `CreateEntityItem<typeof YOUR_ENTITY_INSTANCE>` is exported to help you type items as they are used for creation
 
-```typescript
-type CreateTaskItem = CreateEntityItem<typeof task>;
-
-function createNewTask(item: CreateTaskItem) {
-  return taskManager.entities.task.put(item).go();
-}
-```
+<LiveExample name="task-manager-create-task" />

@@ -1960,7 +1960,7 @@ class Entity {
 
       if (typeof option.unprocessed === "string") {
         if (typeof UnprocessedTypes[option.unprocessed] === "string") {
-          config.unproessed = UnprocessedTypes[option.unprocessed];
+          config.unprocessed = UnprocessedTypes[option.unprocessed];
         } else {
           throw new e.ElectroError(
             e.ErrorCodes.InvalidOptions,

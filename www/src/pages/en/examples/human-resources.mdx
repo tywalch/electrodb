@@ -14,6 +14,8 @@ keywords:
 layout: ../../../layouts/MainLayout.astro
 ---
 
+import LiveExample from "../../../components/LiveExample/LiveExample.astro";
+
 Let's look at the needs of an application used to manage Employees. The application Looks at employees, offices, tasks, and projects.
 
 ## Table Definition
@@ -300,9 +302,9 @@ const EmployeeApp = new Service(
 
 Fulfilling [Requirement #1](#employee-app-requirements).
 
-```typescript
-await EmployeeApp.collections.assignments({ employee: "CBaskin" }).go();
-```
+> The **Entities**, **Service**, and **Table Definition** tabs show the setup this example runs against, and the generated parameters below are produced live by executing the example.
+
+<LiveExample name="human-resources-assignments" />
 
 Returns the following:
 
@@ -341,9 +343,7 @@ Returns the following:
 
 Fulfilling [Requirement #2](#employee-app-requirements).
 
-```typescript
-await EmployeeApp.collections.workplaces({ office: "big cat rescue" }).go();
-```
+<LiveExample name="human-resources-workplaces" />
 
 Returns the following:
 
@@ -379,13 +379,7 @@ Returns the following:
 
 Fulfilling [Requirement #3](#employee-app-requirements).
 
-```typescript
-// on the service
-await EmployeeApp.entities.tasks.query.assigned({ employee: "cbaskin" }).go();
-
-// on the entity
-await tasks.query.assigned({ employee: "cbaskin" }).go();
-```
+<LiveExample name="human-resources-employee-tasks" />
 
 Returns the following:
 
@@ -412,15 +406,7 @@ Returns the following:
 
 Fulfilling [Requirement #4](#employee-app-requirements).
 
-```typescript
-// on the service
-await EmployeeApp.entities.tasks.query
-  .project({ project: "Murder Carol" })
-  .go();
-
-// on the entity
-await tasks.query.project({ project: "Murder Carol" }).go();
-```
+<LiveExample name="human-resources-project-tasks" />
 
 Returns the following:
 
@@ -442,15 +428,7 @@ Returns the following:
 
 Fulfilling [Requirement #5](#employee-app-requirements).
 
-```typescript
-// on the service
-await EmployeeApp.entities.office
-  .locations({ country: "usa", state: "florida" })
-  .go();
-
-// on the entity
-await office.locations({ country: "usa", state: "florida" }).go();
-```
+<LiveExample name="human-resources-office-locations" />
 
 Returns the following:
 
@@ -474,19 +452,7 @@ Returns the following:
 
 Fulfilling [Requirement #6](#employee-app-requirements).
 
-```typescript
-// on the service
-await EmployeeApp.entities.employees
-  .roles({ title: "animal wrangler" })
-  .lte({ salary: "150.00" })
-  .go();
-
-// on the entity
-await employees
-  .roles({ title: "animal wrangler" })
-  .lte({ salary: "150.00" })
-  .go();
-```
+<LiveExample name="human-resources-employee-salaries" />
 
 Returns the following:
 
@@ -514,32 +480,7 @@ Returns the following:
 
 Fulfilling [Requirement #7](#employee-app-requirements).
 
-```typescript
-const startDate = "2020-05-01";
-const endDate = "2020-06-01";
-
-// on the service
-await EmployeeApp.entities.employees
-  .workplaces({ office: "gw zoo" })
-  .where(
-    ({ birthday, dateHired }, { between }) => `
-        ${between(dateHired, startDate, endDate)} OR
-        ${between(birthday, startDate, endDate)}
-    `,
-  )
-  .go();
-
-// on the entity
-await employees
-  .workplaces({ office: "gw zoo" })
-  .where(
-    ({ birthday, dateHired }, { between }) => `
-        ${between(dateHired, startDate, endDate)} OR
-        ${between(birthday, startDate, endDate)}
-    `,
-  )
-  .go();
-```
+<LiveExample name="human-resources-employee-birthdays" />
 
 Returns the following:
 
@@ -567,13 +508,7 @@ Returns the following:
 
 Fulfilling [Requirement #8](#employee-app-requirements).
 
-```typescript
-// on the service
-await EmployeeApp.entities.employees.reports({ manager: "jlowe" }).go();
-
-// on the entity
-await employees.reports({ manager: "jlowe" }).go();
-```
+<LiveExample name="human-resources-direct-reports" />
 
 Returns the following:
 

@@ -1,8 +1,11 @@
 ---
+import { Image } from 'astro:assets';
 import SkipToContent from './SkipToContent.astro';
 import SidebarToggle from './SidebarToggle';
 import ThemeToggleButton from '../RightSidebar/ThemeToggleButton';
 import Search from './Search';
+import logoLight from '../../assets/electrodb.png';
+import logoDark from '../../assets/electrodb-drk-compressed.png';
 
 type Props = {
 	currentPage: string;
@@ -19,12 +22,22 @@ const { currentPage } = Astro.props as Props;
 				<SidebarToggle client:idle />
 			</div>
 			<a href="/en/core-concepts/introduction" class="brand" aria-label="ElectroDB home">
-				<svg class="brand-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path d="M13 2L4.5 13.5h6L11 22l8.5-11.5h-6L13 2Z" fill="currentColor" />
-				</svg>
-				<span class="brand-text">
-					<span class="brand-electro">Electro</span><span class="brand-db">DB</span>
-				</span>
+				<Image
+					class="brand-logo brand-logo-light"
+					src={logoLight}
+					alt="ElectroDB"
+					height={28}
+					densities={[2, 3]}
+					loading="eager"
+				/>
+				<Image
+					class="brand-logo brand-logo-dark"
+					src={logoDark}
+					alt="ElectroDB"
+					height={28}
+					densities={[2, 3]}
+					loading="eager"
+				/>
 			</a>
 		</div>
 
@@ -105,38 +118,47 @@ const { currentPage } = Astro.props as Props;
 	.brand {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.5rem;
 		text-decoration: none;
-		font-weight: 700;
-		font-size: 1rem;
-		color: var(--theme-text);
-		letter-spacing: -0.02em;
 		padding: 0.25rem;
 		margin: -0.25rem;
 		border-radius: var(--radius);
-		transition: color 120ms ease;
+		transition: opacity 120ms ease;
 	}
 
 	.brand:hover {
-		color: var(--theme-text-accent);
+		opacity: 0.8;
 		text-decoration: none;
 	}
 
-	.brand-icon {
-		width: 20px;
-		height: 20px;
-		color: var(--theme-accent);
+	.brand-logo {
+		height: 1.75rem;
+		width: auto;
+		display: block;
 		flex-shrink: 0;
 	}
 
-	.brand-electro {
-		font-style: italic;
-		font-weight: 800;
+	/* Show the dark-text wordmark in light mode, the light-text one in dark
+	   mode — same explicit-class / OS-preference logic as ThemeToggleButton. */
+	.brand-logo-dark {
+		display: none;
 	}
 
-	.brand-db {
-		font-weight: 800;
-		letter-spacing: -0.04em;
+	:root.theme-dark .brand-logo-light {
+		display: none;
+	}
+
+	:root.theme-dark .brand-logo-dark {
+		display: block;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		:root:not(.theme-light):not(.theme-dark) .brand-logo-light {
+			display: none;
+		}
+
+		:root:not(.theme-light):not(.theme-dark) .brand-logo-dark {
+			display: block;
+		}
 	}
 
 	.search-slot {

@@ -1,0 +1,285 @@
+/* Theme variables: light by default, dark overrides below mirror the site's
+   theme.css pattern (explicit .theme-dark class, or OS preference when no
+   explicit class is set). */
+.live-example {
+  --le-code-bg: #f6f8fa;
+  --le-code-text: #1f2328;
+  --le-source-divider: rgba(0, 0, 0, 0.08);
+  --le-output-heading: #57606a;
+  --le-output-label: #24292f;
+  --le-label-accent: #0550ae;
+  --le-inner-pre-bg: #eaeef2;
+  --le-msg-error-bg: rgba(207, 34, 46, 0.08);
+  --le-msg-error-text: #cf222e;
+  --le-msg-error-link: #0550ae;
+  --le-msg-info-bg: #eaeef2;
+  --le-msg-info-text: #24292f;
+  --le-tok-comment: #6e7781;
+  --le-tok-punct: #24292f;
+  --le-tok-property: #0550ae;
+  --le-tok-number: #953800;
+  --le-tok-keyword: #cf222e;
+  --le-tok-string: #0a3069;
+  --le-tok-variable: #953800;
+  --le-tok-operator: #0550ae;
+
+  margin: 1.5rem 0;
+  border: 1px solid var(--theme-border);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--theme-shadow-sm);
+}
+
+:root.theme-dark .live-example {
+  --le-code-bg: var(--theme-code-bg);
+  --le-code-text: var(--theme-code-text);
+  --le-source-divider: rgba(255, 255, 255, 0.08);
+  --le-output-heading: #8b949e;
+  --le-output-label: #e6edf3;
+  --le-label-accent: #79c0ff;
+  --le-inner-pre-bg: #161b22;
+  --le-msg-error-bg: rgba(248, 81, 73, 0.15);
+  --le-msg-error-text: #ffa198;
+  --le-msg-error-link: #79c0ff;
+  --le-msg-info-bg: #161b22;
+  --le-msg-info-text: #e6edf3;
+  --le-tok-comment: #8b949e;
+  --le-tok-punct: #c9d1d9;
+  --le-tok-property: #79c0ff;
+  --le-tok-number: #ffc107;
+  --le-tok-keyword: #ff7b72;
+  --le-tok-string: #a5d6ff;
+  --le-tok-variable: #ffa657;
+  --le-tok-operator: #67cdcc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.theme-light) .live-example {
+    --le-code-bg: var(--theme-code-bg);
+    --le-code-text: var(--theme-code-text);
+    --le-source-divider: rgba(255, 255, 255, 0.08);
+    --le-output-heading: #8b949e;
+    --le-output-label: #e6edf3;
+    --le-label-accent: #79c0ff;
+    --le-inner-pre-bg: #161b22;
+    --le-msg-error-bg: rgba(248, 81, 73, 0.15);
+    --le-msg-error-text: #ffa198;
+    --le-msg-error-link: #79c0ff;
+    --le-msg-info-bg: #161b22;
+    --le-msg-info-text: #e6edf3;
+    --le-tok-comment: #8b949e;
+    --le-tok-punct: #c9d1d9;
+    --le-tok-property: #79c0ff;
+    --le-tok-number: #ffc107;
+    --le-tok-keyword: #ff7b72;
+    --le-tok-string: #a5d6ff;
+    --le-tok-variable: #ffa657;
+    --le-tok-operator: #67cdcc;
+  }
+}
+
+.live-example__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0 0.5rem;
+  background-color: var(--theme-bg-offset);
+  border-bottom: 1px solid var(--theme-border);
+}
+
+.live-example__tabs {
+  display: flex;
+  align-items: stretch;
+}
+
+.live-example__tab {
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--theme-text-light);
+  border-bottom: 2px solid transparent;
+  font-family: var(--font-mono, monospace);
+}
+
+.live-example__tab:hover {
+  color: var(--theme-text);
+}
+
+.live-example__tab--active {
+  color: var(--theme-text-accent);
+  border-bottom-color: var(--theme-accent);
+}
+
+.live-example__playground-link {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  color: var(--theme-text-accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.live-example__playground-link:hover {
+  text-decoration: underline;
+}
+
+.live-example__code {
+  margin: 0;
+  padding: 1rem;
+  background-color: var(--le-code-bg);
+  color: var(--le-code-text);
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Menlo, monospace);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* The site styles inline `code` elements globally (background, padding, and
+   a border that repeats on every wrapped line box of an inline element);
+   opt out entirely, like the site's own `pre.astro-code > code`. */
+.live-example__code > code {
+  all: unset;
+  display: block;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+.live-example__source {
+  border-bottom: 1px solid var(--le-source-divider);
+}
+
+.live-example__output {
+  background-color: var(--le-code-bg);
+  padding: 0.75rem 1rem 1rem;
+}
+
+.live-example__output-heading {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--le-output-heading);
+  margin-bottom: 0.5rem;
+}
+
+.live-example__loading {
+  color: var(--le-output-heading);
+  font-size: 0.8125rem;
+  font-style: italic;
+}
+
+.live-example__output-item + .live-example__output-item {
+  margin-top: 1rem;
+}
+
+.live-example__output-label {
+  font-size: 0.8125rem;
+  color: var(--le-output-label);
+  margin-bottom: 0.5rem;
+}
+
+.live-example__output-label b {
+  color: var(--le-label-accent);
+}
+
+.live-example__output .live-example__code {
+  padding: 0.75rem;
+  border-radius: 6px;
+  background-color: var(--le-inner-pre-bg);
+}
+
+.live-example__message {
+  font-size: 0.8125rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+}
+
+.live-example__message h3 {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.live-example__message--error {
+  background-color: var(--le-msg-error-bg);
+  color: var(--le-msg-error-text);
+}
+
+.live-example__message--error a {
+  color: var(--le-msg-error-link);
+}
+
+.live-example__message--info {
+  background-color: var(--le-msg-info-bg);
+  color: var(--le-msg-info-text);
+}
+
+/* Prism token colors (the docs' fenced code blocks use build-time Shiki;
+   these apply only to LiveExample content highlighted with Prism) */
+
+.live-example .token.comment,
+.live-example .token.block-comment,
+.live-example .token.prolog,
+.live-example .token.doctype,
+.live-example .token.cdata {
+  color: var(--le-tok-comment);
+}
+
+.live-example .token.punctuation {
+  color: var(--le-tok-punct);
+}
+
+.live-example .token.property,
+.live-example .token.class-name,
+.live-example .token.constant,
+.live-example .token.symbol {
+  color: var(--le-tok-property);
+}
+
+.live-example .token.boolean,
+.live-example .token.number,
+.live-example .token.function {
+  color: var(--le-tok-number);
+}
+
+.live-example .token.selector,
+.live-example .token.important,
+.live-example .token.atrule,
+.live-example .token.keyword,
+.live-example .token.builtin {
+  color: var(--le-tok-keyword);
+}
+
+.live-example .token.string,
+.live-example .token.char,
+.live-example .token.attr-value,
+.live-example .token.regex {
+  color: var(--le-tok-string);
+}
+
+.live-example .token.variable {
+  color: var(--le-tok-variable);
+}
+
+.live-example .token.operator,
+.live-example .token.entity,
+.live-example .token.url {
+  color: var(--le-tok-operator);
+}
+
+.live-example .token.bold {
+  font-weight: bold;
+}
+
+.live-example .token.italic {
+  font-style: italic;
+}

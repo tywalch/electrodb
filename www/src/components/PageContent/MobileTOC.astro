@@ -12,14 +12,6 @@ const { headings } = Astro.props as Props;
 {headings.length > 0 && (
 	<details class="mobile-toc">
 		<summary class="mobile-toc-summary">
-			<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-				<line x1="8" y1="6" x2="21" y2="6" />
-				<line x1="8" y1="12" x2="21" y2="12" />
-				<line x1="8" y1="18" x2="21" y2="18" />
-				<circle cx="4" cy="6" r="0.5" fill="currentColor" />
-				<circle cx="4" cy="12" r="0.5" fill="currentColor" />
-				<circle cx="4" cy="18" r="0.5" fill="currentColor" />
-			</svg>
 			<span class="mobile-toc-label">On this page</span>
 			<svg class="mobile-toc-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 				<polyline points="6 9 12 15 18 9" />
@@ -64,11 +56,6 @@ const { headings } = Astro.props as Props;
 
 	.mobile-toc-summary::-webkit-details-marker {
 		display: none;
-	}
-
-	.mobile-toc-summary > svg:first-of-type {
-		color: var(--theme-text-light);
-		flex-shrink: 0;
 	}
 
 	.mobile-toc-label {

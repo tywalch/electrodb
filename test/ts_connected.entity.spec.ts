@@ -6180,3 +6180,94 @@ describe('execution option compare', () => {
       });
     })
   });
+
+// SetAttribute._makeGet once lacked the `if (this.hidden) return;` guard that
+// the string/map/list getters have, leaking hidden Sets nested inside maps.
+// Runs without a database connection.
+describe("hidden nested Set attributes on read", () => {
+  const HiddenSet = new Entity(
+    {
+      model: { service: "audit", entity: "hiddenset", version: "1" },
+      attributes: {
+        id: { type: "string" },
+        secretRootSet: { type: "set", items: "string", hidden: true },
+        data: {
+          type: "map",
+          properties: {
+            secretSet: { type: "set", items: "string", hidden: true },
+            secretStr: { type: "string", hidden: true },
+            visible: { type: "string" },
+          },
+        },
+      },
+      indexes: {
+        primary: {
+          pk: { field: "pk", composite: ["id"] },
+          sk: { field: "sk", composite: [] },
+        },
+      },
+    },
+    { table: "electro" },
+  );
+
+  it("strips a hidden Set nested inside a map", () => {
+    const result = (HiddenSet as any).parse({
+      Item: {
+        pk: "$audit#id_1",
+        sk: "$hiddenset_1",
+        id: "1",
+        secretRootSet: ["x", "y"],
+        data: { secretSet: ["a", "b"], secretStr: "shh", visible: "ok" },
+        __edb_e__: "hiddenset",
+        __edb_v__: "1",
+      },
+    }).data;
+    expect(result.data).to.deep.equal({ visible: "ok" });
+    expect(result.data).to.not.have.property("secretSet");
+    // root-level hidden set should also be absent
+    expect(result).to.not.have.property("secretRootSet");
+  });
+});
+
+// DynamoDBSet once constructed (but never threw) its `Invalid Set type`
+// error, and `enum`-typed set members were not mapped to a DynamoDB set
+// type, producing `type: undefined` in client-less `.params()`. Runs without
+// a database connection.
+describe("DynamoDBSet type handling", () => {
+  const { DynamoDBSet } = require("../src/set");
+
+  it("throws on an unknown set member type", () => {
+    expect(() => new DynamoDBSet(["a"], "bogus")).to.throw(/Invalid Set type/);
+  });
+
+  it("maps known and enum member types to a DynamoDB set type", () => {
+    expect(new DynamoDBSet(["a"], "string").type).to.equal("String");
+    expect(new DynamoDBSet([1], "number").type).to.equal("Number");
+    expect(new DynamoDBSet(["a"], "enum").type).to.equal("String");
+  });
+
+  it("produces a typed set for enum-item sets in client-less params()", () => {
+    const EnumSet = new Entity(
+      {
+        model: { service: "audit", entity: "enumset", version: "1" },
+        attributes: {
+          id: { type: "string" },
+          tags: { type: "set", items: ["red", "green", "blue"] },
+        },
+        indexes: {
+          primary: {
+            pk: { field: "pk", composite: ["id"] },
+            sk: { field: "sk", composite: [] },
+          },
+        },
+      },
+      { table: "electro" },
+    );
+    const params: any = EnumSet.put({
+      id: "1",
+      tags: ["red", "green"],
+    }).params();
+    expect(params.Item.tags.wrapperName).to.equal("Set");
+    expect(params.Item.tags.type).to.equal("String");
+  });
+});

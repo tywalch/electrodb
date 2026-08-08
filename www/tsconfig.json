@@ -2,6 +2,19 @@
   "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
     "jsx": "preserve",
-    "skipLibCheck": true
-  }
+    "skipLibCheck": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      // Resolves imports in src/examples/** against the actual ElectroDB
+      // typings at the repo root so documentation examples are type-checked
+      // against the current API.
+      "electrodb": ["../index.d.ts"]
+    }
+  },
+  // src/examples is type-checked by `npm run test:examples` (scripts/
+  // test-examples.ts) rather than the global pass: examples declaring
+  // "typeError" in their expect.json are asserted to FAIL type-checking,
+  // which a single all-inclusive tsc run can't express.
+  "exclude": ["dist", "public", "src/examples"]
 }

@@ -93,6 +93,8 @@ const sidebar = SIDEBAR[langCode];
   .nav-scroll {
     height: 100%;
     padding: 1.5rem 0.75rem 2rem;
+    /* Keep the last items clear of the iPhone home indicator. */
+    padding-bottom: calc(2rem + env(safe-area-inset-bottom));
     overflow-y: auto;
     overflow-x: hidden;
   }

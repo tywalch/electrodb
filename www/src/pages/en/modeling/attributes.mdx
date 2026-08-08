@@ -203,10 +203,10 @@ myAttr: {
 
 The `validate` property allows for multiple function/type signatures. Here the different combinations _ElectroDB_ supports:
 
-| signature               | behavior                                                                                                                                                             |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Regexp`                | ElectroDB will call `.test(val)` on the provided regex with the value passed to this attribute                                                                       |
-| `(value: T) => boolean` | Return `true`/truthy for valid values and `false`/falsy for invalid values. Throw an error to interrupt the operation and include a custom validation message.     |
+| signature             | behavior                                                                                                                                                       |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Regexp                | ElectroDB will call `.test(val)` on the provided regex with the value passed to this attribute                                                                 |
+| (value: T) => boolean | Return `true`/truthy for valid values and `false`/falsy for invalid values. Throw an error to interrupt the operation and include a custom validation message. |
 
 ## Attribute Types
 

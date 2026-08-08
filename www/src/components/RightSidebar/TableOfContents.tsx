@@ -1,11 +1,12 @@
-import type { FunctionalComponent } from "preact";
-import { useState, useEffect, useRef } from "preact/hooks";
+import { useState, useEffect, useRef } from "react";
 import type { MarkdownHeading } from "astro";
 
 const ACTIVATION_OFFSET = 100;
 
-const TableOfContents: FunctionalComponent<{ headings: MarkdownHeading[] }> = ({
+const TableOfContents = ({
   headings = [],
+}: {
+  headings: MarkdownHeading[];
 }) => {
   const [activeId, setActiveId] = useState<string>("overview");
   const pinnedRef = useRef(false);

@@ -58,7 +58,12 @@ const githubEditUrl = `${CONFIG.GITHUB_EDIT_URL}/${currentFile}`;
 				top: var(--theme-navbar-height);
 				left: 0;
 				right: 0;
-				bottom: 0;
+				/* An explicit height instead of bottom: 0 — iOS Safari's layout
+				   viewport extends behind its bottom toolbar, so a bottom-anchored
+				   panel gets its tail hidden under the browser UI. dvh tracks the
+				   toolbar as it collapses/expands; vh is the fallback. */
+				height: calc(100vh - var(--theme-navbar-height));
+				height: calc(100dvh - var(--theme-navbar-height));
 				background-color: var(--theme-bg);
 				z-index: 9;
 				display: none;
@@ -128,7 +133,11 @@ const githubEditUrl = `${CONFIG.GITHUB_EDIT_URL}/${currentFile}`;
 				width: 100%;
 			}
 
-			.mobile-sidebar-toggle #grid-left {
+			/* `body` prefix lifts specificity to (1,1,1) so this open-state rule
+			   beats the scoped `#grid-left[data-astro-cid] { display: none }`
+			   (1,1,0) regardless of bundle order — the two tie without it, and
+			   cascade order varies per page and after soft-nav style merging. */
+			body.mobile-sidebar-toggle #grid-left {
 				display: block;
 			}
 		</style>

@@ -19,22 +19,26 @@ type TransactGetCommandInput = {
   TransactItems: TransactGetItem[];
 };
 
+export type V2DocumentClient = {
+  get: DocumentClientMethod;
+  put: DocumentClientMethod;
+  delete: DocumentClientMethod;
+  update: DocumentClientMethod;
+  batchWrite: DocumentClientMethod;
+  batchGet: DocumentClientMethod;
+  scan: DocumentClientMethod;
+  transactGet: DocumentClientMethod;
+  transactWrite: DocumentClientMethod;
+  query: DocumentClientMethod;
+};
+
+export type V3DocumentClient = {
+  send: (command: any) => Promise<any>;
+};
+
 export type DocumentClient =
-  | {
-      get: DocumentClientMethod;
-      put: DocumentClientMethod;
-      delete: DocumentClientMethod;
-      update: DocumentClientMethod;
-      batchWrite: DocumentClientMethod;
-      batchGet: DocumentClientMethod;
-      scan: DocumentClientMethod;
-      transactGet: DocumentClientMethod;
-      transactWrite: DocumentClientMethod;
-      query: DocumentClientMethod;
-    }
-  | {
-      send: (command: any) => Promise<any>;
-    };
+  | V2DocumentClient
+  | V3DocumentClient;
 
 export type AllCollectionNames<
   E extends { [name: string]: Entity<any, any, any, any> },

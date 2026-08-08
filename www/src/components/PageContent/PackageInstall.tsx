@@ -1,6 +1,4 @@
-/** @jsxImportSource preact */
-import type { FunctionalComponent } from "preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useState } from "react";
 import "./PackageInstall.css";
 
 type Manager = "npm" | "yarn" | "pnpm" | "bun";
@@ -41,10 +39,10 @@ type Props = {
   dev?: boolean;
 };
 
-const PackageInstall: FunctionalComponent<Props> = ({
+const PackageInstall = ({
   packages,
   dev = false,
-}) => {
+}: Props) => {
   const [manager, setManager] = useState<Manager>("npm");
   const [copied, setCopied] = useState(false);
 
@@ -116,15 +114,15 @@ const PackageInstall: FunctionalComponent<Props> = ({
   };
 
   return (
-    <div class="pkg-install" data-manager={manager}>
-      <div class="pkg-install-tabs" role="tablist">
+    <div className="pkg-install" data-manager={manager}>
+      <div className="pkg-install-tabs" role="tablist">
         {MANAGERS.map((m) => (
           <button
             key={m.id}
             type="button"
             role="tab"
             aria-selected={m.id === manager}
-            class={`pkg-install-tab${m.id === manager ? " is-active" : ""}`}
+            className={`pkg-install-tab${m.id === manager ? " is-active" : ""}`}
             onClick={() => select(m.id)}
           >
             {m.label}
@@ -132,7 +130,7 @@ const PackageInstall: FunctionalComponent<Props> = ({
         ))}
         <button
           type="button"
-          class="pkg-install-copy"
+          className="pkg-install-copy"
           aria-label="Copy command"
           onClick={onCopy}
         >
@@ -144,9 +142,9 @@ const PackageInstall: FunctionalComponent<Props> = ({
                 height="13"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 aria-hidden="true"
               >
                 <path d="M20 6 9 17l-5-5" />
@@ -161,9 +159,9 @@ const PackageInstall: FunctionalComponent<Props> = ({
                 height="13"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 aria-hidden="true"
               >
                 <rect x="9" y="9" width="13" height="13" rx="2" />
@@ -174,8 +172,8 @@ const PackageInstall: FunctionalComponent<Props> = ({
           )}
         </button>
       </div>
-      <pre class="pkg-install-code">
-        <code class="pkg-install-line">{command}</code>
+      <pre className="pkg-install-code">
+        <code className="pkg-install-line">{command}</code>
       </pre>
     </div>
   );

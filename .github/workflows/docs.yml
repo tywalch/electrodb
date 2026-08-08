@@ -1,0 +1,51 @@
+name: docs
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "www/**"
+      - "index.js"
+      - "index.d.ts"
+      - "src/**"
+      - "playground/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    branches: [master]
+    paths:
+      - "www/**"
+      - "index.js"
+      - "index.d.ts"
+      - "src/**"
+      - "playground/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/docs.yml"
+
+jobs:
+  docs:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # The docs examples execute against this repository's ElectroDB, so the
+      # library's (small) runtime dependency set is installed at the root.
+      - name: Install library dependencies
+        run: npm ci --omit=dev
+      - name: Install docs dependencies
+        run: npm ci
+        working-directory: www
+      - name: Type-check docs and examples
+        run: npm run check
+        working-directory: www
+      - name: Execute docs examples
+        run: npm run test:examples
+        working-directory: www
+      - name: Build docs site
+        run: npm run build
+        working-directory: www
