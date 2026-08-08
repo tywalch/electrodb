@@ -1,0 +1,50 @@
+---
+title: Performance
+description: JIT-compiled formatter for faster read-path item formatting
+keywords:
+  - electrodb
+  - docs
+  - dynamodb
+  - performance
+  - compile
+layout: ../../../layouts/MainLayout.astro
+---
+
+## Compiled Formatter
+
+Every item returned by `get`, `query`, `scan`, and `parse` is shaped by ElectroDB's formatter: it applies getters, unwraps sets, walks nested maps/lists, filters to requested attributes, and enforces ownership. By default this runs through an interpreted path that re-walks the schema for every item.
+
+When enabled, ElectroDB JIT-compiles a formatter specialized to a single entity's schema and uses it in place of the interpreted path, reducing per-item overhead on reads. Output is identical; only the formatting cost changes.
+
+This is **opt-in** and **off by default**.
+
+### Enable per entity
+
+```typescript
+const entity = new Entity(schema, { table, client, compile: true });
+```
+
+The formatter is compiled once, when the `Entity` is constructed.
+
+### Control globally
+
+The `ELECTRODB_COMPILE` environment variable overrides the per-entity `compile` option:
+
+| Value    | Behavior                                                                                                    |
+| -------- | ----------------------------------------------------------------------------------------------------------- |
+| `on`     | Force compilation for all entities. Throws `CompilationFailed` where runtime code generation is unavailable. |
+| `off`    | Disable compilation everywhere, ignoring `compile: true`.                                                   |
+| `verify` | Run both the compiled and interpreted paths on every read and throw if their output diverges.                |
+
+`verify` is a correctness check for CI, not for production — it does the work of both paths.
+
+### When it is skipped
+
+Compilation falls back to the interpreted path (unchanged behavior) when:
+
+- The schema defines any user getter on an attribute. Custom getters run arbitrary code, so those schemas are never compiled.
+- Runtime code generation is unavailable (`new Function` is blocked, e.g. under a strict CSP). In `off` or default mode this is a silent fallback; in `on` mode it throws `CompilationFailed`.
+
+### Services
+
+`ServiceConfiguration` also accepts `compile`. It applies to member entities joined as raw models; it is a no-op for pre-built `Entity` instances, which carry their own `compile` setting.
