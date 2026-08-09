@@ -51,13 +51,22 @@ function getValueType(value) {
 
 class AttributeTraverser {
   constructor(parentTraverser) {
+    let allAttributes;
     if (parentTraverser instanceof AttributeTraverser) {
       this.parent = parentTraverser;
       this.paths = this.parent.paths;
+      allAttributes = this.parent.allAttributes;
     } else {
       this.parent = null;
       this.paths = new Map();
+      allAttributes = [];
     }
+    Object.defineProperty(this, "allAttributes", {
+      value: allAttributes,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+    });
     this.children = new Map();
   }
 
@@ -94,11 +103,12 @@ class AttributeTraverser {
     return this.children.entries();
   }
 
+  registerAttribute(attribute) {
+    this.allAttributes.push(attribute);
+  }
+
   getAll() {
-    if (this.parent) {
-      return this.parent.getAll();
-    }
-    return this.paths.entries();
+    return this.allAttributes.map((attribute) => [attribute.path, attribute]);
   }
 }
 
@@ -144,6 +154,7 @@ class Attribute {
     this.traverser = new AttributeTraverser(definition.traverser);
     this.traverser.setPath(this.path, this);
     this.traverser.setPath(this.fieldPath, this);
+    this.traverser.registerAttribute(this);
     this.traverser.asChild(this.name, this);
     this.parent = { parentType: this.type, parentPath: this.path };
     this.hasUserGet = typeof definition.get === "function";

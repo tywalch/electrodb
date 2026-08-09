@@ -179,6 +179,39 @@ describe("JIT compiled item formatter", () => {
         b.source,
       );
     });
+
+    it("gate does not miss a user getter hidden by a traverser path collision", () => {
+      const model = {
+        model: { entity: "collideget", service: "compilespec", version: "1" },
+        attributes: {
+          id: { type: "string" },
+          map: {
+            type: "map",
+            properties: { cf: { type: "string", get: (v) => v + "!!" } },
+          },
+          other: {
+            type: "map",
+            properties: { cf2: { type: "string", field: "cf" } },
+          },
+        },
+        indexes: {
+          main: {
+            pk: { field: "pk", composite: ["id"] },
+            sk: { field: "sk", composite: [] },
+          },
+        },
+      };
+      const plain = new Entity(model, { table: TABLE });
+      const jit = new Entity(model, { table: TABLE, compile: true });
+
+      expectNotCompiled(jit, "user-getter-behind-collision");
+
+      const item = { id: "1", map: { cf: "hello" }, other: { cf: "world" } };
+      const viaJit = jit.parse({ Attributes: item });
+      const viaPlain = plain.parse({ Attributes: item });
+      expectSame(viaJit.data, viaPlain.data, "collision-getter parity");
+      expect(viaJit.data.map.cf).to.equal("hello!!");
+    });
   });
 
   describe("C. no-silent-fallback eligibility table (Entity + compile:true)", () => {
