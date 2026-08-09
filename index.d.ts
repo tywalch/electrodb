@@ -5490,6 +5490,8 @@ export type EntityConfiguration = {
     version?: string;
   };
   ignoreOwnership?: boolean;
+  /** JIT-compile the read-path formatter (default false); env ELECTRODB_COMPILE=off|on|verify overrides */
+  compile?: boolean;
 };
 
 export class Entity<
@@ -6097,6 +6099,8 @@ export type ServiceConfiguration = {
   client?: DocumentClient;
   listeners?: Array<ElectroEventListener>;
   logger?: ElectroEventListener;
+  /** JIT-compile member entities joined as raw models (no-op for pre-built Entity instances) */
+  compile?: boolean;
 };
 
 declare function createWriteTransaction<

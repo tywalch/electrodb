@@ -680,3 +680,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.9.2]
 ### Fixed
 - [Issue #578](https://github.com/tywalch/electrodb/issues/578); Watchers no longer do unnecessary work for methods they don't define: a watcher only runs on `get` if it has a getter, and on `set` if it has a setter. This also fixes a setter-only `watch` attribute (e.g. an `updatedAt` timestamp) being returned as `undefined` on reads when absent from the item.
+
+## [3.10.0]
+### Added
+- [Issue #585] Opt-in JIT compilation of the item format path. When enabled, ElectroDB compiles a per-schema formatter that replaces the interpreted formatter used to shape `get`/`query`/`scan`/`parse` responses, reducing per-item overhead on reads. Enable per-entity with `{ compile: true }`, or control it globally with the `ELECTRODB_COMPILE` environment variable: `on` forces compilation (and throws where runtime code generation is unavailable), `off` disables it, and `verify` runs both the compiled and interpreted paths on every read and throws if their output diverges. Compilation is skipped automatically for schemas with user-defined getters and falls back to the interpreted path in environments without `new Function` (e.g. a strict CSP), so behavior is unchanged when it is off or unavailable.

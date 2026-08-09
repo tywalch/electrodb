@@ -1,0 +1,20 @@
+# compiled.source snapshot: hidden-projection — regenerate with UPDATE_SNAPSHOTS=1 npx mocha test/offline.compile.spec.js, review the diff, commit
+"use strict";
+return function fromDocument(item, filter) {
+  var out = {};
+  var v0 = item["zero_f"];
+  if (v0 !== undefined && (filter == null || filter.has("0"))) out["0"] = v0;
+  var v1 = item["id"];
+  if (v1 !== undefined && (filter == null || filter.has("id"))) out["id"] = unformat[0](v1);
+  var v2 = item["visible"];
+  if (v2 !== undefined && (filter == null || filter.has("visible"))) out["visible"] = v2;
+  var v3 = item["m"];
+  if (v3 !== undefined && (filter == null || filter.has("m"))) {
+    var r4 = {};
+    var v5 = v3["x"];
+    if (v5 !== undefined) r4["x"] = v5;
+    out["m"] = r4;
+  }
+  return out;
+};
+//# sourceURL=electrodb-jit-format.js

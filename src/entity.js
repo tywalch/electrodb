@@ -37,6 +37,7 @@ const { FilterOperations, ExpressionState, formatExpressionName } = require("./o
 const { WhereFactory } = require("./where");
 const { clauses, ChainState } = require("./clauses");
 const { EventManager } = require("./events");
+const { resolveCompileOptions } = require("./format");
 const validations = require("./validations");
 const c = require("./client");
 const u = require("./util");
@@ -60,6 +61,10 @@ class Entity {
     this._validateModel(model);
     this.version = EntityVersions.v1;
     this.model = this._parseModel(model, this.config);
+    const compileOptions = resolveCompileOptions(this.config.compile);
+    if (compileOptions !== null) {
+      this.model.schema.compileRetrievalFormatters(compileOptions);
+    }
     /** start beta/v1 condition **/
     this.config.table = config.table || model.table;
     /** end beta/v1 condition **/
@@ -1076,10 +1081,9 @@ class Entity {
     if (item === undefined || item === null) {
       return null;
     }
-    const config = {
-      ignoreOwnership: true,
-      ...(options || {}),
-    };
+    const config = this._normalizeExecutionOptions({
+      provided: [{ ignoreOwnership: true }, options || {}],
+    });
     return this.formatResponse(item, TableIndex, config);
   }
 
@@ -1754,7 +1758,7 @@ class Entity {
       }
     }
 
-    return provided.filter(Boolean).reduce((config, option) => {
+    const normalized = provided.filter(Boolean).reduce((config, option) => {
       if (typeof option.order === "string") {
         switch (option.order.toLowerCase()) {
           case "asc":
@@ -2033,6 +2037,12 @@ class Entity {
       config.params = Object.assign({}, config.params, option.params);
       return config;
     }, config);
+
+    const returnAttributes = new Set(normalized.attributes);
+    normalized._returnAttributesFilter =
+      returnAttributes.size > 0 ? returnAttributes : null;
+
+    return normalized;
   }
 
   _applyParameterOptions({ params = {}, options = {} } = {}) {

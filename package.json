@@ -1,6 +1,6 @@
 {
   "name": "electrodb",
-  "version": "3.9.2",
+  "version": "3.10.0",
   "description": "A library to more easily create and interact with multiple entities and heretical relationships in dynamodb",
   "main": "index.js",
   "scripts": {
@@ -8,10 +8,13 @@
     "build:browser": "browserify playground/browser.js -o playground/bundle.js",
     "test": "./test.sh",
     "test:ci": "npm install && npm test",
-    "test:run": "npm run test:types && npm run test:init && npm run test:unit",
+    "test:run": "npm run test:types && npm run test:init && npm run test:unit:verify",
     "test:init": "node ./test/init.js",
     "test:init:hard": "node ./test/init.js --recreate",
     "test:unit": "mocha -r ts-node/register ./test/**.spec.*",
+    "test:unit:verify": "ELECTRODB_COMPILE=verify mocha -r ts-node/register ./test/**.spec.*",
+    "test:snapshots": "mocha -r ts-node/register test/offline.compile.spec.js",
+    "test:snapshots:update": "UPDATE_SNAPSHOTS=1 mocha -r ts-node/register test/offline.compile.spec.js",
     "test:types": "tsd",
     "test:format": "prettier -c src/**/*.js examples/**/*",
     "coverage": "npm run test:init:hard && nyc npm run test:unit && nyc report --reporter=text-lcov | coveralls",

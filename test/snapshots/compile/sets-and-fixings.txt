@@ -1,0 +1,33 @@
+# compiled.source snapshot: sets-and-fixings — regenerate with UPDATE_SNAPSHOTS=1 npx mocha test/offline.compile.spec.js, review the diff, commit
+"use strict";
+return function fromDocument(item, filter) {
+  var out = {};
+  var v0 = item["pk"];
+  if (v0 !== undefined && (filter == null || filter.has("id"))) out["id"] = unformat[0](v0);
+  var v1 = item["sk"];
+  if (v1 !== undefined && (filter == null || filter.has("code"))) out["code"] = unformat[1](v1);
+  var v2 = item["tags"];
+  if (v2 !== undefined && (filter == null || filter.has("tags"))) out["tags"] = fromSet(v2);
+  var v3 = item["nums"];
+  if (v3 !== undefined && (filter == null || filter.has("nums"))) out["nums"] = fromSet(v3);
+  var v4 = item["m"];
+  if (v4 !== undefined && (filter == null || filter.has("m"))) {
+    var r5 = {};
+    var v6 = v4["st"];
+    if (v6 !== undefined) r5["st"] = fromSet(v6);
+    out["m"] = r5;
+  }
+  var v7 = item["lset"];
+  if (v7 !== undefined && (filter == null || filter.has("lset"))) {
+    var r8 = [];
+    {
+      const values = v7;
+      for (const v9 of values) {
+        r8.push(fromSet(v9));
+      }
+    }
+    out["lset"] = r8;
+  }
+  return out;
+};
+//# sourceURL=electrodb-jit-format.js
