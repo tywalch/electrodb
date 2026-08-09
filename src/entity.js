@@ -989,10 +989,6 @@ class Entity {
   }
 
   formatResponse(response, index, config = {}) {
-    let stackTrace;
-    if (!config.originalErr) {
-      stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
-    }
     try {
       let results = {};
       if (validations.isFunction(config.parse)) {
@@ -1058,13 +1054,10 @@ class Entity {
 
       return { data: results };
     } catch (err) {
-      if (
-        config.originalErr ||
-        stackTrace === undefined ||
-        err.isElectroError
-      ) {
+      if (config.originalErr || err.isElectroError) {
         throw err;
       } else {
+        const stackTrace = new e.ElectroError(e.ErrorCodes.AWSError);
         stackTrace.message = `Error thrown by DynamoDB client: "${err.message}" - For more detail on this error reference: https://electrodb.dev/en/reference/errors/#aws-error`;
         stackTrace.cause = err;
         throw stackTrace;

@@ -680,3 +680,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.9.2]
 ### Fixed
 - [Issue #578](https://github.com/tywalch/electrodb/issues/578); Watchers no longer do unnecessary work for methods they don't define: a watcher only runs on `get` if it has a getter, and on `set` if it has a setter. This also fixes a setter-only `watch` attribute (e.g. an `updatedAt` timestamp) being returned as `undefined` on reads when absent from the item.
+
+## [3.9.3]
+### Changed
+- `formatResponse` now constructs its `ElectroError` stack trace lazily in the error path instead of on every successful response, avoiding an unnecessary `Error` allocation on the happy path for read-heavy workloads. [[#587]](https://github.com/tywalch/electrodb/issues/587)
