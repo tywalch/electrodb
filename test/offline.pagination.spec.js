@@ -284,6 +284,23 @@ const tasks = new Entity(
 
 const taskr = new Service({ tasks, offices, employees });
 
+function makeMultiPageClient(pages, method = "query") {
+  let callCount = 0;
+  let calls = [];
+  let client = {};
+  for (const m of v2Methods) {
+    client[m] = () => {};
+  }
+  const handler = (params) => {
+    calls.push(params);
+    const response = pages[callCount] || pages[pages.length - 1];
+    callCount++;
+    return { promise: async () => response };
+  };
+  client[method] = handler;
+  return { calls, client };
+}
+
 function makeClient(lastEvaluatedKey) {
   let queries = [];
   let response = {
@@ -507,6 +524,81 @@ describe("Offline Pagination", () => {
   });
 
   describe("Entities", () => {
+    describe("raw data pagination", () => {
+      const page1Items = [{ pk: "page1-pk1", sk: "sk1" }, { pk: "page1-pk2", sk: "sk2" }];
+      const page2Items = [{ pk: "page2-pk1", sk: "sk3" }, { pk: "page2-pk2", sk: "sk4" }];
+      const lastEvaluatedKey = { pk: "page1-pk2", sk: "sk2" };
+
+      it("should return only the first page when pages is 1 (default)", async () => {
+        const { client, calls } = makeMultiPageClient([
+          { Items: page1Items, Count: 2, ScannedCount: 2, LastEvaluatedKey: lastEvaluatedKey },
+          { Items: page2Items, Count: 2, ScannedCount: 2 },
+        ]);
+        employees.setClient(client);
+        const result = await employees.query
+          .coworkers({ office: "Mobile Branch" })
+          .go({ data: "raw", pages: 1 });
+
+        expect(calls).to.have.length(1);
+        expect(result.data.Items).to.deep.equal(page1Items);
+        expect(result.data.Count).to.equal(2);
+        expect(result.data.ScannedCount).to.equal(2);
+        expect(result.data.LastEvaluatedKey).to.deep.equal(lastEvaluatedKey);
+      });
+
+      it("should combine items from all pages when pages is 'all'", async () => {
+        const { client, calls } = makeMultiPageClient([
+          { Items: page1Items, Count: 2, ScannedCount: 2, LastEvaluatedKey: lastEvaluatedKey },
+          { Items: page2Items, Count: 2, ScannedCount: 2 },
+        ]);
+        employees.setClient(client);
+        const result = await employees.query
+          .coworkers({ office: "Mobile Branch" })
+          .go({ data: "raw", pages: "all" });
+
+        expect(calls).to.have.length(2);
+        expect(result.data.Items).to.deep.equal([...page1Items, ...page2Items]);
+        expect(result.data.Count).to.equal(4);
+        expect(result.data.ScannedCount).to.equal(4);
+        expect(result.data.LastEvaluatedKey).to.be.undefined;
+        expect(result.cursor).to.be.null;
+      });
+
+      it("should combine items from N pages when pages is N", async () => {
+        const page3Items = [{ pk: "page3-pk1", sk: "sk5" }];
+        const { client, calls } = makeMultiPageClient([
+          { Items: page1Items, Count: 2, ScannedCount: 2, LastEvaluatedKey: lastEvaluatedKey },
+          { Items: page2Items, Count: 2, ScannedCount: 2, LastEvaluatedKey: { pk: "page2-pk2", sk: "sk4" } },
+          { Items: page3Items, Count: 1, ScannedCount: 1 },
+        ]);
+        employees.setClient(client);
+        const result = await employees.query
+          .coworkers({ office: "Mobile Branch" })
+          .go({ data: "raw", pages: 2 });
+
+        expect(calls).to.have.length(2);
+        expect(result.data.Items).to.deep.equal([...page1Items, ...page2Items]);
+        expect(result.data.Count).to.equal(4);
+        expect(result.data.ScannedCount).to.equal(4);
+      });
+
+      it("should combine items from all pages during a scan when pages is 'all'", async () => {
+        const { client, calls } = makeMultiPageClient([
+          { Items: page1Items, Count: 2, ScannedCount: 2, LastEvaluatedKey: lastEvaluatedKey },
+          { Items: page2Items, Count: 2, ScannedCount: 2 },
+        ], "scan");
+        employees.setClient(client);
+        const result = await employees.scan.go({ data: "raw", pages: "all" });
+
+        expect(calls).to.have.length(2);
+        expect(result.data.Items).to.deep.equal([...page1Items, ...page2Items]);
+        expect(result.data.Count).to.equal(4);
+        expect(result.data.ScannedCount).to.equal(4);
+        expect(result.data.LastEvaluatedKey).to.be.undefined;
+        expect(result.cursor).to.be.null;
+      });
+    });
+
     it("Should return the lastEvaluatedKey as it came back from dynamo", async () => {
       const lastEvaluatedKey = {
         sk: "$employees_1",
