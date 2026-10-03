@@ -60,6 +60,9 @@ class Entity {
     this._validateModel(model);
     this.version = EntityVersions.v1;
     this.model = this._parseModel(model, this.config);
+    if (this.config.compile === true) {
+      this.model.schema.compileRetrievalFormatters();
+    }
     /** start beta/v1 condition **/
     this.config.table = config.table || model.table;
     /** end beta/v1 condition **/
@@ -1069,10 +1072,9 @@ class Entity {
     if (item === undefined || item === null) {
       return null;
     }
-    const config = {
-      ignoreOwnership: true,
-      ...(options || {}),
-    };
+    const config = this._normalizeExecutionOptions({
+      provided: [{ ignoreOwnership: true }, options || {}],
+    });
     return this.formatResponse(item, TableIndex, config);
   }
 
@@ -1747,7 +1749,7 @@ class Entity {
       }
     }
 
-    return provided.filter(Boolean).reduce((config, option) => {
+    const normalized = provided.filter(Boolean).reduce((config, option) => {
       if (typeof option.order === "string") {
         switch (option.order.toLowerCase()) {
           case "asc":
@@ -2026,6 +2028,12 @@ class Entity {
       config.params = Object.assign({}, config.params, option.params);
       return config;
     }, config);
+
+    const returnAttributes = new Set(normalized.attributes);
+    normalized._returnAttributesFilter =
+      returnAttributes.size > 0 ? returnAttributes : null;
+
+    return normalized;
   }
 
   _applyParameterOptions({ params = {}, options = {} } = {}) {

@@ -21,6 +21,7 @@ const e = require("./errors");
 const u = require("./util");
 const v = require("./validations");
 const { DynamoDBSet } = require("./set");
+const { compileDocumentFormatter } = require("./format");
 
 function getValueType(value) {
   if (value === undefined) {
@@ -50,13 +51,22 @@ function getValueType(value) {
 
 class AttributeTraverser {
   constructor(parentTraverser) {
+    let allAttributes;
     if (parentTraverser instanceof AttributeTraverser) {
       this.parent = parentTraverser;
       this.paths = this.parent.paths;
+      allAttributes = this.parent.allAttributes;
     } else {
       this.parent = null;
       this.paths = new Map();
+      allAttributes = [];
     }
+    Object.defineProperty(this, "allAttributes", {
+      value: allAttributes,
+      writable: false,
+      enumerable: false,
+      configurable: true,
+    });
     this.children = new Map();
   }
 
@@ -93,11 +103,12 @@ class AttributeTraverser {
     return this.children.entries();
   }
 
+  registerAttribute(attribute) {
+    this.allAttributes.push(attribute);
+  }
+
   getAll() {
-    if (this.parent) {
-      return this.parent.getAll();
-    }
-    return this.paths.entries();
+    return this.allAttributes.map((attribute) => [attribute.path, attribute]);
   }
 }
 
@@ -143,8 +154,10 @@ class Attribute {
     this.traverser = new AttributeTraverser(definition.traverser);
     this.traverser.setPath(this.path, this);
     this.traverser.setPath(this.fieldPath, this);
+    this.traverser.registerAttribute(this);
     this.traverser.asChild(this.name, this);
     this.parent = { parentType: this.type, parentPath: this.path };
+    this.hasUserGet = typeof definition.get === "function";
     this.get = this._makeGet(definition.get);
     this.set = this._makeSet(definition.set);
     this._hasMutationHandler = {
@@ -670,6 +683,7 @@ class MapAttribute extends Attribute {
     });
     this.properties = properties;
     this.isRoot = !!definition.isRoot;
+    this.hasUserGet = typeof definition.get === "function";
     this.get = this._makeGet(definition.get, properties);
     this.set = this._makeSet(definition.set, properties);
   }
@@ -883,6 +897,7 @@ class ListAttribute extends Attribute {
       traverser: this.traverser,
     });
     this.items = items;
+    this.hasUserGet = typeof definition.get === "function";
     this.get = this._makeGet(definition.get, items);
     this.set = this._makeSet(definition.set, items);
   }
@@ -1057,6 +1072,7 @@ class SetAttribute extends Attribute {
       traverser: this.traverser,
     });
     this.items = items;
+    this.hasUserGet = typeof definition.get === "function";
     this.get = this._makeGet(definition.get, items);
     this.set = this._makeSet(definition.set, items);
     this.validate = this._makeSetValidate(definition);
@@ -1222,6 +1238,11 @@ class SetAttribute extends Attribute {
   }
 }
 
+const ProhibitedAttributeNames = new Set([
+  "__proto__",
+  ...Object.getOwnPropertyNames(Object.prototype),
+]);
+
 class Schema {
   constructor(
     properties = {},
@@ -1249,6 +1270,12 @@ class Schema {
     );
     this.traverser = traverser;
     this.isRoot = !!isRoot;
+    Object.defineProperty(this, "compiled", {
+      value: null,
+      writable: true,
+      enumerable: false,
+      configurable: true,
+    });
   }
 
   static normalizeAttributes(
@@ -1279,6 +1306,19 @@ class Schema {
         };
       }
       const field = attribute.field || name;
+      if (
+        ProhibitedAttributeNames.has(name) ||
+        ProhibitedAttributeNames.has(field)
+      ) {
+        throw new e.ElectroError(
+          e.ErrorCodes.InvalidAttributeDefinition,
+          `Invalid attribute definition: Attribute "${name}" ${
+            ProhibitedAttributeNames.has(name)
+              ? `has a name`
+              : `has a field "${field}"`
+          } that is reserved. Attribute and field names cannot be "__proto__", "constructor", or any other Object.prototype property name.`,
+        );
+      }
       let isKeyField = false;
       let prefix = "";
       let postfix = "";
@@ -1742,6 +1782,9 @@ class Schema {
     let data = {};
     let names = this.translationForRetrieval;
     for (let [attr, value] of Object.entries(item)) {
+      if (value === undefined) {
+        continue;
+      }
       let name = names[attr];
       if (name) {
         data[name] = value;
@@ -1844,9 +1887,24 @@ class Schema {
     return Array.from(this.requiredAttributes);
   }
 
+  compileRetrievalFormatters() {
+    this.compiled = compileDocumentFormatter(this);
+    return this.compiled;
+  }
+
   formatItemForRetrieval(item, config) {
-    let returnAttributes = new Set(config.attributes || []);
-    let hasUserSpecifiedReturnAttributes = returnAttributes.size > 0;
+    if (
+      this.compiled !== null &&
+      (config.data === undefined || config.data === DataOptions.attributes)
+    ) {
+      return this.compiled.fromDocument(item, config._returnAttributesFilter);
+    }
+    return this._formatItemForRetrievalInterpreted(item, config);
+  }
+
+  _formatItemForRetrievalInterpreted(item, config) {
+    let returnAttributes = config._returnAttributesFilter;
+    let hasUserSpecifiedReturnAttributes = returnAttributes != null;
     let remapped = this.translateFromFields(item, config);
     let data = this._fulfillAttributeMutationMethod("get", remapped);
     if (this.hiddenAttributes.size > 0 || hasUserSpecifiedReturnAttributes) {

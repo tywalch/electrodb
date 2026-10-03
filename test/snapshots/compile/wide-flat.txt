@@ -1,0 +1,23 @@
+# compiled.source snapshot: wide-flat — regenerate with UPDATE_SNAPSHOTS=1 npx mocha test/offline.compile.spec.js, review the diff, commit
+"use strict";
+return function fromDocument(item, filter) {
+  var out = {};
+  var v0 = item["zero_f"];
+  if (v0 !== undefined && (filter == null || filter.has("0"))) out["0"] = v0;
+  var v1 = item["id"];
+  if (v1 !== undefined && (filter == null || filter.has("id"))) out["id"] = unformat[0](v1);
+  var v2 = item["f\"\\\n${y}"];
+  if (v2 !== undefined && (filter == null || filter.has("we\"ird\n${x}"))) out["we\"ird\n${x}"] = v2;
+  var v3 = item["bool"];
+  if (v3 !== undefined && (filter == null || filter.has("bool"))) out["bool"] = v3;
+  var v4 = item["num"];
+  if (v4 !== undefined && (filter == null || filter.has("num"))) out["num"] = v4;
+  var v5 = item["en"];
+  if (v5 !== undefined && (filter == null || filter.has("en"))) out["en"] = v5;
+  var v6 = item["s"];
+  if (v6 !== undefined && (filter == null || filter.has("s"))) out["s"] = v6;
+  var v7 = item["anyv"];
+  if (v7 !== undefined && (filter == null || filter.has("anyv"))) out["anyv"] = v7;
+  return out;
+};
+//# sourceURL=electrodb-jit-format.js

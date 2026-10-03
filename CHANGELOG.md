@@ -684,3 +684,7 @@ All notable changes to this project will be documented in this file. Breaking ch
 ## [3.9.3]
 ### Changed
 - `formatResponse` now constructs its `ElectroError` stack trace lazily in the error path instead of on every successful response, avoiding an unnecessary `Error` allocation on the happy path for read-heavy workloads. [[#587]](https://github.com/tywalch/electrodb/issues/587)
+
+## [3.10.0]
+### Added
+- [Issue #585] Opt-in JIT compilation of the item format path. When enabled, ElectroDB compiles a per-schema formatter that replaces the interpreted formatter used to shape `get`/`query`/`scan`/`parse` responses, reducing per-item overhead on reads. Enable per-entity with `{ compile: true }`. Compilation is skipped automatically for schemas with user-defined getters and falls back to the interpreted path in environments without `new Function` (e.g. a strict CSP), so behavior is unchanged when it is off or unavailable.

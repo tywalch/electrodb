@@ -164,3 +164,8 @@ expectType<Record<string, unknown> | null>(defaultErrorParams);
 const queryErrorParams = error.params<QueryCommandOutput>();
 
 expectType<QueryCommandOutput | null>(queryErrorParams);
+
+import { EntityConfiguration, ServiceConfiguration } from "../";
+expectAssignable<EntityConfiguration>({ compile: true });
+expectAssignable<ServiceConfiguration>({ compile: true });
+expectAssignable<ServiceConfiguration>({ table: "tbl", compile: false });

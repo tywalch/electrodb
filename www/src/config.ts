@@ -99,6 +99,7 @@ export const SIDEBAR: Sidebar = {
       { text: "Events & Logging", link: "en/reference/events-logging" },
       { text: "Parse", link: "en/reference/parse" },
       { text: "Conversions", link: "en/reference/conversions" },
+      { text: "Performance", link: "en/reference/performance" },
     ],
     Examples: [
       { text: "Human resources database", link: "en/examples/human-resources" },
